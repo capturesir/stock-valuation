@@ -51,7 +51,10 @@
 | macOS | `python3 --version` |
 | Linux | `python3 --version` |
 
-若尚未安裝：Windows 可到 [python.org](https://www.python.org/downloads/windows/) 安裝，並勾選 “Add python.exe to PATH”；macOS 可用官網安裝檔或 `brew install python`；Linux 用發行版套件（例如 `sudo apt install python3 python3-venv python3-pip`）。三個系統都需要已安裝 [Git](https://git-scm.com/downloads)。
+若尚未安裝：Windows 可到 [python.org](https://www.python.org/downloads/windows/) 安裝，並勾選 “Add python.exe to PATH”；macOS 建議 `brew install python@3.12`（見 2.5，若原先是 Xcode 附的 3.9 必須另裝）；Linux 用發行版套件（例如 `sudo apt install python3 python3-venv python3-pip`）。三個系統都需要已安裝 [Git](https://git-scm.com/downloads)。
+
+> **macOS 使用者**：2.5 有逐字檢查清單（Python 3.9 的處理、Apple Silicon 路徑、AI 金鑰寫法、每一步應該看到的輸出），2.6 是常見問題對照表；照著做比只看本節快。
+
 
 ### 2.1 複製倉庫並安裝
 
@@ -130,6 +133,7 @@ python -m pytest tests/ -q
 ### 2.2 設定注意
 
 - **不要把 API 金鑰、收件或寄件信箱、SMTP 密碼寫進 `config.yaml`，也不要提交 `.env`。** 語言模型金鑰用 `LLM_API_KEY`（見第 6 節）；電郵用第 2.4 節的環境變數。`config.yaml` 已列入 `.gitignore`；請從 `config.example.yaml` 複製一份在本機使用。
+- **`.env` 只是放金鑰的地方，程式不會自動讀它。** 你寫好 `.env` 後仍要載入到環境變數（`set -a; source .env; set +a`，或寫進 shell 設定檔），否則系統會當作沒有金鑰、改走規則後備。想確認有沒有接上，跑 `python scripts/check_llm.py --ping`。
 - 沒有設定語言模型也可以估值，系統會走規則後備。
 - 沒有設定電郵也可以估值，系統只在本機寫出 Excel 與說明，不會寄信，也沒有預設的私人信箱。
 - 本介面預設只綁定本機 `127.0.0.1:8765`，不會對外開放。
@@ -229,6 +233,147 @@ python -m src.pipeline.cli send-report --ticker 1830.HK --date 2026-11-11
 使用 Gmail 時，請用你自己的 Gmail 作為寄件信箱，並在 Google 帳戶建立「應用程式密碼」；不要把倉庫作者或其他人的信箱寫進去。其他郵件服務則改成該服務的 SMTP 主機與埠。本機網頁目前提供下載 Excel，寄信仍經上述命令列設定。
 
 若加了 `--email` 或執行 `send-report` 但設定不齊全，指令會說明缺少哪些變數並以結束碼 `4` 離開，本機檔案仍會保留。
+
+### 2.5 macOS 從零部署：逐字檢查清單（含 AI 金鑰）
+
+以下假設一部全新 Mac（Apple Silicon 或 Intel 相同流程），一步一步複製執行；每步附「應該看到什麼」，不符就先停下看 2.6。
+
+**步驟 0：確認 Python 版本（Mac 最容易出錯的一步）**
+
+```bash
+python3 --version
+```
+
+| 顯示 | 做法 |
+| --- | --- |
+| 3.11 或以上 | 直接用 `python3`，跳到步驟 1 |
+| 3.9.x（macOS 內建／Xcode Command Line Tools） | 版本太舊，必須另裝，見下 |
+
+```bash
+# 若沒有 Homebrew，先安裝（會要求輸入密碼）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 安裝 3.12（Apple Silicon 的執行檔在 /opt/homebrew/bin，Intel 在 /usr/local/bin）
+brew install python@3.12
+/opt/homebrew/bin/python3.12 --version     # Intel 用 /usr/local/bin/python3.12
+```
+
+以下用 `python3.12` 代表這支直譯器；你的路徑可能不同，但後面指令都一樣。
+
+**步驟 1：取得程式**
+
+```bash
+cd ~
+git clone https://github.com/capturesir/stock-valuation.git
+cd stock-valuation
+```
+
+**步驟 2：建立並啟用虛擬環境**
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+```
+
+應該看到命令列前面出現 `(.venv)`。**之後每開一個新終端機視窗，都要先** `cd ~/stock-valuation && source .venv/bin/activate`，否則 `python` 會回到系統那支。
+
+**步驟 3：安裝依賴**
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+應該看到 `Successfully installed ...`（約 25–30 個套件，2–4 分鐘）。若出現 SSL 或憑證錯誤，通常是舊版 pip，重跑上面第一行即可。
+
+**步驟 4：建立本機設定檔**
+
+```bash
+cp config.example.yaml config.yaml
+```
+
+`config.yaml` 已在 `.gitignore`，不會被提交；金鑰**不要**寫進去（見步驟 6）。
+
+**步驟 5：先跑測試，確認安裝正常**
+
+```bash
+python -m pytest tests/ -q
+```
+
+應該看到 **`75 passed, 2 skipped`**。
+
+> 若你之前已經跑過真實估值，`out/` 與 `cases/` 會被覆寫而令部分測試失敗；先 `git checkout -- out cases` 再跑即可。
+
+**步驟 6：設定 AI（以 DeepSeek 為例，任何 OpenAI 相容服務都適用）**
+
+先用 repo 附的檢查腳本確認「有沒有接上」（此刻應該顯示尚未設定）：
+
+```bash
+python scripts/check_llm.py
+```
+
+然後把金鑰放進 `.env`（已被 `.gitignore` 忽略；**本系統不會自動讀 `.env`**，每次要用 `set -a; source .env; set +a` 載入，或寫進 `~/.zshrc`）：
+
+```bash
+cat > .env <<'EOF'
+LLM_BASE_URL=https://api.deepseek.com/v1
+LLM_MODEL=deepseek-flash
+LLM_API_KEY=sk-你的金鑰
+EOF
+
+set -a; source .env; set +a      # 每次新視窗載入
+python scripts/check_llm.py --ping
+```
+
+`--ping` 會真的打一次 API；應該看到：
+
+```
+available : True
+base_url  : https://api.deepseek.com/v1
+model     : deepseek-flash
+ping      : ok（回覆 {"pong": true}）
+```
+
+想一開機就生效，把三行 `export` 寫進 `~/.zshrc`（只放金鑰到本機檔案，不要提交）：
+
+```bash
+cat >> ~/.zshrc <<'EOF'
+export LLM_BASE_URL="https://api.deepseek.com/v1"
+export LLM_MODEL="deepseek-flash"
+export LLM_API_KEY="sk-你的金鑰"
+EOF
+source ~/.zshrc
+```
+
+**步驟 7：啟動網頁並做第一次估值**
+
+```bash
+python -m src.web.app
+```
+
+- 瀏覽器開啟 <http://127.0.0.1:8765/>，應看到「可攜式股票估值系統」
+- 開 <http://127.0.0.1:8765/api/health>，`llm.configured` 應為 `true`（代表 AI 已接上）
+- 先試內建規格：輸入 `1830.HK` → 查詢 → 估值 → 應顯示五情境與「驗證通過」
+- 再試一個沒內建規格的代號（例如 `9988.HK`）→ 查詢 → 估值 → 應成功，並在「資料缺口」第一行看到通用規格警示
+
+到此部署完成。以後使用只需：`cd ~/stock-valuation && source .venv/bin/activate && python -m src.web.app`。
+
+### 2.6 macOS 常見問題
+
+| 現象 | 原因與處理 |
+| --- | --- |
+| `pip install` 大量失敗、說找不到 3.11 語法 | 用錯 Python。`python3 --version` 若是 3.9，照 2.5 步驟 0 用 `python3.12` 建 venv |
+| `zsh: command not found: pip` | 沒啟用虛擬環境。先 `source .venv/bin/activate` |
+| 重開終端機後 AI 又不通 | `export` 只在該視窗有效。改用 `set -a; source .env; set +a` 或寫入 `~/.zshrc` |
+| `Address already in use` | 8765 被佔用：`VALUATION_WEB_PORT=8766 python -m src.web.app` |
+| `/api/health` 顯示 `configured: false` | 三個變數缺一：`LLM_BASE_URL`（要含 `/v1`）、`LLM_MODEL`、`LLM_API_KEY`。`hint` 會指出缺哪個 |
+| AI 回 401 | 金鑰錯或已失效（`check_llm.py --ping` 會顯示 HTTP 401） |
+| AI 回 404 | `base_url` 少了 `/v1` 或路徑錯（DeepSeek 必須是 `https://api.deepseek.com/v1`） |
+| AI 回 429／估值仍完成但來源是 `rules_fallback` | 額度或限流。系統會自動退回規則後備，估值照樣完成；稍後重跑即改用 AI |
+| 抓 Yahoo 很慢或失敗 | Yahoo 偶發限流，等一兩分鐘重試；`cases/<代號>/` 會保留上次抓取結果 |
+| `pytest` 有測試失敗但程式明明能用 | 你跑過真實估值，`out/`、`cases/` 已被覆寫：`git checkout -- out cases` 後重跑 |
+| 估值日與你所在時區不同 | 估值日按澳門時間（UTC+8）；Mac 在其他時區可用 `--date 2026-11-11` 指定 |
+| 想看 Excel 公式有沒有算對 | 需 LibreOffice（可選）：`brew install --cask libreoffice`，不是通過驗證的必要條件 |
 
 ## 3. 圖文教學：本機網頁怎麼用
 
@@ -441,6 +586,15 @@ python -m src.pipeline.cli run --ticker NVDA
 
 客戶端行為：逾時與重試；若伺服器支援 `response_format=json_object` 會優先使用，失敗則改解析 fence 中的 JSON。解析不到或 HTTP 失敗時，**不會中斷估值**，改走規則後備並記錄錯誤。
 
+設定完想立刻確認有沒有通，不必先跑一次估值：
+
+```bash
+python scripts/check_llm.py          # 只看設定（base_url／model／金鑰是否齊全）
+python scripts/check_llm.py --ping   # 真的打一次 API，失敗時直接指出 401／404／429 的方向
+```
+
+網頁版對應 `GET /api/health` 的 `llm` 欄位（見第 2.3 節）。
+
 強制不用 LLM：
 
 ```bash
@@ -548,6 +702,7 @@ stock-valuation/
   docs/signals_schema_v1.json
   docs/figures/                # 本 README 的圖文截圖
   prompts/                     # API 步驟的版本化提示詞
+  scripts/                     # check_llm.py（部署時檢查 AI 接線）
   src/engine/                  # fcff_engine、method_a、verify_fcff
   src/fetch/                   # Yahoo、Rf、SEC、披露易、Damodaran
   src/filings/                 # 新財報偵測
