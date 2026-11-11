@@ -41,6 +41,19 @@ SYM = {"TWD": "NT$", "HKD": "HK$", "USD": "US$", "JPY": "¥", "KRW": "₩", "CNY
 WIDTHS = {"A": 34, "B": 15}
 
 
+def trade_currency(d: dict) -> str:
+    """Currency of the share price and the per-share fair value.
+
+    Different from ``d["currency"]`` (the model currency) when the statements are
+    reported in another currency, e.g. CNOOC reports in CNY but trades in HKD.
+    """
+    pair = ((d.get("fx_if_any") or {}).get("pair") or "")
+    if "/" in pair:
+        return pair.split("/")[1]
+    return d.get("currency") or ""
+
+
+
 def as_source_text(v):
     """shares_source may be a plain str or an audit dict {basis, source_name, ...} (e.g. 0178.HK / 0941.HK)."""
     if v is None:
@@ -192,7 +205,9 @@ def add_calc_sheet(wb, d, name, peer=None):
     ws = wb.create_sheet(name)
     w = W(ws)
     t, ccy = d["ticker"], d["currency"]
-    sym = SYM.get(ccy, ccy)
+    # share price and per-share values are in the trading currency, which may
+    # differ from the model currency used by the FCFF rows (see trade_currency)
+    sym = SYM.get(trade_currency(d), trade_currency(d))
     MU = {"USD": "US$m", "JPY": "¥m", "KRW": "₩m"}.get(d.get("model_ccy", "USD"), "US$m")   # model-currency unit
     disc, fx = d["discount"], d["fx_if_any"]
     _dr0 = d["projections"][0].get("drivers") or {}
@@ -528,7 +543,7 @@ def add_calc_sheet(wb, d, name, peer=None):
     else:
         w.inp("shares", "攤薄股數", d["shares"], NUM2, "百萬股", "市場數據：" + as_source_text(d["shares_source"]))
     pfx = fx.get("per_share_fx", 1.0)
-    w.inp("ps_fx", "每股換算匯率（US$ → 交易貨幣）", pfx, NUM4, "", ("市場數據：" + str(fx.get("pair")) + f" {d['price_date']} 收市；" if pfx != 1 else "") + fx.get("per_share_fx_note", ""),
+    w.inp("ps_fx", f"每股換算匯率（{ccy} → {trade_currency(d)}）", pfx, NUM4, "", ("市場數據：" + str(fx.get("pair")) + f" {d['price_date']} 收市；" if pfx != 1 else "") + fx.get("per_share_fx_note", ""),
           fx.get("source_name", "") if pfx != 1 else "", fx.get("url", "") if pfx != 1 else "", fx.get("data_date", "") if pfx != 1 else "")
     R = w.ref
     w.inp("fair", f"每股理論價（{sym}）= 股權價值 ÷ 股數 × 匯率", f"={R['equity']}/{R['shares']}*{R['ps_fx']}", NUM2, sym, key_row=True, kind="計算")

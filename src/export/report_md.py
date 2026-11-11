@@ -4,6 +4,9 @@ from __future__ import annotations
 
 def write_report(d: dict, path: str) -> str:
     cc = d["currency"]
+    from .xlsx_calc import trade_currency
+
+    tc = trade_currency(d)
     fv = d["fair_value_per_share"]
     px = d["price"]
     ratio = px / fv if fv else None
@@ -15,8 +18,9 @@ def write_report(d: dict, path: str) -> str:
     a(f"# {d['asset']}（{d['ticker']}）FCFF 估值")
     a("")
     a(f"- 估值日：{d['valuation_date']}（亞洲／澳門時間，UTC+8）")
-    a(f"- 市價：{cc} {px}（{d['price_date']}，來源：{d.get('price_source_url')}）")
-    a(f"- 主理論價（基準）：{cc} {fv:.4f}")
+    a(f"- 市價：{tc} {px}（{d['price_date']}，來源：{d.get('price_source_url')}）")
+    a(f"- 主理論價（基準）：{tc} {fv:.4f}")
+    a(f"- 模型貨幣：{cc}" + (f"（財報以 {cc} 列帳，每股數值按匯率換算為 {tc}）" if cc != tc else ""))
     a(f"- 市價／基準理論價：{ratio:.3f}×" if ratio else "- 市價／基準理論價：不適用")
     a(f"- WACC（方法 A）：{wacc:.2%}")
     a(f"- 終值 g：{g:.2%}")

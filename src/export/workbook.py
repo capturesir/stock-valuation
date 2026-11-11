@@ -5,7 +5,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter as CL
 
-from .xlsx_calc import add_calc_sheet, FN, SYM
+from .xlsx_calc import add_calc_sheet, FN, SYM, trade_currency
 
 HDR = Font(name=FN, bold=True, size=11, color="FFFFFF")
 HDR_F = PatternFill("solid", fgColor="1F3A5F")
@@ -45,7 +45,8 @@ def build_workbook(d: dict, path: str) -> str:
 
 def _summary(ws, d):
     cc = d["currency"]
-    sym = SYM.get(cc, cc)
+    tc = trade_currency(d)
+    sym = SYM.get(tc, tc)
     ws["A1"] = f"{d['asset']}（{d['ticker']}）FCFF 五情境估值摘要"
     ws["A1"].font = TITLE
     ws.merge_cells("A1:D1")
@@ -53,7 +54,7 @@ def _summary(ws, d):
         ("估值日（澳門時間）", d.get("valuation_date")),
         ("市價", d.get("price")),
         ("市價日期", d.get("price_date")),
-        ("貨幣", cc),
+        ("貨幣", f"{tc}（模型貨幣 {cc}）" if tc != cc else cc),
         ("基準理論價", d.get("fair_value_per_share")),
         ("市價／基準理論價", d.get("gap_vs_price", {}).get("price_over_fair_ratio")),
         ("WACC（方法 A）", d["discount"]["wacc"]["value"]),
