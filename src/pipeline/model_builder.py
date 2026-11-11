@@ -205,6 +205,15 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     sh_floor = spec["shares_floor_m"]
     fv_9_base, _ = fair_custom(g0, spec["margins"], 0.0, zero_dnwc=True, capex_pcts=floor_cpx, shares=SH, wacc=0.09)
     fv_9, _ = fair_custom(g0, spec["margins"], 0.0, zero_dnwc=True, capex_pcts=floor_cpx, shares=sh_floor, wacc=0.09)
+    floor_note = None
+    if fv_9 is not None and fv_static is not None and fv_9 > fv_static and spec.get("generic_spec"):
+        # Heavy-capex names: the static scenario keeps the historical capex path
+        # while the 9% floor uses the sustainable ratio, so the "floor" can print
+        # above the static case. Say so instead of letting the reader guess.
+        floor_note = (
+            f"9%靜態（{fv_9:.2f}）高於靜態（{fv_static:.2f}）：靜態情境沿用歷史資本開支路徑，"
+            "9%地板用可持續比例，兩者的 capex 假設不同，不是計算錯誤。"
+        )
 
     wacc_v = disc["wacc"]["value"]
     # sensitivity grid around wacc and g
@@ -258,6 +267,8 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     ]
 
     out = build_json(cfg, sens_w, sens_g, scenarios=scenarios, revisions=revisions, extra=extra)
+    if floor_note:
+        out.setdefault("data_gaps", []).append(floor_note)
     # A negative or non-finite theoretical value means the model does not fit the
     # company (loss-making, over-levered, or a bad base year). verify_fcff only
     # checks arithmetic, so flag it explicitly instead of shipping it silently.

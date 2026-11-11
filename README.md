@@ -631,8 +631,30 @@ python -m pytest tests/ -q
 | `0883.HK`（CNOOC） | 港股，財報人民幣、交易港元 | 基準理論價 42.42 HKD（市價 22.72）、WACC 8.67%、終值 g 2.50%、`VERIFY=PASS`、`ASSUMPTION_SOURCE=llm` | 行業自動對應 Damodaran `Oil/Gas (Production and Exploration)`；匯率 CNY→HKD 1.1746 用 Yahoo 當日價；Excel 摘要顯示「HKD（模型貨幣 CNY）」 |
 | `MSFT` | 美股，行業字串需對應 | 基準理論價 401.36 USD（市價 520.34）、WACC 10.36%、`VERIFY=PASS`、`ASSUMPTION_SOURCE=rules_fallback` | Yahoo「Software - Infrastructure」對應 Damodaran `Software (System & Application)`；關掉 AI 亦可用 |
 | `SPCX` | 虧損公司（EBIT 約 −12.2% 營收） | **拒絕建立模型** | 拒絕原因寫明：五情境 FCFF 假設正 NOPAT，硬算會得出負理論價。修正前此例曾算出 −2327.44 並「驗證通過」，故加入此閘門 |
+| `1211.HK`（比亞迪） | 重資本開支（capex 18.8% 營收、D&A 7.5%），財報人民幣、交易港元 | 用 AI：基準 74.16 HKD（市價 69.20）、悲觀 52.82／樂觀 96.40／靜態 13.86／9%靜態 50.12、`VERIFY=PASS`、`ASSUMPTION_SOURCE=llm`；不用 AI：數字相同、`rules_fallback` | 未修正前把 capex 高峰拉平十年，得出 4.28 HKD（市價 16 倍）且悲觀／靜態為負；現已改為過渡至可持續水平，9% 地板同步改用該比例 |
+| `KO`（可口可樂） | 美股，行業字串需對應，低增長高估值 | 用 AI：基準 44.11 USD（市價 96.55，2.19×）、WACC 7.54%；不用 AI：44.11、`rules_fallback`；兩者 `VERIFY=PASS` | Yahoo「Beverages - Non-Alcoholic」對應 Damodaran `Beverage (Soft)`；價差大是低增長股在這個框架下的正常結果，不是計算錯誤 |
 
-三例的共同點：硬數字全部來自抓回來的財報與 Damodaran 檔案；通用規格一律在 `data_gaps` 第一行標示「自動建立、未經人工覆核」。
+### 11.5 每次改動後如何重做驗收（建議流程）
+
+用一個**從未估值過**的代號做端到端驗收，才算這次改動成功：
+
+```bash
+# 1) 查詢：有結果代表市場上有此股票（同時確認市值／幣別）
+curl -s "http://127.0.0.1:8765/api/lookup?ticker=<新代號>" | head -c 300
+
+# 2) 用 AI 估值
+python -m src.pipeline.cli run --ticker <新代號>
+
+# 3) 不用 AI 估值（確認規則後備同樣走得通）
+python -m src.pipeline.cli run --ticker <新代號> --no-llm
+
+# 4) 檢查：VERIFY=PASS、五情境皆為正、PRICE/FV 是否離譜、資料缺口首行是否為通用規格警示
+python -m pytest tests/ -q
+```
+
+判準：兩次都要 `VERIFY=PASS`；`ASSUMPTION_SOURCE` 分別為 `llm` 與 `rules_fallback`；理論價與市價的倍數要在可解釋範圍（例如 0.3×–3×）；任何情境出現負值都要當成 bug，而不是「估值結果」。
+
+以上各例的共同點：硬數字全部來自抓回來的財報與 Damodaran 檔案；通用規格一律在 `data_gaps` 第一行標示「自動建立、未經人工覆核」。
 
 ---
 
@@ -642,6 +664,7 @@ python -m pytest tests/ -q
 - 通用規格的三個已知限制：不會拆分部／地域收入，CRP 按上市地推定（港股若收入主要來自內地應改 CRP 中國）；行業按 Yahoo 行業字串對應 Damodaran，未能對應時會以 Yahoo 迴歸 β 還原 βU 並標示為估算；財報貨幣與交易貨幣不同時（如 0883.HK 以人民幣列帳、港元交易）會用 Yahoo 匯率換算，匯率日與市價日相同。
 - **虧損公司不適用**：通用規格要求最近年度 EBIT 為正。若 EBIT 為負（例：SPCX 約 −12% 營收），系統會拒絕建立模型並說明原因，因為五情境 FCFF 假設正 NOPAT，硬算會得出零甚至負理論價。這類公司需另建虧損轉盈專用模型。任何情況下若理論價 ≤ 0，輸出會加上 `result_warning` 並置頂於「資料缺口」，CLI 會印 `WARNING=`；`verify_fcff` 只驗算術，不代表假設合理。
 - 一致預期若出現極端增幅（例如低基數造成 +269%），通用規格會截斷至 −50%～+150% 並在資料缺口註明。
+- 重資本開支公司（例：`1211.HK` 比亞迪，capex 約 18.8% 營收、D&A 7.5%）不會把歷史高峰拉平十年：通用規格把 capex% 直線過渡到可持續水平（＝D&A% ＋ g／RONIC × 利潤率），9%靜態地板亦改用該比例，否則長期負 FCFF 會得出負理論價。若 9%靜態高於靜態，是兩者 capex 假設不同（靜態沿用歷史路徑），報告會在資料缺口說明，不是計算錯誤。
 - Investing.com 港債頁面可能回 403；SEC Archives HTML 常見 403。利率與業績偵測已有備援來源，見第 8 節。
 - 1830.HK 的 `check-filings` 可能因披露易 `prefix.do` 回應不是 JSONP 而被攔截，此時不要把「檢查失敗」當成「沒有新財報」。
 - NVDA 規則後備的基準理論價遠高於街貨目標價，靜態情境則低很多；引用時請一併看五情境與資料缺口。

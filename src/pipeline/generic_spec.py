@@ -418,10 +418,29 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     growths = rules.fade_to_g(starts, terminal_g, n)
     margins = [m0] + rules.fade_levels(m0, m_avg, n)[1:]
     da_pcts = [da_pct] * n
-    capex_pcts = [cpx_pct] * n
+    # Capex: holding the historical ratio flat for ten years turns a capex
+    # super-cycle into permanently negative FCFF (BYD 1211.HK: capex 18.8% of
+    # revenue vs D&A 7.5% gave a 4.28 fair value against a 69.2 price). Fade the
+    # ratio towards the steady state implied by the engine's own terminal
+    # formula: capex% = D&A% + (g / RONIC) × margin − ΔNWC% × g.
+    ronic = 0.12
+    steady_capex_pct = da_pct + (terminal_g / ronic) * max(m0, 0.0) - nwc_pct * terminal_g
+    steady_capex_pct = max(steady_capex_pct, da_pct * 0.8)
+    if cpx_pct > steady_capex_pct + 0.01:
+        capex_pcts = rules.fade_levels(cpx_pct, steady_capex_pct, n)
+        gaps.append(
+            f"資本開支：歷史 {len(cpx_hist) or 1} 年平均佔營收 {cpx_pct:.2%}，遠高於維持性水平"
+            f"（D&A {da_pct:.2%}＋增長所需再投資，推算 {steady_capex_pct:.2%}）；"
+            "已按此比例直線過渡至可持續水平，避免把投資高峰期永久化而得出負企業價值。"
+        )
+    else:
+        capex_pcts = [cpx_pct] * n
+
     growth_notes = [f"規則後備：{cons_note}；其後向終值 g {terminal_g:.2%} 直線淡化"] + ["向終值增長直線淡化"] * (n - 1)
     margin_notes = [f"首年用最近年度 EBIT 利潤率 {m0:.2%}；其後向 {len(margins_hist)} 年平均 {m_avg:.2%} 淡化"] * n
-    re_note = f"總 D&A 取 {len(da_pcts_hist) or 1} 年平均 {da_pct:.2%} 營收；Capex 取 {len(cpx_hist) or 1} 年平均 {cpx_pct:.2%} 營收"
+    re_note = (f"總 D&A 取 {len(da_pcts_hist) or 1} 年平均 {da_pct:.2%} 營收；"
+               f"Capex 由 {capex_pcts[0]:.2%} 過渡至 {capex_pcts[-1]:.2%} 營收"
+               + ("（歷史高峰向可持續水平直線過渡）" if capex_pcts[0] != capex_pcts[-1] else ""))
     llm_note = None
 
     if use_llm and client is not None and client.available():
@@ -464,6 +483,14 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     cpx_ppe = [abs(_val(cf_a, d, "Depreciation") or 0) / r for d, r in hist_rev if _val(cf_a, d, "Depreciation")]
     floor = rules.capex_floor(cpx_ppe, cpx_hist)
     floor_pct = floor["floor_pct"] if floor["floor_pct"] else cpx_pct
+    # The 9% floor scenario must not carry the capex super-cycle for ever: with
+    # BYD's 18.8% the floor came out at -18 HKD per share, which is not a floor.
+    if floor_pct > steady_capex_pct:
+        gaps.append(
+            f"9%靜態地板：歷史 Capex 均值 {floor_pct:.2%} 高於可持續水平 {steady_capex_pct:.2%}，"
+            "地板改用可持續比例（否則零增長情境會得出負每股價值）。"
+        )
+        floor_pct = steady_capex_pct
 
     # ---- FX: model currency (statements) vs market currency (price)
     val_date = dt.date.fromisoformat(snap.get("valuation_date") or dt.date.today().isoformat())

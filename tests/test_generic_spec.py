@@ -113,6 +113,25 @@ def test_absurd_consensus_growth_is_clamped_and_reported():
     assert any("截斷" in g for g in spec["data_gaps"])
 
 
+def test_heavy_capex_is_normalised_towards_sustainable_level():
+    """A capex super-cycle must not be extrapolated flat for ten years.
+
+    BYD (1211.HK) spends ~18.8% of revenue on capex against 7.5% D&A; holding
+    that flat produced a 4.28 fair value against a 69.2 price and negative
+    scenarios. The ratio has to fade to the steady state used by the engine.
+    """
+    fund = _fund()
+    # statement values are in currency units, so 30% of 398,220m is 1.19e11
+    for row in fund["cf_a"].values():
+        row["Capital Expenditure"] = -0.30 * 398_220_000_000.0
+    spec = G.build_generic_spec(_snap(), fund, {}, use_llm=False)
+
+    assert spec["capex_pcts"][0] > spec["capex_pcts"][-1]      # fades down
+    assert spec["capex_pcts"][-1] < 0.30                        # not the historical peak
+    assert spec["capex_floor_pct"] == pytest.approx(spec["capex_pcts"][-1])
+    assert any("資本開支" in g for g in spec["data_gaps"])
+
+
 def test_validate_paths_accepts_the_rules_path():
     g = [0.05] * 10
     m = [0.2] * 10
