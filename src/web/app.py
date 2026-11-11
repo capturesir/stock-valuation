@@ -103,7 +103,12 @@ def index():
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "service": "valuation-web", "disclaimer": "本系統產出不構成投資建議。"}
+    return {
+        "ok": True,
+        "service": "valuation-web",
+        "llm": services.llm_status(),
+        "disclaimer": "本系統產出不構成投資建議。",
+    }
 
 
 @app.get("/api/lookup")

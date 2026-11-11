@@ -144,6 +144,18 @@ python -m uvicorn src.web.app:app --host 127.0.0.1 --port 8765
 
 以瀏覽器開啟 [http://127.0.0.1:8765/](http://127.0.0.1:8765/)。主機與埠可用環境變數 `VALUATION_WEB_HOST`、`VALUATION_WEB_PORT` 更改（寫法見第 6 節）。**CLI 原指令、旗標、預設值與結束碼不受網頁影響。**
 
+想先確認語言模型有沒有接上（不必先跑一次估值），開 [http://127.0.0.1:8765/api/health](http://127.0.0.1:8765/api/health)：
+
+```json
+{"ok": true, "service": "valuation-web",
+ "llm": {"configured": true, "model": "deepseek-flash",
+         "base_url": "https://api.deepseek.com/v1",
+         "api_key_set": true, "json_mode": true},
+ "disclaimer": "本系統產出不構成投資建議。"}
+```
+
+`configured` 為 `true` 表示估值會用 AI 寫假設；`false` 表示會走規則後備，並多一個 `hint` 說明缺哪個變數。此端點不會回傳金鑰，`base_url` 也會去掉查詢字串。CLI 等價做法是看輸出最後的 `ASSUMPTION_SOURCE=llm` 或 `rules_fallback`。
+
 ### 2.4 電郵設定（可選）
 
 電郵不是必須步驟。未設定收件信箱、寄件信箱或 SMTP 時，系統只在本機產出檔案，**不會寄信**，也**沒有**內建的私人信箱。若你要在估值完成後把 Excel 寄給自己，請在本機設定下列環境變數（環境變數優先於 `config.yaml`；**密碼只能用環境變數**，不要寫進設定檔或提交到 Git）：

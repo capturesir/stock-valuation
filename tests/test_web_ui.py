@@ -53,6 +53,39 @@ def test_health_and_index(client):
     assert "檢查財報" in text
 
 
+def test_health_reports_configured_llm_without_leaking_key(client, monkeypatch):
+    monkeypatch.setenv("LLM_BASE_URL", "https://api.example.com/v1")
+    monkeypatch.setenv("LLM_MODEL", "example-model")
+    monkeypatch.setenv("LLM_API_KEY", "sk-test-not-a-real-key")
+    body = client.get("/api/health").json()
+    llm = body["llm"]
+    assert llm["configured"] is True
+    assert llm["model"] == "example-model"
+    assert llm["base_url"] == "https://api.example.com/v1"
+    assert llm["api_key_set"] is True
+    assert "hint" not in llm
+    assert "sk-test-not-a-real-key" not in str(body)
+
+
+def test_health_reports_missing_llm_config(client, monkeypatch):
+    for name in ("LLM_BASE_URL", "LLM_MODEL", "LLM_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    llm = client.get("/api/health").json()["llm"]
+    assert llm["configured"] is False
+    assert llm["hint"]
+
+
+def test_llm_status_strips_query_string_from_base_url(monkeypatch):
+    from src.web.services import llm_status
+
+    monkeypatch.setenv("LLM_BASE_URL", "https://gateway.example.com/v1?api-key=secret")
+    monkeypatch.setenv("LLM_MODEL", "example-model")
+    monkeypatch.setenv("LLM_API_KEY", "sk-test-not-a-real-key")
+    status = llm_status()
+    assert status["base_url"] == "https://gateway.example.com/v1"
+    assert "secret" not in str(status)
+
+
 def test_lookup_nvda_success(client, monkeypatch):
     _patch_lookup(monkeypatch, _nvda_chart, {"long_name": "NVIDIA Corporation", "sector": "Technology"})
     r = client.get("/api/lookup?ticker=nvda")

@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Optional
 
 from ..fetch import yahoo, httputil
-from ..pipeline.orchestrator import ROOT, _norm
+from ..llm.client import LLMClient
+from ..pipeline.orchestrator import ROOT, _norm, load_config
 
 KNOWN_SPECS = frozenset({"NVDA", "1830.HK"})
 DATE_DIR_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_(.+)$")
@@ -214,3 +215,28 @@ def lookup_ticker(ticker: str) -> dict:
         "has_name_spec": has_name_spec(ticker),
         "last_valuation": latest_valuation(ticker),
     }
+
+
+def llm_status() -> dict:
+    """Report whether the AI step is wired up, without exposing the key.
+
+    Lets a deployer confirm the model connection before spending a valuation
+    run: when it is not configured, valuations still complete but
+    ``assumption_source`` silently falls back to ``rules_fallback``.
+    """
+    client = LLMClient(load_config())
+    configured = client.available()
+    base_url = (client.base_url or "").split("?", 1)[0]  # never echo query tokens
+    status = {
+        "configured": configured,
+        "model": client.model or None,
+        "base_url": base_url or None,
+        "api_key_set": bool(client.api_key),
+        "json_mode": client.json_mode,
+    }
+    if not configured:
+        status["hint"] = (
+            "未設定 LLM_BASE_URL／LLM_MODEL，或雲端 API 未提供 LLM_API_KEY；"
+            "估值仍會完成，但 assumption_source 會是 rules_fallback。"
+        )
+    return status
