@@ -248,6 +248,8 @@ python -m src.pipeline.cli send-report --ticker 1830.HK --date 2026-11-11
 
 查詢成功後，頁面會顯示公司名稱、貨幣與市價等資料，此時**尚未**計算理論價。確認是你要的股票，再按「估值」。估值過程若有問題，錯誤會直接顯示在頁面上。
 
+若查到的代號沒有內建（人工覆核）規格，頁面會提示「按估值會自動用 Yahoo 財報建立通用規格、信心較低」，仍可直接按「估值」，完成後請先看「資料缺口」分頁第一行的通用規格警示。虧損公司（最近年度 EBIT 為負）會被拒絕並在頁面說明原因，不會產生沒有意義的理論價。
+
 NVIDIA（`NVDA`）查詢結果示例：
 
 ![NVDA 查詢結果](docs/figures/fig-15-07-nvda-lookup.png)
@@ -320,6 +322,7 @@ NVIDIA 估值完成後的分頁示意：
 # 為一隻股票估值（首次或重跑）
 python -m src.pipeline.cli run --ticker NVDA
 python -m src.pipeline.cli run --ticker 1830.HK
+python -m src.pipeline.cli run --ticker 0883.HK          # 無內建規格：自動建立通用規格
 python -m src.pipeline.cli run --ticker NVDA --date 2026-11-11 --no-llm
 
 # 檢查自上次估值以來是否有新財報（美國：SEC submissions；香港：披露易）
@@ -337,7 +340,18 @@ python -m src.pipeline.cli run --ticker NVDA --email
 python -m src.pipeline.cli send-report --ticker NVDA
 ```
 
-結束碼：`0` 正常（估值驗證通過，檢查結果為不必重跑，訊號匯出成功，或電郵已寄出）；`2` 估值驗證失敗或訊號檔驗證失敗；`10` 需要重跑；`3` 檢查被攔截或出錯；`4` 已要求寄信但設定不齊全或寄送失敗（本機檔案仍保留）。
+結束碼：`0` 正常（估值驗證通過，檢查結果為不必重跑，訊號匯出成功，或電郵已寄出）；`2` 估值失敗（驗證不通過、無法建立模型如財報關鍵項目不足或公司虧損，或訊號檔驗證失敗）；`10` 需要重跑；`3` 檢查被攔截或出錯；`4` 已要求寄信但設定不齊全或寄送失敗（本機檔案仍保留）。
+
+`run` 的輸出摘要含以下行，便於腳本解析：
+
+| 行 | 說明 |
+| --- | --- |
+| `PRICE=… <交易貨幣>` | 市價；另附 `(MODEL_CCY=…)`，兩者不同時代表財報以另一貨幣列帳（例：`PRICE=22.72 HKD (MODEL_CCY=CNY)`） |
+| `FV_BASE=… <交易貨幣>` | 基準理論價，一律以交易貨幣表示 |
+| `VERIFY=PASS／FAIL` | 引擎算術與報表一致性檢查（**只驗算術，不驗假設合理**） |
+| `WARNING=…` | 只在理論價 ≤ 0 時出現，代表此模型不適用於該公司，結果不可引用 |
+| `ASSUMPTION_SOURCE=llm／rules_fallback` | 這次的假設來自 AI 還是規則後備 |
+
 
 產出位於 `out/YYYY-MM-DD_<代號>/`：JSON、Excel、繁中說明、假設 CSV。
 
@@ -542,7 +556,7 @@ stock-valuation/
   src/signals/                 # B 組相容訊號匯出
   src/web/                     # 本機網頁介面（不改變 CLI）
   src/export/                  # Excel、繁中 Markdown、可選電郵
-  tests/                       # 介面、CLI、ΔNWC、訊號匯出、電郵設定測試
+  tests/                       # 介面、CLI、ΔNWC、通用規格、訊號匯出、電郵設定測試
   data/damodaran/              # betaGlobal.xls（2026-01-05）
   cases/<ticker>/              # 當次抓取快照與 state.json（方便重現）
   out/YYYY-MM-DD_<ticker>/     # JSON、Excel、說明、假設 CSV
@@ -550,7 +564,7 @@ stock-valuation/
 
 ---
 
-## 11. 驗證測試：1830.HK 與 NVDA（2026-11-11，澳門時間）
+## 11. 驗證測試：1830.HK、NVDA 與通用規格（2026-11-11，澳門時間）
 
 兩隻都是打包時**從未估值過**的代號，全程用真實抓取資料，**規則後備**（環境沒有 `LLM_BASE_URL`／`LLM_API_KEY`，故未呼叫任何雲端或本地模型）。沒有寫入正式關注名單或正式訊號檔。獨立驗證 `verify_fcff` 均為 **PASS**。晚間修正 ΔNWC 匯出後，Excel「計算」頁與官方理論價核對相符；官方理論價不變。
 
@@ -607,6 +621,18 @@ stock-valuation/
 ```bash
 python -m pytest tests/ -q
 ```
+
+### 11.4 通用規格實測（2026-11-11／12，澳門時間）
+
+同一套指令、同一個引擎，對三種原本沒有內建規格的情況各跑一次：
+
+| 代號 | 情況 | 結果 | 說明 |
+| --- | --- | --- | --- |
+| `0883.HK`（CNOOC） | 港股，財報人民幣、交易港元 | 基準理論價 42.42 HKD（市價 22.72）、WACC 8.67%、終值 g 2.50%、`VERIFY=PASS`、`ASSUMPTION_SOURCE=llm` | 行業自動對應 Damodaran `Oil/Gas (Production and Exploration)`；匯率 CNY→HKD 1.1746 用 Yahoo 當日價；Excel 摘要顯示「HKD（模型貨幣 CNY）」 |
+| `MSFT` | 美股，行業字串需對應 | 基準理論價 401.36 USD（市價 520.34）、WACC 10.36%、`VERIFY=PASS`、`ASSUMPTION_SOURCE=rules_fallback` | Yahoo「Software - Infrastructure」對應 Damodaran `Software (System & Application)`；關掉 AI 亦可用 |
+| `SPCX` | 虧損公司（EBIT 約 −12.2% 營收） | **拒絕建立模型** | 拒絕原因寫明：五情境 FCFF 假設正 NOPAT，硬算會得出負理論價。修正前此例曾算出 −2327.44 並「驗證通過」，故加入此閘門 |
+
+三例的共同點：硬數字全部來自抓回來的財報與 Damodaran 檔案；通用規格一律在 `data_gaps` 第一行標示「自動建立、未經人工覆核」。
 
 ---
 
