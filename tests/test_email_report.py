@@ -28,7 +28,16 @@ FORBIDDEN_SHA256 = {
     "c6ecb80758a6733a26c9f95a9113aacaf4cd9528161078ebb39611fa6b815dae",
 }
 TOKEN_RE = re.compile(r"[A-Za-z0-9._%+-]+")
-SKIP_PARTS = {".git", "__pycache__", ".pytest_cache", "data/damodaran"}
+# Directories that are build artefacts or local-only, never part of the package.
+# ``.venv`` / ``venv`` are created by the README deploy steps *inside* the repo,
+# and third-party packages ship their own authors' mailbox addresses, so they
+# must not be scanned here.
+SKIP_PARTS = {
+    ".git", "__pycache__", ".pytest_cache", ".venv", "venv", "data/damodaran",
+}
+# Local-only files listed in .gitignore; a deployer's own mailbox legitimately
+# lives here and is never committed.
+SKIP_FILES = {"config.yaml", ".env"}
 TEXT_SUFFIX = {
     ".py", ".md", ".yaml", ".yml", ".json", ".txt", ".html", ".csv",
     ".example", ".ini", ".cfg", ".toml", ".bat", ".ps1", ".sh",
@@ -45,6 +54,8 @@ def test_package_has_no_author_mailboxes():
         if not path.is_file():
             continue
         if any(part in SKIP_PARTS for part in path.parts) or "damodaran" in path.parts:
+            continue
+        if path.name in SKIP_FILES:
             continue
         raw = path.read_bytes()
         text = raw.decode("utf-8", "replace")

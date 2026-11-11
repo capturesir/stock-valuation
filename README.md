@@ -104,7 +104,11 @@ cp config.example.yaml config.yaml
 python -m pytest tests/ -q
 ```
 
-測試通過即可使用。之後每次進入目錄，先啟動虛擬環境：
+測試通過即可使用。
+
+> **注意**：`out/` 與 `cases/` 內的檔案同時是估值輸出，也是測試的比對基準。跑過一次真實估值（網頁或 CLI）之後，這些檔案會被覆寫，`python -m pytest tests/ -q` 會因為數值不再相同而失敗；要重跑測試，先 `git checkout -- out cases` 還原基準檔。測試會略過 `.venv`、`venv`、`config.yaml`、`.env` 這些本機檔案。
+
+之後每次進入目錄，先啟動虛擬環境：
 
 | 系統 | 啟動虛擬環境 |
 | --- | --- |
