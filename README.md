@@ -393,6 +393,17 @@ python -m src.pipeline.cli run --ticker 1830.HK
 
 Windows CMD 則用 `set LLM_BASE_URL=http://127.0.0.1:11434/v1` 與 `set LLM_MODEL=llama3.1`。若改用 LM Studio 等，把位址改成 `http://127.0.0.1:1234/v1` 即可。
 
+**已實測的第三方相容服務：DeepSeek**（2026-11-11 實測，模型為 DeepSeek-V4.1-Flash；NVDA 與 1830.HK 均得出 `assumption_source = llm`、`verify_fcff` 通過）：
+
+```bash
+export LLM_BASE_URL="https://api.deepseek.com/v1"
+export LLM_API_KEY="sk-..."          # 不要提交到檔案庫
+export LLM_MODEL="deepseek-flash"
+python -m src.pipeline.cli run --ticker NVDA
+```
+
+`deepseek-flash` 對應 DeepSeek-V4.1-Flash。舊名 `deepseek-v4-flash` 官方仍接受，但同一個舊模型已退役，請求由 DeepSeek-V4.1-Flash 回應並按 Flash 價格計費，日後可能下架，建議用官方名 `deepseek-flash`。DeepSeek 支援 `response_format=json_object`，本客戶端會自動使用。
+
 客戶端行為：逾時與重試；若伺服器支援 `response_format=json_object` 會優先使用，失敗則改解析 fence 中的 JSON。解析不到或 HTTP 失敗時，**不會中斷估值**，改走規則後備並記錄錯誤。
 
 強制不用 LLM：
@@ -567,6 +578,8 @@ stock-valuation/
 ### 11.3 本次是否用了 LLM？
 
 沒有。執行時環境沒有設定 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`，兩次測試均為 `assumption_source = rules_fallback`。這正是「用量上限或沒有模型時仍要得出估值」的設計目標。
+
+補充（同日稍後）：另以 OpenAI 相容的 DeepSeek 端點（`LLM_MODEL=deepseek-flash`，模型版本 DeepSeek-V4.1-Flash）重跑 NVDA 與 1830.HK，兩者皆 `assumption_source = llm`、`verify_fcff` 通過。上文記錄的是「沒有金鑰」情況下的驗證；兩條路徑都可用，見第 6 節的 DeepSeek 例子。
 
 自動化測試（含 CLI 回歸、網頁分頁、ΔNWC 核對、訊號匯出、電郵設定）在虛擬環境已啟動後，Windows、macOS、Linux 都用同一句：
 
