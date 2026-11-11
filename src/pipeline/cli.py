@@ -180,15 +180,25 @@ def main(argv=None) -> int:
     args = p.parse_args(argv)
 
     if args.cmd == "run":
-        res = run_ticker(args.ticker, valuation_date=args.date, use_llm=not args.no_llm)
+        try:
+            res = run_ticker(args.ticker, valuation_date=args.date, use_llm=not args.no_llm)
+        except (RuntimeError, SystemExit) as exc:
+            print(f"[錯誤] {exc}")
+            return 2
         j = res["json"]
         print(f"TICKER={j['ticker']}  COMPANY={j['asset']}")
-        print(f"PRICE={j['price']} {j['currency']}  DATE={j['price_date']}")
-        print(f"FV_BASE={j['fair_value_per_share']:.4f}  PRICE/FV={j['price']/j['fair_value_per_share']:.3f}")
+        # price and per-share fair value are in the trading currency, which can
+        # differ from the model currency when the statements use another one
+        pair = ((j.get("fx_if_any") or {}).get("pair") or "")
+        trade_ccy = pair.split("/")[1] if "/" in pair else j["currency"]
+        print(f"PRICE={j['price']} {trade_ccy}  DATE={j['price_date']}  (MODEL_CCY={j['currency']})")
+        print(f"FV_BASE={j['fair_value_per_share']:.4f} {trade_ccy}  PRICE/FV={j['price']/j['fair_value_per_share']:.3f}")
         print(f"WACC={j['discount']['wacc']['value']:.4%}  g={j['terminal']['g']:.2%}")
         for s in j["scenarios"]:
             print(f"  {s['name']}: {s['fair_value']:.4f}")
         print(f"VERIFY={'PASS' if res['verify_pass'] else 'FAIL'}  {res['verify_errors']}")
+        if j.get("result_warning"):
+            print(f"WARNING={j['result_warning']}")
         print(f"ASSUMPTION_SOURCE={j.get('assumption_source')}")
         print(f"XLSX={res['xlsx']}")
         print(f"MD={res['md']}")

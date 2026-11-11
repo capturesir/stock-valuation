@@ -6,7 +6,9 @@ openpyxl>=3.1
 PyYAML>=6.0
 beautifulsoup4>=4.12
 lxml>=5.0
-# Optional: parse Damodaran .xls
+# Optional: parse Damodaran .xls (betaGlobal.xls industry table; needed for the
+# full industry beta table used by generic specs — falls back to the hand-
+# transcribed subset in src/engine/method_a.py when missing)
 xlrd>=2.0
 
 # Web UI (CLI is unchanged; these are only needed for the local interface and tests)

@@ -196,7 +196,7 @@
       hide(els.specNote);
       els.specNote.textContent = "";
     } else {
-      els.specNote.textContent = "本封裝驗證版內建規格僅含 NVDA 與 1830.HK。此代號可顯示市價，但點擊「估值」會失敗，直至新增 name_specs 並備妥來源。";
+      els.specNote.textContent = "此代號沒有內建（人工覆核）規格。按「估值」會自動用 Yahoo 財報＋Damodaran 建立通用規格，數字全部有來源，但未經逐項覆核、信心較低；估值後請看「資料缺口」並核對年報。";
       show(els.specNote);
     }
     if (data.last_valuation && data.last_valuation.xlsx) {

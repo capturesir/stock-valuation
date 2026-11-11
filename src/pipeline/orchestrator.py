@@ -12,7 +12,7 @@ from ..llm.client import LLMClient
 from ..llm import steps as llm_steps
 from ..fetch import yahoo, rf as rfmod, sec, hkex
 from ..filings import detect
-from . import name_specs
+from . import name_specs, generic_spec
 from .model_builder import build_and_run
 from ..export.workbook import build_workbook
 from ..export.report_md import write_report
@@ -149,7 +149,16 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     elif ticker == "1830.HK":
         spec = name_specs.spec_1830(snap)
     else:
-        raise RuntimeError(f"本封裝驗證版內建規格僅含 NVDA 與 1830.HK。其他代號請先新增 name_specs 並備妥來源，不可讓模型憑記憶填數。")
+        # No hand-verified spec: build one from the fetched statements so a new
+        # ticker can be valued straight away. Numbers still come from sources,
+        # never from the model's memory; see generic_spec.py.
+        try:
+            spec = generic_spec.build_generic_spec(snap, fund, cfg, use_llm=use_llm, client=client)
+        except generic_spec.GenericSpecError as exc:
+            raise RuntimeError(
+                f"{ticker} 無法自動建立模型：{exc}"
+                "（已取得市價與財報，但關鍵項目不足；請補來源或改用內建規格 NVDA／1830.HK。）"
+            ) from exc
 
     spec["assumption_source"] = snap["assumption_source"]
     spec["llm_status"] = llm_status

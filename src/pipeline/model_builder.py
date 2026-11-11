@@ -258,6 +258,17 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     ]
 
     out = build_json(cfg, sens_w, sens_g, scenarios=scenarios, revisions=revisions, extra=extra)
+    # A negative or non-finite theoretical value means the model does not fit the
+    # company (loss-making, over-levered, or a bad base year). verify_fcff only
+    # checks arithmetic, so flag it explicitly instead of shipping it silently.
+    if out["fair_value_per_share"] is None or out["fair_value_per_share"] <= 0:
+        warning = (
+            f"理論價為負或無效（{out['fair_value_per_share']}），代表 FCFF 五情境模型不適用於此公司"
+            "（例如仍大幅虧損、資本結構極端或基準年異常）；此結果不可用作估值參考。"
+        )
+        out.setdefault("data_gaps", []).insert(0, warning)
+        out["result_warning"] = warning
+
     for s in out["scenarios"]:
         if s["name"] == "基準":
             s["fair_value"] = out["fair_value_per_share"]
