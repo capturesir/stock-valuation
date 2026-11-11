@@ -1,0 +1,411 @@
+{
+ "asset": "NVIDIA Corporation",
+ "ticker": "NVDA",
+ "market": "美股",
+ "currency": "USD",
+ "units": "百萬美元（USD millions）；每股理論價 US$",
+ "valuation_date": "2026-11-11",
+ "price": 168.88999938964844,
+ "price_date": "2026-11-10",
+ "price_url": "https://finance.yahoo.com/quote/NVDA",
+ "price_source": "Yahoo Finance",
+ "convention": "年中折現；估值日 2026-11-11（澳門）。最新資產負債表 2026-07-26／Yahoo 欄 2026-07-31。FY2027 下半年殘段剩餘期間中點約 2026-12-21，t=0.110；FY2028 年中約 2027-07-31，t=0.717；其後各年 +1。終值按最後預測年年中 t_N 折現。",
+ "forecast_years_label": "FY2027 H2 stub + FY2028–FY2037（10.5 年）",
+ "horizon_rationale": "半導體周期與 AI 加速器需求需完整預測期，讓增長由一致預期的高雙位數淡化至終值 g。",
+ "shares_m": 24242.0,
+ "shares_source": {
+  "value": 24242.0,
+  "basis": "市場數據：2026-07-31 已發行 24,147m ＋（Q2 攤薄加權 24,285m − 基本加權 24,190m）＝24242m",
+  "source_name": "Yahoo Finance quarterly statements",
+  "url": "https://finance.yahoo.com/quote/NVDA/financials",
+  "data_date": "2026-07-31"
+ },
+ "debt_m": 38351.0,
+ "D_basis": "市場數據：2026-07-31 Yahoo Total Debt US$38,351m（長期借款 US$32,366m＋流動借款 US$1,000m＋資本租賃 US$4,985m）。經營租賃若未列入 Total Debt，可能低估 D（資料缺口）。",
+ "D_source": "Yahoo Finance quarterly balance sheet",
+ "D_url": "https://finance.yahoo.com/quote/NVDA/balance-sheet",
+ "D_date": "2026-07-31",
+ "E_basis": "市值 = US$168.88999938964844 × 24242m 攤薄股（2026-11-10 收市）",
+ "rf": {
+  "value": 0.049830002784729,
+  "basis": "市場數據：美國 10 年期國債 Yahoo ^TNX 收市 4.983%（2026-11-10）",
+  "source_name": "Yahoo Finance ^TNX",
+  "url": "https://finance.yahoo.com/quote/%5ETNX",
+  "data_date": "2026-11-10"
+ },
+ "crp": {
+  "value": 0.0,
+  "basis": "分析師假設（方法 A）：美國公司，ERP 已是美國隱含 ERP，不另加 CRP",
+  "source_name": "Damodaran Country Risk Premiums（2026-07 更新）",
+  "url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/ctrypremJuly26.xlsx",
+  "data_date": "2026-07-01"
+ },
+ "kd_pre": {
+  "value": 0.04223898219221751,
+  "basis": "分析師假設（規則）：FY2026 利息 US$259m ÷ 年末債務 US$11,040m ＝ 2.35% 用於舊債務；Q2 債務增至 US$38,351m（約增 US$27,311m）。8-K 票息因 EDGAR HTML 403 未讀到，新增債務暫按 Rf 4.983% 計，加權 Kd＝4.22%。實際票息若更高／更低，WACC 須修訂。",
+  "source_name": "Yahoo income/balance；Rf 見折現率",
+  "url": "https://finance.yahoo.com/quote/NVDA/financials",
+  "data_date": "2026-07-31"
+ },
+ "tax_rate": 0.165,
+ "tax_d": {
+  "value": 0.165,
+  "basis": "分析師假設：預測稅率採 Q2 FY2027 Yahoo Tax Rate For Calcs 16.5%（FY2026 有效稅率 15.12%，略低）",
+  "source_name": "Yahoo Finance quarterly income statement",
+  "url": "https://finance.yahoo.com/quote/NVDA/financials",
+  "data_date": "2026-07-31"
+ },
+ "beta_reg": 2.247,
+ "beta_reg_url": "https://finance.yahoo.com/quote/NVDA/key-statistics",
+ "beta_reg_date": "2026-11-10",
+ "year_labels": [
+  "FY2027 H2（stub）",
+  "FY2028",
+  "FY2029",
+  "FY2030",
+  "FY2031",
+  "FY2032",
+  "FY2033",
+  "FY2034",
+  "FY2035",
+  "FY2036",
+  "FY2037"
+ ],
+ "period_lengths": [
+  0.5,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0
+ ],
+ "discount_periods": [
+  0.10951403148528405,
+  0.7173169062286106,
+  1.7173169062286107,
+  2.7173169062286107,
+  3.7173169062286107,
+  4.717316906228611,
+  5.717316906228611,
+  6.717316906228611,
+  7.717316906228611,
+  8.71731690622861,
+  9.71731690622861
+ ],
+ "growths": [
+  0.8703425640718276,
+  0.6803414235942191,
+  0.6080812654170836,
+  0.5358211072399482,
+  0.46356094906281275,
+  0.3913007908856773,
+  0.3190406327085418,
+  0.2467804745314064,
+  0.174520316354271,
+  0.10226015817713552,
+  0.030000000000000027
+ ],
+ "margins": [
+  0.6594277873996266,
+  0.6594277873996266,
+  0.651684282961851,
+  0.6439407785240755,
+  0.6361972740862999,
+  0.6284537696485243,
+  0.6207102652107488,
+  0.6129667607729732,
+  0.6052232563351976,
+  0.5974797518974221,
+  0.5897362474596465
+ ],
+ "da_pcts": [
+  0.011943588474774511,
+  0.011943588474774511,
+  0.012079391545786737,
+  0.012215194616798963,
+  0.012350997687811187,
+  0.012486800758823413,
+  0.012622603829835639,
+  0.012758406900847865,
+  0.01289420997186009,
+  0.013030013042872315,
+  0.013165816113884541
+ ],
+ "capex_pcts": [
+  0.024933084414854135,
+  0.024933084414854135,
+  0.02600382815347063,
+  0.02707457189208713,
+  0.028145315630703625,
+  0.029216059369320122,
+  0.03028680310793662,
+  0.03135754684655312,
+  0.03242829058516961,
+  0.033499034323786106,
+  0.034569778062402606
+ ],
+ "dnwc_pct": 0.23181190897387213,
+ "dnwc_rule": "非現金 NWC≈（應收＋存貨−應付）／營收；FY2026 ＝ 23.2%；ΔNWC＝該比率×ΔRevenue（殘段按全年增量×殘段佔比）",
+ "prev_revenue_for_first": 125133.0,
+ "first_revenue": 234041.57607,
+ "first_delta_nwc": 25809.6891113065,
+ "first_is_stub": true,
+ "static_keeps_first_revenue": true,
+ "ytd_actual_revenue": 177836.0,
+ "full_year_after_first": 411877.57607,
+ "full_year_base_revenue": 411877.57607,
+ "stub_fields": {
+  "h1_actual_revenue": 177836.0,
+  "fy2026_revenue": 411877.57607,
+  "h1_actual_revenue_note": "欄位名沿用 verify_fcff：此處為 FY2027 上半年（Q1+Q2，截至 2026-07-26）實際營收",
+  "ytd_actual_revenue": 177836.0
+ },
+ "growth_base_notes": [
+  "Yahoo 本財年營收一致預期 US$411,877.6m（53 位）減 H1 實際 US$177,836m ＝ H2 stub US$234,041.6m；對比 FY2026 下半年 US$125,133m，增長 87.0%",
+  "Yahoo 下一財年營收一致預期 US$692,095.0m（56 位）÷ 本財年一致預期 − 1 ＝ 68.0%",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑"
+ ],
+ "growth_rationales": [
+  "Yahoo 本財年營收一致預期 US$411,877.6m（53 位）減 H1 實際 US$177,836m ＝ H2 stub US$234,041.6m；對比 FY2026 下半年 US$125,133m，增長 87.0%",
+  "Yahoo 下一財年營收一致預期 US$692,095.0m（56 位）÷ 本財年一致預期 − 1 ＝ 68.0%",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑",
+  "一致預期以外年份：由 FY2028 增長直線淡化至終值 g，規則後備路徑"
+ ],
+ "margin_rationales": [
+  "上半年營業利潤率 65.9%（GAAP Operating Income）；殘段沿用近期利潤率",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化",
+  "由近期 65.9% 向 FY2024–26 三年平均 59.0% 淡化"
+ ],
+ "reinvestment_rationales": [
+  "殘段 Capex 按上半年 Capex/營收 2.49%×殘段營收（公司無公開全年指引）；D&A 1.19%",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏",
+  "Capex/營收向 4 年均值 3.46% 淡化；D&A 向 FY2026 1.32% 靠攏"
+ ],
+ "row_sources": [
+  "https://finance.yahoo.com/quote/NVDA/analysis/",
+  "https://finance.yahoo.com/quote/NVDA/financials",
+  "https://data.sec.gov/submissions/CIK0001045810.json"
+ ],
+ "terminal_g": 0.03,
+ "ronic": 0.2,
+ "g_rationale": "分析師假設（規則）：終值 g＝3.0%，不高於美元 Rf 4.983%，約對應美國長期名目增長下沿。",
+ "method_rationale": "價值驅動終值：FCFF_{N+1}＝NOPAT_N×(1+g)×(1−g/RONIC)；RONIC＝20%（AI 資本開支周期下的中期投入資本回報假設，非公司指引）。",
+ "tv_method": "value_driver",
+ "bridge": [
+  {
+   "item": "現金、約當現金及短期投資",
+   "value": 62469.0,
+   "sign": "+",
+   "basis": "市場數據：2026-07-31 Yahoo 現金＋短期投資 US$62,469m；全數加回（未扣最低營運現金，略偏樂觀）",
+   "source_name": "Yahoo Finance quarterly balance sheet",
+   "url": "https://finance.yahoo.com/quote/NVDA/balance-sheet",
+   "data_date": "2026-07-31"
+  },
+  {
+   "item": "金融／長期投資（帳面）",
+   "value": 51157.0,
+   "sign": "+",
+   "basis": "市場數據：2026-07-31 Yahoo Investments and Advances／Investment in Financial Assets US$51,157m；按帳面加回",
+   "source_name": "Yahoo Finance quarterly balance sheet",
+   "url": "https://finance.yahoo.com/quote/NVDA/balance-sheet",
+   "data_date": "2026-07-31"
+  },
+  {
+   "item": "有息債務及資本租賃",
+   "value": 38351.0,
+   "sign": "-",
+   "basis": "市場數據：2026-07-31 Yahoo Total Debt US$38,351m（含資本租賃）",
+   "source_name": "Yahoo Finance quarterly balance sheet",
+   "url": "https://finance.yahoo.com/quote/NVDA/balance-sheet",
+   "data_date": "2026-07-31"
+  }
+ ],
+ "fx_rate": 1.0,
+ "fx_if_any": {
+  "pair": null,
+  "rate": 1.0,
+  "applied": "不適用（美元）",
+  "per_share_fx": 1.0
+ },
+ "corrections": [
+  {
+   "item": "Damodaran 行業分類",
+   "requested": "按 indname.xls",
+   "adopted": "Semiconductor（NVIDIA Corporation, NasdaqGS:NVDA；indname.xls By industry）",
+   "reason": "與既有 2330.TW／MU／AVGO 同一行業 βU 多年平均 1.673（betaGlobal.xls 2026-01-05）"
+  },
+  {
+   "item": "租賃",
+   "requested": "融資性債務口徑一致",
+   "adopted": "Yahoo Total Debt 含 Capital Lease Obligations US$4,985m，已入 WACC 的 D 與橋接；經營租賃是否另列無法從 Yahoo 確認",
+   "reason": "避免漏計資本租賃；經營租賃缺口已列入 data_gaps"
+  }
+ ],
+ "base_year": {
+  "year": "FY2026（另附 FY2027 上半年實際）",
+  "year_end": "2026-01-25",
+  "currency": "USD millions",
+  "revenue": 215938.0,
+  "ebit": 130387.0,
+  "ebit_margin": 0.6038168363141272,
+  "da": 2843.0,
+  "capex": 6042.0,
+  "tax_rate_effective": 0.15117,
+  "h1_fy2027_revenue": 177836.0,
+  "h1_fy2027_ebit": 117270.0,
+  "bridge_date": "2026-07-31",
+  "sources": [
+   "https://finance.yahoo.com/quote/NVDA/financials",
+   "https://finance.yahoo.com/quote/NVDA/cash-flow",
+   "https://data.sec.gov/submissions/CIK0001045810.json"
+  ]
+ },
+ "capex_floor_pct": 0.034569778062402606,
+ "capex_floor_detail": {
+  "avg_ppe_dep_pct": 0.027351466232520296,
+  "avg_capex_pct": 0.034569778062402606,
+  "floor_pct": 0.034569778062402606,
+  "n_ppe_years": 4,
+  "n_capex_years": 4,
+  "note": "9%靜態地板 = max(近 3–5 年（若不足則註明）平均 PPE 折舊%, 平均現金 Capex%)；IFRS 16 只用 PPE 折舊",
+  "years": {
+   "FY2026": {
+    "rev": 215938,
+    "capex": 6042,
+    "da": 2843
+   },
+   "FY2025": {
+    "rev": 130497,
+    "capex": 3236,
+    "da": 1864
+   },
+   "FY2024": {
+    "rev": 60922,
+    "capex": 1069,
+    "da": 1508
+   },
+   "FY2023": {
+    "rev": 26974,
+    "capex": 1833,
+    "da": 1543
+   }
+  }
+ },
+ "shares_floor_m": 26778.24956421842,
+ "shares_floor_detail": {
+  "base_shares_m": 24242.0,
+  "history_max_m": 25070.0,
+  "grown_m": 26778.24956421842,
+  "floor_shares_m": 26778.24956421842,
+  "method": "取 max(當前 24242.000m, 歷史可見最高 25070.000m, 當前×(1+1%)^10=26778.250m)；不把回購導致的股數下降外推為地板"
+ },
+ "bear_g_delta": -0.03,
+ "bull_g_delta": 0.03,
+ "bear_m_delta": -0.02,
+ "bull_m_delta": 0.02,
+ "consensus_growths": [
+  0.8703425640718276,
+  0.6803414235942191,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null
+ ],
+ "growth_table_notes": [
+  "一致預期欄：殘段與 FY2028 來自 Yahoo Analysis 營收估計（取數日見來源）；其後年份 Yahoo 無公開數字，留空。",
+  "具名投行增長路徑未取得，不倒推。",
+  "悲觀／樂觀：跳過殘段，僅對其後首 4 個完整財年增長 ±3 個百分點、利潤率 ±2 個百分點。"
+ ],
+ "growth_table_sources": [
+  {
+   "name": "Yahoo Finance Analysis NVDA",
+   "url": "https://finance.yahoo.com/quote/NVDA/analysis/",
+   "data_date": "2026-11-10"
+  }
+ ],
+ "ib_compare": {
+  "consensus": {
+   "source": "Yahoo Finance Analysis / info targets",
+   "url": "https://finance.yahoo.com/quote/NVDA/analysis/",
+   "data_date": "2026-11-10",
+   "mean": 325.7772,
+   "high": 515.0,
+   "low": 180.0,
+   "median": 315.0,
+   "n_analysts": 57,
+   "currency": "USD"
+  },
+  "named_brokers": [],
+  "data_gaps": [
+   "具名券商報告原文未取得，named_brokers 留空。"
+  ]
+ },
+ "cfo_fcff_crosscheck": {
+  "year": "FY2026",
+  "cfo": 102718.0,
+  "interest": 259.0,
+  "tax": 0.15117,
+  "capex": 6042.0,
+  "fcff_cfo_formula": 96895.84697,
+  "nopat": 110676.39721,
+  "da": 2843.0,
+  "note": "US GAAP 利息多在經營現金流；CFO 公式與港股慣例不完全相同。預測仍以 NOPAT 路徑為主。",
+  "source": "https://finance.yahoo.com/quote/NVDA/cash-flow",
+  "data_date": "2026-01-25"
+ },
+ "data_gaps": [
+  "Yahoo 未提供 FY2025–FY2026 單獨 PPE 折舊（只有 Reconciled D&A）；9%地板的折舊側用總 D&A／營收，可能略高於純 PPE 折舊。因平均 Capex% 高於平均 D&A%，地板仍由 Capex 決定。",
+  "Q3 FY2027（約 2026-10 季結）尚未見 10-Q；H2 stub 營收採 Yahoo 本財年一致預期減上半年實際。",
+  "Yahoo Q2 資產負債表出現 Restricted Cash US$36.9bn，與現金＋短期投資 US$62.5bn 加總不合理，疑為欄位錯置；橋接不加該項。",
+  "具名投行目標價原文未取得（付費庫／被轉述頁未抓到）；投行表僅列 Yahoo 一致目標價區間。"
+ ],
+ "assumption_source": "rules_fallback",
+ "llm_status": {
+  "available": false,
+  "base_url": "https://api.openai.com/v1",
+  "model": "gpt-4o-mini",
+  "used": false,
+  "errors": []
+ }
+}

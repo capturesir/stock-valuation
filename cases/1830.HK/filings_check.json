@@ -1,0 +1,9 @@
+{
+ "market": "HK",
+ "ticker": "1830.HK",
+ "source_ok": false,
+ "rerun_needed": false,
+ "error": "prefix 回應不是 JSONP",
+ "blocked": true,
+ "note": "披露易代號查詢失敗，無法判斷是否有新公告。"
+}

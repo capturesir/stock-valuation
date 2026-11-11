@@ -1,0 +1,426 @@
+{
+ "asset": "完美醫療健康管理有限公司 Perfect Medical Health Management Limited",
+ "ticker": "1830.HK",
+ "market": "香港",
+ "currency": "HKD",
+ "units": "百萬港元（HK$ million）；每股理論價 HK$",
+ "valuation_date": "2026-11-11",
+ "price": 1.4900000095367432,
+ "price_date": "2026-11-10",
+ "price_url": "https://finance.yahoo.com/quote/1830.HK",
+ "price_source": "Yahoo Finance",
+ "convention": "年中折現；估值日 2026-11-11（澳門）。年結 3 月 31 日。最新已入帳資產負債表 2026-03-31，故預測自 FY2027 全年起（H1 已過但未入帳）。FY2027 年中 2026-09-30 已過去，t＝0；FY2028 年中 2027-09-30，t=0.884；其後各年 +1。模型貨幣港元。",
+ "forecast_years_label": "FY2027–FY2036（10 年）",
+ "horizon_rationale": "醫療美容及健康管理網絡調整與利潤率修復需要完整周期，再收斂至終值增長。",
+ "shares_m": 1256.197771,
+ "shares_source": {
+  "value": 1256.197771,
+  "basis": "市場數據：2026-03-31 已發行普通股 1,256,197,771 股；Yahoo／年結攤薄加權均為 1,256.197m，四年大致持平",
+  "source_name": "全年業績公告／Yahoo",
+  "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+  "data_date": "2026-03-31"
+ },
+ "debt_m": 134.584,
+ "D_basis": "市場數據：2026-03-31 計息債務＝租賃負債 HK$134.584m（Yahoo Total Debt 與 Capital Lease Obligations 相同，無銀行借款）",
+ "D_source": "全年業績公告／Yahoo balance sheet",
+ "D_url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+ "D_date": "2026-03-31",
+ "E_basis": "市值 = HK$1.4900000095367432 × 1256.197771m 股（2026-11-10 收市）",
+ "rf": {
+  "value": 0.03686,
+  "basis": "市場數據：ADB AsianBondsOnline 香港 10 年期政府債券 Latest Yield 3.686%（Close of 未標日期）",
+  "source_name": "ADB AsianBondsOnline",
+  "url": "https://asianbondsonline.adb.org/hongkong/",
+  "data_date": null
+ },
+ "crp": {
+  "value": 0.0074187,
+  "basis": "市場數據：Damodaran 香港 Aa3 國家風險溢價 0.74%（2026-07-01 年中更新）（FY2026 全年業績：香港收入 HK$765.591m，佔 79.6%；境外（中國內地、澳門、澳洲、新加坡）20.4%。風險來源以香港為主，故 CRP 用香港而非中國。境外仍有內地業務，屬次要。）",
+  "source_name": "Damodaran Country Risk Premiums（ctrypremJuly26.xlsx）",
+  "url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/ctrypremJuly26.xlsx",
+  "data_date": "2026-07-01"
+ },
+ "kd_pre": {
+  "value": 0.05906348451524698,
+  "basis": "市場數據：FY2026 融資成本（租賃利息）HK$7.949m ÷ 年末租賃負債 HK$134.584m ＝ 5.91%（與現金流量表 Payment of interest element of lease liabilities 一致）",
+  "source_name": "全年業績公告",
+  "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+  "data_date": "2026-03-31"
+ },
+ "tax_rate": 0.15551588447824377,
+ "tax_d": {
+  "value": 0.15551588447824377,
+  "basis": "分析師假設：預測稅率採 FY2026 有效稅率 15.55%（稅項 HK$32.842m ÷ 除稅前 HK$211.181m）。香港利得稅法定 16.5%，集團另有內地 25%、澳門、澳洲、新加坡稅率。",
+  "source_name": "全年業績公告",
+  "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+  "data_date": "2026-03-31"
+ },
+ "beta_reg": 0.837,
+ "beta_reg_url": "https://finance.yahoo.com/quote/1830.HK/key-statistics",
+ "beta_reg_date": "2026-11-10",
+ "year_labels": [
+  "FY2027",
+  "FY2028",
+  "FY2029",
+  "FY2030",
+  "FY2031",
+  "FY2032",
+  "FY2033",
+  "FY2034",
+  "FY2035",
+  "FY2036"
+ ],
+ "period_lengths": [
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0,
+  1.0
+ ],
+ "discount_periods": [
+  0.0,
+  0.8843258042436687,
+  1.8843258042436686,
+  2.8843258042436686,
+  3.8843258042436686,
+  4.884325804243669,
+  5.884325804243669,
+  6.884325804243669,
+  7.884325804243669,
+  8.88432580424367
+ ],
+ "growths": [
+  0.121,
+  0.11033333333333332,
+  0.09966666666666667,
+  0.089,
+  0.07833333333333334,
+  0.06766666666666667,
+  0.056999999999999995,
+  0.046333333333333324,
+  0.035666666666666666,
+  0.024999999999999994
+ ],
+ "margins": [
+  0.26541714647138176,
+  0.263762868658821,
+  0.26210859084626015,
+  0.26045431303369937,
+  0.25880003522113854,
+  0.25714575740857776,
+  0.2554914795960169,
+  0.25383720178345615,
+  0.2521829239708953,
+  0.25052864615833453
+ ],
+ "da_pcts": [
+  0.15922809708328267,
+  0.15922809708328267,
+  0.15922809708328267,
+  0.15922809708328267,
+  0.15922809708328267,
+  0.15922809708328267,
+  0.15922809708328267,
+  0.15922809708328267,
+  0.15922809708328267,
+  0.15922809708328267
+ ],
+ "capex_pcts": [
+  0.031226203328434933,
+  0.031226203328434933,
+  0.031226203328434933,
+  0.031226203328434933,
+  0.031226203328434933,
+  0.031226203328434933,
+  0.031226203328434933,
+  0.031226203328434933,
+  0.031226203328434933,
+  0.031226203328434933
+ ],
+ "dnwc_pct": -0.16973468045376472,
+ "dnwc_rule": "ΔNWC＝-17.0%×ΔRevenue（FY2026 應收＋存貨−應付−遞延收入）／營收",
+ "prev_revenue_for_first": 962.349,
+ "first_revenue": 1078.793229,
+ "first_is_stub": false,
+ "static_keeps_first_revenue": false,
+ "static_base_revenue": 962.349,
+ "growth_base_notes": [
+  "規則後備：無 Yahoo 營收共識。FY2027 採用 2026-07-09 公告第一季銷售合約價值按年 +12.1% 作為全年代理；其後直線淡化至終值 g 2.5%",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化"
+ ],
+ "growth_rationales": [
+  "規則後備：無 Yahoo 營收共識。FY2027 採用 2026-07-09 公告第一季銷售合約價值按年 +12.1% 作為全年代理；其後直線淡化至終值 g 2.5%",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化",
+  "向終值增長直線淡化"
+ ],
+ "margin_rationales": [
+  "FY2027：H1 按盈利預告中位溢利 HK$144.5m 還原 EBIT 利潤率 31.6%（營收用 +12.1% 代理）；H2 利潤率沿用 FY2026 下半年 21.4%，不把上半年升幅年化。全年加權 26.5%。其後向四年平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化",
+  "向 FY2023–26 平均營業利潤率 25.1% 淡化"
+ ],
+ "reinvestment_rationales": [
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資",
+  "總 D&A（含使用權折舊）沿用 FY2026 15.9% 營收；現金 PPE Capex 用四年均值 3.12%；租賃本金／利息視為融資"
+ ],
+ "row_sources": [
+  "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+  "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/1109/2026110900781.pdf",
+  "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900137.pdf",
+  "https://finance.yahoo.com/quote/1830.HK"
+ ],
+ "terminal_g": 0.025,
+ "ronic": 0.12,
+ "g_rationale": "終值 g＝2.5%，不高於港元 Rf 3.686%；醫療美容長期名目增長下沿的規則假設。",
+ "method_rationale": "價值驅動終值：RONIC＝12%（接近或略高於服務業中周期投入資本回報的規則假設，非公司指引）。",
+ "tv_method": "value_driver",
+ "bridge": [
+  {
+   "item": "現金、短期投資及受限制現金",
+   "value": 294.93399999999997,
+   "sign": "+",
+   "basis": "市場數據：2026-03-31 現金及短期投資 HK$289.337m＋受限制現金 HK$5.597m；全數加回（未扣最低營運現金）",
+   "source_name": "全年業績公告／Yahoo",
+   "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+   "data_date": "2026-03-31"
+  },
+  {
+   "item": "金融資產投資（帳面）",
+   "value": 228.406,
+   "sign": "+",
+   "basis": "市場數據：2026-03-31 Investment in Financial Assets HK$228.406m；按帳面（FVTOCI 波動已見儲備，未另作評估）",
+   "source_name": "全年業績公告／Yahoo",
+   "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+   "data_date": "2026-03-31"
+  },
+  {
+   "item": "租賃負債（HKFRS 16）",
+   "value": 134.584,
+   "sign": "-",
+   "basis": "市場數據：2026-03-31 租賃負債 HK$134.584m；EBIT 已扣使用權折舊，負債入橋接與 WACC 的 D",
+   "source_name": "全年業績公告／Yahoo",
+   "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+   "data_date": "2026-03-31"
+  },
+  {
+   "item": "遞延稅項負債",
+   "value": 24.677,
+   "sign": "-",
+   "basis": "市場數據：2026-03-31 非流動遞延稅負債 HK$24.677m",
+   "source_name": "全年業績公告／Yahoo",
+   "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+   "data_date": "2026-03-31"
+  },
+  {
+   "item": "非控股權益",
+   "value": 1.681,
+   "sign": "+",
+   "basis": "市場數據：2026-03-31 非控股權益 HK$-1.681m（負數，少數股東權益為負；加回 1.681m）",
+   "source_name": "全年業績公告／Yahoo",
+   "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+   "data_date": "2026-03-31"
+  }
+ ],
+ "fx_rate": 1.0,
+ "fx_if_any": {
+  "pair": null,
+  "rate": 1.0,
+  "applied": "不適用（港元）",
+  "per_share_fx": 1.0,
+  "cnyhkd": null
+ },
+ "corrections": [
+  {
+   "item": "Damodaran 行業分類",
+   "requested": "按 indname.xls 不得臆測",
+   "adopted": "Business & Consumer Services（Perfect Medical Health Management Limited, SEHK:1830；SIC 7200；國家 Hong Kong）",
+   "reason": "不是 Hospitals/Healthcare Facilities。βU 多年平均 0.9617623654591464（betaGlobal.xls 2026-01-05 Average 2020-24）"
+  },
+  {
+   "item": "HKFRS 16 租賃",
+   "requested": "PPE capex 與總 D&A 分開",
+   "adopted": "加回總 D&A（含使用權折舊）；現金 Capex 只用購置 PPE；租賃負債入 D 與橋接",
+   "reason": "與手冊港股專章及 1883／9896 處理一致"
+  },
+  {
+   "item": "CRP",
+   "requested": "按風險來源選香港或中國",
+   "adopted": "香港（FY2026 收入 79.6% 來自香港）",
+   "reason": "境外 20.4% 含內地，但不是主要收入來源"
+  }
+ ],
+ "base_year": {
+  "year": "FY2026",
+  "year_end": "2026-03-31",
+  "currency": "HKD millions",
+  "revenue": 962.349,
+  "ebit": 212.986,
+  "ebit_margin": 0.22131887703941083,
+  "da": 153.233,
+  "ppe_depreciation": 55.466,
+  "capex": 30.258,
+  "tax_rate_effective": 0.15551588447824377,
+  "h1_fy2026_revenue": 485.88,
+  "profit_alert_h1_fy2027_pat_mid": 144.5,
+  "geo_fy2026": {
+   "Hong Kong": 765.591,
+   "Outside Hong Kong": 196.758
+  },
+  "bridge_date": "2026-03-31",
+  "sources": [
+   "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+   "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0715/2026071500340.pdf",
+   "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/1109/2026110900781.pdf",
+   "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900137.pdf"
+  ]
+ },
+ "capex_floor_pct": 0.05873788484312338,
+ "capex_floor_detail": {
+  "avg_ppe_dep_pct": 0.05873788484312338,
+  "avg_capex_pct": 0.031226203328434933,
+  "floor_pct": 0.05873788484312338,
+  "n_ppe_years": 2,
+  "n_capex_years": 4,
+  "note": "9%靜態地板 = max(近 3–5 年（若不足則註明）平均 PPE 折舊%, 平均現金 Capex%)；IFRS 16 只用 PPE 折舊",
+  "ppe_dep_fy26": 55.466,
+  "ppe_dep_fy25": 67.491,
+  "capex_cf": {
+   "FY2026": 30.258,
+   "FY2025": 34.652,
+   "FY2024": 58.285,
+   "FY2023": 29.047
+  }
+ },
+ "shares_floor_m": 1387.6238517388376,
+ "shares_floor_detail": {
+  "base_shares_m": 1256.197771,
+  "history_max_m": 1256.536,
+  "grown_m": 1387.6238517388376,
+  "floor_shares_m": 1387.6238517388376,
+  "method": "取 max(當前 1256.198m, 歷史可見最高 1256.536m, 當前×(1+1%)^10=1387.624m)；不把回購導致的股數下降外推為地板"
+ },
+ "bear_g_delta": -0.03,
+ "bull_g_delta": 0.03,
+ "bear_m_delta": -0.02,
+ "bull_m_delta": 0.02,
+ "consensus_growths": [
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null
+ ],
+ "growth_table_notes": [
+  "Yahoo 無營收一致預期，一致預期欄留空。",
+  "FY2027 基準增長 12.1% 來自第一季銷售合約價值，不是已確認營收，也不是盈利預告中的溢利增幅（+50–55% 只適用於 H1 溢利）。",
+  "具名投行增長路徑未取得。"
+ ],
+ "growth_table_sources": [
+  {
+   "name": "HKEX 未經審核營運數據（截至 2026-06-30 止三個月）",
+   "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900137.pdf",
+   "data_date": "2026-07-09"
+  },
+  {
+   "name": "HKEX 正面盈利預告",
+   "url": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/1109/2026110900781.pdf",
+   "data_date": "2026-11-09"
+  }
+ ],
+ "ib_compare": {
+  "consensus": {
+   "source": "Yahoo Finance Analysis / info targets",
+   "url": "https://finance.yahoo.com/quote/1830.HK/analysis/",
+   "data_date": "2026-11-10",
+   "mean": null,
+   "high": null,
+   "low": null,
+   "median": null,
+   "n_analysts": null,
+   "currency": "HKD"
+  },
+  "named_brokers": [],
+  "data_gaps": [
+   "Yahoo 無可用的分析師目標價或人數為 0；不填具名投行目標價。"
+  ]
+ },
+ "cfo_fcff_crosscheck": {
+  "year": "FY2026",
+  "cfo": 339.477,
+  "interest": 7.949,
+  "tax": 0.15551588447824377,
+  "capex": 30.258,
+  "fcff_cfo_formula": 315.9318042342824,
+  "fcff_cfo_note": "FCFF≈CFO+利息×(1−t)−Capex（利息在融資現金流 Interest Paid Cff）",
+  "nopat": 179.86329382851676,
+  "da": 153.233,
+  "note": "NOPAT 路徑另減 ΔNWC；與 CFO 公式差額主要來自營運資金（含遞延收入）及非現金項目。預測以 NOPAT 為主。",
+  "source": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+  "data_date": "2026-03-31"
+ },
+ "data_gaps": [
+  "全年業績分部資本開支合計 HK$24.626m，與 Yahoo／現金流量表購置 PPE HK$30.258m 不一致；模型現金 Capex 採用現金流量表 30.258m，差額列為缺口。",
+  "2026-11-09 正面盈利預告只披露截至 2026-09-30 止六個月股東應佔溢利約 1.42–1.47 億港元，沒有營收。FY2027 營收增長暫以 2026-07-09 第一季「銷售合約價值」按年 +12.1% 作為唯一量化頂線代理，信心低；中期業績訂於 2026-11-16 公布後必須重跑。",
+  "PPE 折舊僅有業績公告 FY2025–FY2026 兩年可分開（67.491／55.466 百萬港元）；FY2023–FY2024 Yahoo 只有總 D&A。地板以 2 年 PPE 折舊均值與 4 年現金 Capex 均值取較高。",
+  "非現金 NWC 含遞延收入（預付療程），FY2026 為大幅負值。增長時 ΔNWC 可能為負（釋放現金）；若中期後遞延收入結構改變，此項須修訂。未計其他應付／預付款的完整明細。",
+  "Yahoo 及披露易均無分析師營收／目標價共識（覆蓋為零）；投行比較表因此只有空白具名列，不填假目標價。",
+  "最新完整資產負債表仍為 2026-03-31；H1 FY2027 的現金、債務、派息、遞延收入尚未公布（董事會 2026-11-16 審批中期業績）。橋接日期早於估值日約 7.5 個月。",
+  "2026-11-10 收市 HK$1.49，較 11/09 收市 HK$1.20 大升且成交放大，時點在 11/09 盈利預告之後；模型用 11/10 收市，不把短期漲幅當成基本面已完全反映或未反映的結論。"
+ ],
+ "assumption_source": "rules_fallback",
+ "llm_status": {
+  "available": false,
+  "base_url": "https://api.openai.com/v1",
+  "model": "gpt-4o-mini",
+  "used": false,
+  "errors": []
+ },
+ "filing_urls": {
+  "profit_alert": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/1109/2026110900781.pdf",
+  "final_results": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf",
+  "annual_report": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0715/2026071500340.pdf",
+  "ops_update": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900137.pdf",
+  "board_meeting": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/1104/2026110401654.pdf",
+  "ir": "https://ir.perfectmedical.com/c/ir_announcement.php",
+  "interim_prior": "https://www1.hkexnews.hk/listedco/listconews/sehk/2025/1128/2025112802112.pdf"
+ }
+}

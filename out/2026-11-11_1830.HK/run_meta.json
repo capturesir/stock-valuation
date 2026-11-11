@@ -1,0 +1,21 @@
+{
+ "verify_pass": true,
+ "verify_errors": [],
+ "assumption_source": "rules_fallback",
+ "llm_status": {
+  "available": false,
+  "base_url": "https://api.openai.com/v1",
+  "model": "gpt-4o-mini",
+  "used": false,
+  "errors": []
+ },
+ "xlsx": "/workspace/invest/system/valuation-system/out/2026-11-11_1830.HK/2026-11-11_1830.HK_FCFF.xlsx",
+ "md": "/workspace/invest/system/valuation-system/out/2026-11-11_1830.HK/2026-11-11_1830.HK_valuation.md",
+ "json": "/workspace/invest/system/valuation-system/out/2026-11-11_1830.HK/2026-11-11_1830.HK.json",
+ "fair_value_per_share": 5.505520668145552,
+ "wacc": 0.08476824470784161,
+ "g": 0.025,
+ "price": 1.4900000095367432,
+ "price_date": "2026-11-10",
+ "company": "完美醫療健康管理有限公司 Perfect Medical Health Management Limited"
+}

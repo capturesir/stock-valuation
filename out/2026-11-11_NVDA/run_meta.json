@@ -1,0 +1,21 @@
+{
+ "verify_pass": true,
+ "verify_errors": [],
+ "assumption_source": "rules_fallback",
+ "llm_status": {
+  "available": false,
+  "base_url": "https://api.openai.com/v1",
+  "model": "gpt-4o-mini",
+  "used": false,
+  "errors": []
+ },
+ "xlsx": "/workspace/invest/system/valuation-system/out/2026-11-11_NVDA/2026-11-11_NVDA_FCFF.xlsx",
+ "md": "/workspace/invest/system/valuation-system/out/2026-11-11_NVDA/2026-11-11_NVDA_valuation.md",
+ "json": "/workspace/invest/system/valuation-system/out/2026-11-11_NVDA/2026-11-11_NVDA.json",
+ "fair_value_per_share": 874.9752392386321,
+ "wacc": 0.11985805533928838,
+ "g": 0.03,
+ "price": 168.88999938964844,
+ "price_date": "2026-11-10",
+ "company": "NVIDIA Corporation"
+}

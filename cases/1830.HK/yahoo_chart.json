@@ -1,0 +1,61 @@
+{
+ "url": "https://query1.finance.yahoo.com/v8/finance/chart/1830.HK?period1=1793148946&period2=1794444946&interval=1d&events=div,split",
+ "http_status": 200,
+ "ok": true,
+ "meta": {
+  "currency": "HKD",
+  "exchange": "HKG",
+  "symbol": "1830.HK",
+  "regularMarketPrice": 1.49,
+  "regularMarketTime": 1794298114,
+  "gmtoffset": 28800,
+  "shortName": "PERFECT MEDICAL",
+  "instrumentType": "EQUITY"
+ },
+ "closes": [
+  {
+   "date": "2026-10-28",
+   "close": 1.1200000047683716
+  },
+  {
+   "date": "2026-10-29",
+   "close": 1.149999976158142
+  },
+  {
+   "date": "2026-10-30",
+   "close": 1.1399999856948853
+  },
+  {
+   "date": "2026-11-02",
+   "close": 1.1200000047683716
+  },
+  {
+   "date": "2026-11-03",
+   "close": 1.125
+  },
+  {
+   "date": "2026-11-04",
+   "close": 1.1399999856948853
+  },
+  {
+   "date": "2026-11-05",
+   "close": 1.184999942779541
+  },
+  {
+   "date": "2026-11-06",
+   "close": 1.184999942779541
+  },
+  {
+   "date": "2026-11-09",
+   "close": 1.2000000476837158
+  },
+  {
+   "date": "2026-11-10",
+   "close": 1.4900000095367432
+  }
+ ],
+ "last": {
+  "date": "2026-11-10",
+  "close": 1.4900000095367432
+ }
+}

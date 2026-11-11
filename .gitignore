@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+.Python
+.env
+*.egg-info/
+.venv/
+.pytest_cache/
+
+# local env and secrets
+.env.*
+*.pem
+
+# local config (copy from config.example.yaml); never commit keys
+config.yaml
+
+# caches / venv
+venv/
+
+# local run output that may be regenerated
+out/signals.json
+out/signals/
+out/signals.invalid.json

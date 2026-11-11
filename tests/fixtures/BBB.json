@@ -1,0 +1,22 @@
+{
+  "ticker": "BBB",
+  "asset": "Fixture Beta Corp",
+  "price": 100.0,
+  "currency": "USD",
+  "price_date": "2026-11-09",
+  "fair_value_per_share": 80.0,
+  "scenarios": [
+    {
+      "name": "悲觀：提早下行",
+      "fair_value": 60.0
+    },
+    {
+      "name": "基準",
+      "fair_value": 80.0
+    },
+    {
+      "name": "樂觀：上行延長",
+      "fair_value": 110.0
+    }
+  ]
+}

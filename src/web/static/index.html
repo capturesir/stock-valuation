@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>可攜式股票估值系統</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>可攜式股票估值系統</h1>
+      <p class="sub">與 CLI 的 run／check-filings 對應；查詢不會自動開始估值</p>
+    </div>
+    <p class="disclaimer">本系統產出不構成投資建議。</p>
+  </header>
+
+  <main>
+    <section class="panel" id="lookup-panel">
+      <form id="lookup-form" class="lookup-row">
+        <label class="field grow">
+          <span>股票代號</span>
+          <input id="ticker" name="ticker" type="text" placeholder="例如 NVDA 或 1830.HK" autocomplete="off" required>
+        </label>
+        <button type="submit" id="btn-lookup" class="btn primary">查詢</button>
+      </form>
+      <p class="hint">先查詢並確認公司與市價，再點「估值」。目前完整規格只內建 NVDA 與 1830.HK。</p>
+      <div id="lookup-error" class="banner error hidden" role="alert"></div>
+
+      <div id="quote-card" class="card hidden">
+        <div class="quote-head">
+          <div>
+            <h2 id="q-name">—</h2>
+            <p class="muted" id="q-meta"></p>
+          </div>
+          <div class="quote-price">
+            <div id="q-price">—</div>
+            <div class="muted" id="q-price-sub"></div>
+          </div>
+        </div>
+        <dl id="q-facts" class="facts"></dl>
+        <p id="spec-note" class="note hidden"></p>
+
+        <div id="last-val" class="last-val hidden">
+          <h3>上次估值</h3>
+          <p id="last-val-text" class="muted"></p>
+          <div class="row-actions">
+            <button type="button" id="btn-view-last" class="btn">檢視上次結果</button>
+            <a id="btn-dl-last" class="btn" href="#" download>下載上次 Excel</a>
+          </div>
+        </div>
+
+        <div class="run-opts">
+          <label class="field">
+            <span>估值日（澳門時間，對應 --date）</span>
+            <input id="val-date" type="date">
+          </label>
+          <label class="check">
+            <input type="checkbox" id="no-llm">
+            <span>不使用語言模型（等同 --no-llm）</span>
+          </label>
+        </div>
+        <div class="row-actions">
+          <button type="button" id="btn-valuate" class="btn primary">估值</button>
+          <button type="button" id="btn-check" class="btn">檢查財報</button>
+          <label class="check">
+            <input type="checkbox" id="rerun-if-needed">
+            <span>如需要則重跑</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section id="status-panel" class="panel hidden">
+      <div id="progress" class="banner info hidden"></div>
+      <div id="run-error" class="banner error hidden" role="alert"></div>
+      <div id="filings-box" class="card hidden">
+        <div class="row-actions">
+          <h3>財報檢查</h3>
+          <span id="filings-status" class="badge"></span>
+        </div>
+        <pre id="filings-json" class="json-block"></pre>
+      </div>
+    </section>
+
+    <section id="result-panel" class="panel hidden">
+      <div class="result-bar">
+        <div id="result-summary"></div>
+        <div class="result-actions">
+          <a id="btn-download" class="btn primary" href="#" download>下載 Excel</a>
+          <a id="btn-dl-signals" class="btn" href="#" download>下載訊號 JSON</a>
+          <button type="button" id="btn-export-signals" class="btn">匯出訊號</button>
+        </div>
+      </div>
+      <p id="signals-msg" class="hint hidden"></p>
+      <div id="sheet-tabs" class="tabs" role="tablist"></div>
+      <div id="sheet-scroll">
+        <div id="sheet-view"></div>
+      </div>
+      <p id="sheet-note" class="hint"></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>本系統產出不構成投資建議。理論價由 Python 引擎按已列來源與假設計算。臨時估值不會寫入關注名單。</p>
+  </footer>
+  <script src="/static/app.js"></script>
+</body>
+</html>

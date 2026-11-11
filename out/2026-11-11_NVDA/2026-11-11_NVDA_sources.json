@@ -1,0 +1,107 @@
+{
+ "price": 168.88999938964844,
+ "price_date": "2026-11-10",
+ "rf": {
+  "source": "Yahoo Finance ^TNX",
+  "url": "https://finance.yahoo.com/quote/%5ETNX",
+  "ok": true,
+  "chart": {
+   "url": "https://query1.finance.yahoo.com/v8/finance/chart/^TNX?period1=1793580939&period2=1794444939&interval=1d&events=div,split",
+   "http_status": 200,
+   "ok": true,
+   "meta": {
+    "currency": "USD",
+    "exchange": "CGI",
+    "symbol": "^TNX",
+    "regularMarketPrice": 4.983,
+    "regularMarketTime": 1794340794,
+    "gmtoffset": -21600,
+    "shortName": "CBOE Interest Rate 10 Year T No",
+    "instrumentType": "INDEX"
+   },
+   "closes": [
+    {
+     "date": "2026-11-02",
+     "close": 4.894000053405762
+    },
+    {
+     "date": "2026-11-03",
+     "close": 4.952000141143799
+    },
+    {
+     "date": "2026-11-04",
+     "close": 4.894000053405762
+    },
+    {
+     "date": "2026-11-05",
+     "close": 4.836999893188477
+    },
+    {
+     "date": "2026-11-06",
+     "close": 4.859000205993652
+    },
+    {
+     "date": "2026-11-09",
+     "close": 4.863999843597412
+    },
+    {
+     "date": "2026-11-10",
+     "close": 4.9830002784729
+    }
+   ],
+   "last": {
+    "date": "2026-11-10",
+    "close": 4.9830002784729
+   }
+  },
+  "value": 0.049830002784729,
+  "data_date": "2026-11-10",
+  "basis": "市場數據：美國 10 年期國債 Yahoo ^TNX 收市 4.983%（2026-11-10）"
+ },
+ "filings": {
+  "market": "US",
+  "ticker": "NVDA",
+  "cik": "0001045810",
+  "source": "https://data.sec.gov/submissions/CIK0001045810.json",
+  "source_ok": true,
+  "rerun_needed": false,
+  "latest_filing": {
+   "form": "10-Q",
+   "filingDate": "2026-08-26",
+   "reportDate": "2026-07-26",
+   "accession": "0001045810-26-000075",
+   "primary": "nvda-20260726.htm",
+   "desc": "10-Q",
+   "items": "",
+   "kind": "10-Q"
+  },
+  "reason": "尚無上次估值檔案日；這是首次或 state 為空。最新檔如下，不自動視為『須重跑』。",
+  "archive_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+  "html_fetch_note": "www.sec.gov/Archives 常回 403；偵測以 data.sec.gov/submissions 為準。"
+ },
+ "ib": {
+  "consensus": {
+   "source": "Yahoo Finance Analysis / info targets",
+   "url": "https://finance.yahoo.com/quote/NVDA/analysis/",
+   "data_date": "2026-11-10",
+   "mean": 325.7772,
+   "high": 515.0,
+   "low": 180.0,
+   "median": 315.0,
+   "n_analysts": 57,
+   "currency": "USD"
+  },
+  "named_brokers": [],
+  "data_gaps": [
+   "具名券商報告原文未取得，named_brokers 留空。"
+  ]
+ },
+ "yahoo_urls": {
+  "financials": "https://finance.yahoo.com/quote/NVDA/financials",
+  "balance": "https://finance.yahoo.com/quote/NVDA/balance-sheet",
+  "cashflow": "https://finance.yahoo.com/quote/NVDA/cash-flow",
+  "stats": "https://finance.yahoo.com/quote/NVDA/key-statistics",
+  "analysis": "https://finance.yahoo.com/quote/NVDA/analysis",
+  "profile": "https://finance.yahoo.com/quote/NVDA/profile"
+ }
+}

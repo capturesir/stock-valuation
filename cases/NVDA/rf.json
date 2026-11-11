@@ -1,0 +1,57 @@
+{
+ "source": "Yahoo Finance ^TNX",
+ "url": "https://finance.yahoo.com/quote/%5ETNX",
+ "ok": true,
+ "chart": {
+  "url": "https://query1.finance.yahoo.com/v8/finance/chart/^TNX?period1=1793580939&period2=1794444939&interval=1d&events=div,split",
+  "http_status": 200,
+  "ok": true,
+  "meta": {
+   "currency": "USD",
+   "exchange": "CGI",
+   "symbol": "^TNX",
+   "regularMarketPrice": 4.983,
+   "regularMarketTime": 1794340794,
+   "gmtoffset": -21600,
+   "shortName": "CBOE Interest Rate 10 Year T No",
+   "instrumentType": "INDEX"
+  },
+  "closes": [
+   {
+    "date": "2026-11-02",
+    "close": 4.894000053405762
+   },
+   {
+    "date": "2026-11-03",
+    "close": 4.952000141143799
+   },
+   {
+    "date": "2026-11-04",
+    "close": 4.894000053405762
+   },
+   {
+    "date": "2026-11-05",
+    "close": 4.836999893188477
+   },
+   {
+    "date": "2026-11-06",
+    "close": 4.859000205993652
+   },
+   {
+    "date": "2026-11-09",
+    "close": 4.863999843597412
+   },
+   {
+    "date": "2026-11-10",
+    "close": 4.9830002784729
+   }
+  ],
+  "last": {
+   "date": "2026-11-10",
+   "close": 4.9830002784729
+  }
+ },
+ "value": 0.049830002784729,
+ "data_date": "2026-11-10",
+ "basis": "市場數據：美國 10 年期國債 Yahoo ^TNX 收市 4.983%（2026-11-10）"
+}

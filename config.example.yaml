@@ -1,0 +1,71 @@
+# 複製為 config.yaml 後按環境修改。請勿把 API 金鑰寫進本檔。
+# 金鑰一律經環境變數：LLM_API_KEY（及可選的 LLM_BASE_URL、LLM_MODEL）
+
+valuation_date: null   # 空白則用執行當日（亞洲／澳門時間）
+output_dir: out
+cases_dir: cases
+
+llm:
+  # 也可由環境變數覆蓋：LLM_BASE_URL、LLM_API_KEY、LLM_MODEL
+  base_url: "https://api.openai.com/v1"   # 本地例：http://127.0.0.1:11434/v1  或 http://127.0.0.1:1234/v1
+  model: "gpt-4o-mini"
+  api_key_env: LLM_API_KEY
+  timeout_seconds: 90
+  max_retries: 3
+  temperature: 0
+  # 伺服器支援時要求 JSON 物件（OpenAI-compatible response_format）
+  json_mode: true
+
+markets:
+  us:
+    currency: USD
+    rf_symbol: "^TNX"          # Yahoo：美國 10 年期孳息，報價為百分比
+    crp_country: US            # 美國公司 CRP=0
+  hk:
+    currency: HKD
+    # 港元 10 年期：優先 ADB AsianBondsOnline，其次 Trading Economics（Investing.com 常被攔截）
+    rf_primary: adb
+    adb_url: "https://asianbondsonline.adb.org/hongkong/"
+    te_url: "https://tradingeconomics.com/hong-kong/government-bond-yield"
+    investing_url: "https://www.investing.com/rates-bonds/hong-kong-10-year-bond-yield"
+
+sources:
+  yahoo_chart: "https://query1.finance.yahoo.com/v8/finance/chart/"
+  yahoo_quote: "https://finance.yahoo.com/quote/"
+  sec_submissions: "https://data.sec.gov/submissions/CIK{cik}.json"
+  sec_ua: "ValuationSystem research@localhost"
+  hkex_prefix: "https://www1.hkexnews.hk/search/prefix.do"
+  hkex_search: "https://www1.hkexnews.hk/search/titleSearchServlet.do"
+  hkex_base: "https://www1.hkexnews.hk"
+  damodaran_erp: "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/home.htm"
+  damodaran_beta: "https://pages.stern.nyu.edu/~adamodar/pc/datasets/betaGlobal.xls"
+  damodaran_indname: "https://pages.stern.nyu.edu/~adamodar/pc/datasets/indname.xls"
+
+forecast:
+  years: 10
+  bear_growth_delta_pp: -0.03    # 首 4 個完整預測年，相對基準增長
+  bull_growth_delta_pp: 0.03
+  bear_margin_delta_pp: -0.02
+  bull_margin_delta_pp: 0.02
+  terminal_g_default_us: 0.03
+  terminal_g_default_hk: 0.025
+  dnwc_fallback_pct: 0.05
+  share_floor_dilution: 0.01     # 若歷史股數因回購下降，地板用當前股數 × (1+此比率)^年期
+
+
+# 電郵為可選。收件、寄件與 SMTP 密碼請用環境變數，不要把私人信箱或密碼寫進本檔後提交。
+# 環境變數優先：VALUATION_REPORT_TO、VALUATION_REPORT_FROM、
+# VALUATION_SMTP_HOST、VALUATION_SMTP_PORT、VALUATION_SMTP_USER、
+# VALUATION_SMTP_PASSWORD、VALUATION_SMTP_STARTTLS。未設定則只在本機產出檔案，不寄信。
+report:
+  to_email: ""
+  from_email: ""
+  smtp_host: ""
+  smtp_port: 587
+  smtp_user: ""
+  smtp_password_env: VALUATION_SMTP_PASSWORD
+  smtp_starttls: true
+
+notes:
+  do_not_write_watchlist: true
+  not_investment_advice: true

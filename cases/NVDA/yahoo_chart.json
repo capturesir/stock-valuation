@@ -1,0 +1,61 @@
+{
+ "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1793148937&period2=1794444937&interval=1d&events=div,split",
+ "http_status": 200,
+ "ok": true,
+ "meta": {
+  "currency": "USD",
+  "exchange": "NMS",
+  "symbol": "NVDA",
+  "regularMarketPrice": 168.89,
+  "regularMarketTime": 1794344401,
+  "gmtoffset": -18000,
+  "shortName": "NVIDIA Corporation",
+  "instrumentType": "EQUITY"
+ },
+ "closes": [
+  {
+   "date": "2026-10-28",
+   "close": 215.3800048828125
+  },
+  {
+   "date": "2026-10-29",
+   "close": 213.66000366210938
+  },
+  {
+   "date": "2026-10-30",
+   "close": 204.63999938964844
+  },
+  {
+   "date": "2026-11-02",
+   "close": 202.05999755859375
+  },
+  {
+   "date": "2026-11-03",
+   "close": 206.69000244140625
+  },
+  {
+   "date": "2026-11-04",
+   "close": 200.1300048828125
+  },
+  {
+   "date": "2026-11-05",
+   "close": 181.60000610351562
+  },
+  {
+   "date": "2026-11-06",
+   "close": 186.63999938964844
+  },
+  {
+   "date": "2026-11-09",
+   "close": 178.6699981689453
+  },
+  {
+   "date": "2026-11-10",
+   "close": 168.88999938964844
+  }
+ ],
+ "last": {
+  "date": "2026-11-10",
+  "close": 168.88999938964844
+ }
+}

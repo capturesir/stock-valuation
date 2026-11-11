@@ -1,0 +1,22 @@
+{
+  "ticker": "AAA",
+  "asset": "Fixture Alpha Corp",
+  "price": 100.0,
+  "currency": "USD",
+  "price_date": "2026-11-10",
+  "fair_value_per_share": 120.0,
+  "scenarios": [
+    {
+      "name": "悲觀",
+      "fair_value": 90.0
+    },
+    {
+      "name": "基準",
+      "fair_value": 120.0
+    },
+    {
+      "name": "樂觀",
+      "fair_value": 150.0
+    }
+  ]
+}

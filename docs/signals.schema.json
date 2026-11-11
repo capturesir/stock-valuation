@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/valuation-system/docs/signals.schema.json",
+  "title": "B 組相容交易訊號檔（schema_version 1.0）",
+  "description": "由 A 組正式腳本 models/build_signals.py 的 json_schema() 導出。JSON Schema 本身不強制欄位次序；發布檔必須使用模板 docs/signals_schema_v1.json 的鍵次序。本套件可攜匯出器只套用基礎 side／confidence／upside 公式，不會套用正式 A 組的 confidence_cap、市價過期扣分、資料缺口扣分或 signal_enabled 覆核閘門。",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "generated_by", "price_date", "signals"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "generated_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+08:00$" },
+    "generated_by": { "type": "string", "minLength": 1 },
+    "price_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "signal_id", "ticker", "market", "name", "asset_type", "currency",
+          "side", "confidence", "fair_value", "market_price", "price_date",
+          "upside_pct", "horizon", "rationale", "report_path", "expires_at"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "signal_id": { "type": "string", "pattern": "^\\d{8}-[A-Z0-9][A-Z0-9.\\-]*$" },
+          "ticker": { "type": "string", "minLength": 1 },
+          "market": { "type": "string", "enum": ["US", "JP", "HK", "KR", "TW", "CRYPTO"] },
+          "name": { "type": "string", "minLength": 1 },
+          "asset_type": { "type": "string", "enum": ["equity", "crypto"] },
+          "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+          "side": { "type": "string", "enum": ["BUY", "SELL", "HOLD"] },
+          "confidence": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "fair_value": { "type": "number", "exclusiveMinimum": 0 },
+          "market_price": { "type": "number", "exclusiveMinimum": 0 },
+          "price_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          "upside_pct": { "type": "number" },
+          "horizon": { "type": "string", "minLength": 1 },
+          "rationale": { "type": "string", "minLength": 1 },
+          "report_path": { "type": "string", "minLength": 1 },
+          "expires_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\+08:00$" }
+        }
+      }
+    }
+  }
+}

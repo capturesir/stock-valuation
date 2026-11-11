@@ -1,0 +1,290 @@
+"""Web API: lookup, valuation job wiring, filings, download, and error display."""
+from __future__ import annotations
+
+import time
+from pathlib import Path
+from src.web import jobs as jobmod
+from src.web.sheets import EXPECTED_SHEETS
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _chart(ticker, currency, name, exchange, price, date, **_k):
+    return {
+        "ok": True,
+        "meta": {
+            "currency": currency,
+            "exchange": exchange,
+            "symbol": ticker,
+            "shortName": name,
+            "instrumentType": "EQUITY",
+        },
+        "last": {"date": date, "close": price},
+    }
+
+
+def _nvda_chart(*a, **k):
+    return _chart("NVDA", "USD", "NVIDIA Corporation", "NasdaqGS", 168.89, "2026-11-10")
+
+
+def _1830_chart(*a, **k):
+    return _chart("1830.HK", "HKD", "PERFECT MEDICAL", "HKSE", 1.49, "2026-11-10")
+
+
+def _fail_chart(*a, **k):
+    return {"ok": False, "error": "Yahoo chart 無結果", "http_status": 404}
+
+
+def _patch_lookup(monkeypatch, chart_fn, extra=None):
+    monkeypatch.setattr("src.fetch.yahoo.chart_quote", chart_fn)
+    monkeypatch.setattr("src.web.services._enrich_profile", lambda t: extra or {})
+
+
+def test_health_and_index(client):
+    r = client.get("/api/health")
+    assert r.status_code == 200
+    assert "不構成投資建議" in r.json()["disclaimer"]
+    page = client.get("/")
+    assert page.status_code == 200
+    text = page.text
+    assert "股票代號" in text
+    assert "估值" in text
+    assert "本系統產出不構成投資建議" in text
+    assert "檢查財報" in text
+
+
+def test_lookup_nvda_success(client, monkeypatch):
+    _patch_lookup(monkeypatch, _nvda_chart, {"long_name": "NVIDIA Corporation", "sector": "Technology"})
+    r = client.get("/api/lookup?ticker=nvda")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["ok"] is True
+    assert data["ticker"] == "NVDA"
+    assert data["has_name_spec"] is True
+    assert data["quote"]["price"] == 168.89
+    assert data["quote"]["price_date"] == "2026-11-10"
+    assert data["quote"]["currency"] == "USD"
+    assert "NVIDIA" in (data["display_name"] or "")
+    assert data["last_valuation"]
+    assert data["last_valuation"]["xlsx"]
+    assert "NVDA_FCFF.xlsx" in data["last_valuation"]["xlsx"]
+
+
+def test_lookup_1830_success(client, monkeypatch):
+    _patch_lookup(monkeypatch, _1830_chart)
+    r = client.get("/api/lookup?ticker=1830")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["ok"] is True
+    assert data["ticker"] == "1830.HK"
+    assert data["has_name_spec"] is True
+    assert data["quote"]["price"] == 1.49
+    assert data["quote"]["currency"] == "HKD"
+    assert data["last_valuation"]["xlsx"]
+
+
+def test_lookup_nonsense_ticker_error(client, monkeypatch):
+    _patch_lookup(monkeypatch, _fail_chart)
+    r = client.get("/api/lookup?ticker=NOTAREALTICKER999")
+    assert r.status_code == 404
+    data = r.json()
+    assert data["ok"] is False
+    assert "找不到" in data["error"] or "無法取得" in data["error"]
+    assert "quote" not in data or not data.get("quote")
+
+
+def test_lookup_does_not_start_valuation(client, monkeypatch):
+    calls = []
+
+    def boom(*a, **k):
+        calls.append((a, k))
+        raise AssertionError("lookup 不應呼叫 run_ticker")
+
+    monkeypatch.setattr("src.web.jobs.run_ticker", boom)
+    _patch_lookup(monkeypatch, _nvda_chart)
+    r = client.get("/api/lookup?ticker=NVDA")
+    assert r.status_code == 200
+    assert r.json()["ok"] is True
+    assert calls == []
+    assert jobmod.store.active() is None
+    assert jobmod.store.jobs == {}
+
+
+def test_workbook_sheets_and_download_nvda(client):
+    r = client.get("/api/workbook?ticker=NVDA&date=2026-11-11")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["ok"] is True
+    assert [s["name"] for s in data["workbook"]["sheets"]] == EXPECTED_SHEETS
+    for s in data["workbook"]["sheets"]:
+        assert s["nonempty"] > 0
+    blob = " ".join(c["d"] for s in data["workbook"]["sheets"] if s["name"] == "摘要" for row in s["rows"] for c in row)
+    assert "NVIDIA" in blob and "874.98" in blob
+    dl = client.get("/api/workbook/excel?ticker=NVDA&date=2026-11-11")
+    assert dl.status_code == 200
+    assert dl.content[:2] == b"PK"
+    disp = dl.headers.get("content-disposition", "")
+    assert "2026-11-11_NVDA_FCFF.xlsx" in disp
+
+
+def test_workbook_sheets_and_download_1830(client):
+    r = client.get("/api/workbook?ticker=1830.HK&date=2026-11-11")
+    assert r.status_code == 200
+    data = r.json()
+    assert [s["name"] for s in data["workbook"]["sheets"]] == EXPECTED_SHEETS
+    for s in data["workbook"]["sheets"]:
+        assert s["nonempty"] > 0
+    blob = " ".join(c["d"] for s in data["workbook"]["sheets"] if s["name"] == "摘要" for row in s["rows"] for c in row)
+    assert "完美醫療" in blob and "5.51" in blob
+    dl = client.get("/api/workbook/excel?ticker=1830.HK")
+    assert dl.status_code == 200
+    assert dl.content[:2] == b"PK"
+    assert "1830.HK_FCFF.xlsx" in dl.headers.get("content-disposition", "")
+
+
+def _wait_job(client, job_id, timeout=3.0):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        r = client.get(f"/api/jobs/{job_id}")
+        assert r.status_code == 200
+        job = r.json()["job"]
+        if job["status"] in ("done", "error"):
+            return job
+        time.sleep(0.02)
+    raise AssertionError("job 超時未結束")
+
+
+def test_valuate_wired_to_run_ticker_and_missing_spec_error(client, monkeypatch):
+    seen = {}
+
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11"):
+        seen["ticker"] = ticker
+        seen["use_llm"] = use_llm
+        seen["valuation_date"] = valuation_date
+        raise RuntimeError("本封裝驗證版內建規格僅含 NVDA 與 1830.HK。其他代號請先新增 name_specs 並備妥來源，不可讓模型憑記憶填數。")
+
+    monkeypatch.setattr("src.web.jobs.run_ticker", fake_run)
+    r = client.post("/api/valuate", json={"ticker": "AAPL", "date": "2026-11-11", "no_llm": True})
+    assert r.status_code == 200
+    job_id = r.json()["job"]["id"]
+    job = _wait_job(client, job_id)
+    assert seen["ticker"] == "AAPL"
+    assert seen["use_llm"] is False
+    assert seen["valuation_date"] == "2026-11-11"
+    assert job["status"] == "error"
+    assert "name_specs" in job["error"]
+    assert "NVDA" in job["error"]
+
+
+def test_valuate_nonsense_ticker_error_path(client, monkeypatch):
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11"):
+        raise RuntimeError(f"無法取得 {ticker} 市價：Yahoo chart 無結果")
+
+    monkeypatch.setattr("src.web.jobs.run_ticker", fake_run)
+    r = client.post("/api/valuate", json={"ticker": "ZZZZZNONE"})
+    job = _wait_job(client, r.json()["job"]["id"])
+    assert job["status"] == "error"
+    assert "無法取得" in job["error"]
+
+
+def test_valuate_success_uses_existing_workbook(client, monkeypatch):
+    xlsx = ROOT / "out" / "2026-11-11_NVDA" / "2026-11-11_NVDA_FCFF.xlsx"
+    js = ROOT / "out" / "2026-11-11_NVDA" / "2026-11-11_NVDA.json"
+
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11"):
+        import json
+        payload = json.loads(js.read_text(encoding="utf-8"))
+        return {
+            "json": payload,
+            "path": str(js),
+            "xlsx": str(xlsx),
+            "md": str(xlsx).replace("_FCFF.xlsx", "_valuation.md"),
+            "out_dir": str(xlsx.parent),
+            "verify_pass": True,
+            "verify_errors": [],
+        }
+
+    monkeypatch.setattr("src.web.jobs.run_ticker", fake_run)
+    r = client.post("/api/valuate", json={"ticker": "NVDA", "date": "2026-11-11", "no_llm": True})
+    job = _wait_job(client, r.json()["job"]["id"])
+    assert job["status"] == "done"
+    assert job["result"]["verify_pass"] is True
+    assert job["result"]["ticker"] == "NVDA"
+    sheets = client.get(f"/api/jobs/{job['id']}/sheets")
+    assert sheets.status_code == 200
+    names = [s["name"] for s in sheets.json()["workbook"]["sheets"]]
+    assert names == EXPECTED_SHEETS
+    dl = client.get(f"/api/jobs/{job['id']}/download")
+    assert dl.status_code == 200
+    assert dl.content[:2] == b"PK"
+
+
+def test_second_concurrent_valuation_rejected(client, monkeypatch):
+    import threading
+    started = threading.Event()
+    release = threading.Event()
+
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11"):
+        started.set()
+        release.wait(timeout=3)
+        raise RuntimeError("stopped")
+
+    monkeypatch.setattr("src.web.jobs.run_ticker", fake_run)
+    r1 = client.post("/api/valuate", json={"ticker": "NVDA"})
+    assert r1.status_code == 200
+    assert started.wait(timeout=2)
+    r2 = client.post("/api/valuate", json={"ticker": "1830.HK"})
+    assert r2.status_code == 409
+    assert "進行中" in r2.json()["error"]
+    release.set()
+    _wait_job(client, r1.json()["job"]["id"])
+
+
+def test_check_filings_route_statuses(client, monkeypatch):
+    monkeypatch.setattr(
+        "src.web.app.check_filings",
+        lambda t: {"ticker": t, "rerun_needed": False, "latest_filing": {"form": "10-Q"}},
+    )
+    r = client.post("/api/check-filings", json={"ticker": "NVDA"})
+    assert r.status_code == 200
+    data = r.json()
+    assert data["status"] == "NO_RERUN"
+    assert data["job"] is None
+    assert data["result"]["latest_filing"]["form"] == "10-Q"
+
+    monkeypatch.setattr(
+        "src.web.app.check_filings",
+        lambda t: {"ticker": t, "rerun_needed": True, "reason": "new 10-Q"},
+    )
+    r = client.post("/api/check-filings", json={"ticker": "NVDA"})
+    assert r.json()["status"] == "RERUN_NEEDED"
+    assert r.json()["job"] is None  # 未勾選如需要則重跑
+
+    monkeypatch.setattr(
+        "src.web.app.check_filings",
+        lambda t: {"ticker": t, "error": "被攔截", "blocked": True, "rerun_needed": False},
+    )
+    r = client.post("/api/check-filings", json={"ticker": "1830.HK"})
+    assert r.json()["status"] == "CHECK_BLOCKED_OR_ERROR"
+
+
+def test_check_filings_rerun_if_needed_starts_job(client, monkeypatch):
+    monkeypatch.setattr(
+        "src.web.app.check_filings",
+        lambda t: {"ticker": t, "rerun_needed": True, "reason": "new filing"},
+    )
+    called = {}
+
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11"):
+        called["ticker"] = ticker
+        raise RuntimeError("wiring only")
+
+    monkeypatch.setattr("src.web.jobs.run_ticker", fake_run)
+    r = client.post("/api/check-filings", json={"ticker": "NVDA", "rerun_if_needed": True, "date": "2026-11-11"})
+    assert r.status_code == 200
+    assert r.json()["status"] == "RERUN_NEEDED"
+    assert r.json()["job"]
+    job = _wait_job(client, r.json()["job"]["id"])
+    assert called["ticker"] == "NVDA"
+    assert job["status"] == "error"
+    assert "wiring only" in job["error"]

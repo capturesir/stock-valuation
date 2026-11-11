@@ -1,0 +1,15 @@
+{
+ "ticker": "1830.HK",
+ "last_valuation_date": "2026-11-11",
+ "last_results_filing": {
+  "form": "POSITIVE PROFIT ALERT",
+  "filingDate": "2026-11-09",
+  "reportDate": "2026-09-30",
+  "title": "INSIDE INFORMATION POSITIVE PROFIT ALERT",
+  "file_link": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/1109/2026110900781.pdf",
+  "news_id": "12405791"
+ },
+ "price": 1.4900000095367432,
+ "price_date": "2026-11-10",
+ "fair_value_per_share": 5.505520668145552
+}

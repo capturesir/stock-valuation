@@ -1,0 +1,10 @@
+item,value,basis,source_name,url,data_date
+rf,0.049830002784729,市場數據：美國 10 年期國債 Yahoo ^TNX 收市 4.983%（2026-11-10）,Yahoo Finance ^TNX,https://finance.yahoo.com/quote/%5ETNX,2026-11-10
+erp,0.042,市場數據：Damodaran 2026-10-01 隱含 ERP 4.20%（當月，對應美國 10 年期 5.29%）；方法 A：每月採用當月隱含 ERP,Damodaran Online（Implied ERP）,https://pages.stern.nyu.edu/~adamodar/New_Home_Page/home.htm,2026-10-01
+crp,0.0,分析師假設（方法 A）：美國公司，ERP 已是美國隱含 ERP，不另加 CRP,Damodaran Country Risk Premiums（2026-07 更新）,https://pages.stern.nyu.edu/~adamodar/pc/datasets/ctrypremJuly26.xlsx,2026-07-01
+beta_adopted,1.6862,方法 A（2026-10-08 用戶批准，全部名單統一）：Damodaran 全球「Semiconductor」行業 βU 多年平均（Average 2020-24）1.673 × (1 + (1 − 16.5%) × D/E 0.009) = 1.686；行業按 Damodaran 公司分類（indname.xls）,"Damodaran Betas（Global, 2026-01-05）；indname.xls",https://pages.stern.nyu.edu/~adamodar/pc/datasets/betaGlobal.xls,2026-01-05
+kd_pre_tax,0.04223898219221751,"分析師假設（規則）：FY2026 利息 US$259m ÷ 年末債務 US$11,040m ＝ 2.35% 用於舊債務；Q2 債務增至 US$38,351m（約增 US$27,311m）。8-K 票息因 EDGAR HTML 403 未讀到，新增債務暫按 Rf 4.983% 計，加權 Kd＝4.22%。實際票息若更高／更低，WACC 須修訂。",Yahoo income/balance；Rf 見折現率,https://finance.yahoo.com/quote/NVDA/financials,2026-07-31
+tax_rate,0.165,分析師假設：預測稅率採 Q2 FY2027 Yahoo Tax Rate For Calcs 16.5%（FY2026 有效稅率 15.12%，略低）,Yahoo Finance quarterly income statement,https://finance.yahoo.com/quote/NVDA/financials,2026-07-31
+wacc,0.11985805533928838,計算：weight_e × ke + weight_d × kd_after_tax,模型計算,,
+terminal_g,0.03,分析師假設（規則）：終值 g＝3.0%，不高於美元 Rf 4.983%，約對應美國長期名目增長下沿。,模型假設,,2026-11-11
+shares,24242.0,"{'value': 24242.0, 'basis': '市場數據：2026-07-31 已發行 24,147m ＋（Q2 攤薄加權 24,285m − 基本加權 24,190m）＝24242m', 'source_name': 'Yahoo Finance quarterly statements', 'url': 'https://finance.yahoo.com/quote/NVDA/financials', 'data_date': '2026-07-31'}",,,

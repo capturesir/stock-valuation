@@ -1,0 +1,21 @@
+{
+ "market": "US",
+ "ticker": "NVDA",
+ "cik": "0001045810",
+ "source": "https://data.sec.gov/submissions/CIK0001045810.json",
+ "source_ok": true,
+ "rerun_needed": false,
+ "latest_filing": {
+  "form": "10-Q",
+  "filingDate": "2026-08-26",
+  "reportDate": "2026-07-26",
+  "accession": "0001045810-26-000075",
+  "primary": "nvda-20260726.htm",
+  "desc": "10-Q",
+  "items": "",
+  "kind": "10-Q"
+ },
+ "reason": "尚無上次估值檔案日；這是首次或 state 為空。最新檔如下，不自動視為『須重跑』。",
+ "archive_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+ "html_fetch_note": "www.sec.gov/Archives 常回 403；偵測以 data.sec.gov/submissions 為準。"
+}

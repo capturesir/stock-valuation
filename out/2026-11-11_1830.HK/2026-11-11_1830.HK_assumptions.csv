@@ -1,0 +1,10 @@
+item,value,basis,source_name,url,data_date
+rf,0.03686,市場數據：ADB AsianBondsOnline 香港 10 年期政府債券 Latest Yield 3.686%（Close of 未標日期）,ADB AsianBondsOnline,https://asianbondsonline.adb.org/hongkong/,
+erp,0.042,市場數據：Damodaran 2026-10-01 隱含 ERP 4.20%（當月，對應美國 10 年期 5.29%）；方法 A：每月採用當月隱含 ERP,Damodaran Online（Implied ERP）,https://pages.stern.nyu.edu/~adamodar/New_Home_Page/home.htm,2026-10-01
+crp,0.0074187,市場數據：Damodaran 香港 Aa3 國家風險溢價 0.74%（2026-07-01 年中更新）（FY2026 全年業績：香港收入 HK$765.591m，佔 79.6%；境外（中國內地、澳門、澳洲、新加坡）20.4%。風險來源以香港為主，故 CRP 用香港而非中國。境外仍有內地業務，屬次要。）,Damodaran Country Risk Premiums（ctrypremJuly26.xlsx）,https://pages.stern.nyu.edu/~adamodar/pc/datasets/ctrypremJuly26.xlsx,2026-07-01
+beta_adopted,1.0202,方法 A（2026-10-08 用戶批准，全部名單統一）：Damodaran 全球「Business & Consumer Services」行業 βU 多年平均（Average 2020-24）0.962 × (1 + (1 − 15.6%) × D/E 0.072) = 1.020；行業按 Damodaran 公司分類（indname.xls）,"Damodaran Betas（Global, 2026-01-05）；indname.xls",https://pages.stern.nyu.edu/~adamodar/pc/datasets/betaGlobal.xls,2026-01-05
+kd_pre_tax,0.05906348451524698,市場數據：FY2026 融資成本（租賃利息）HK$7.949m ÷ 年末租賃負債 HK$134.584m ＝ 5.91%（與現金流量表 Payment of interest element of lease liabilities 一致）,全年業績公告,https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf,2026-03-31
+tax_rate,0.15551588447824377,分析師假設：預測稅率採 FY2026 有效稅率 15.55%（稅項 HK$32.842m ÷ 除稅前 HK$211.181m）。香港利得稅法定 16.5%，集團另有內地 25%、澳門、澳洲、新加坡稅率。,全年業績公告,https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf,2026-03-31
+wacc,0.08476824470784161,計算：weight_e × ke + weight_d × kd_after_tax,模型計算,,
+terminal_g,0.025,終值 g＝2.5%，不高於港元 Rf 3.686%；醫療美容長期名目增長下沿的規則假設。,模型假設,,2026-11-11
+shares,1256.197771,"{'value': 1256.197771, 'basis': '市場數據：2026-03-31 已發行普通股 1,256,197,771 股；Yahoo／年結攤薄加權均為 1,256.197m，四年大致持平', 'source_name': '全年業績公告／Yahoo', 'url': 'https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0630/2026063002439.pdf', 'data_date': '2026-03-31'}",,,

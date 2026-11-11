@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-10-01T06:55:00+08:00",
+  "generated_by": "投資經理 (A組)",
+  "price_date": "2026-09-30",
+  "signals": [
+    {
+      "signal_id": "20261001-0883.HK",
+      "ticker": "0883.HK",
+      "market": "HK",
+      "name": "中國海洋石油 CNOOC",
+      "asset_type": "equity",
+      "currency": "HKD",
+      "side": "BUY",
+      "confidence": 72,
+      "fair_value": 31.15,
+      "market_price": 23.96,
+      "price_date": "2026-09-30",
+      "upside_pct": 30.0,
+      "horizon": "6-12m",
+      "rationale": "（範例）FCFF DCF 理論價 31.15，市價為理論價 0.77 倍",
+      "report_path": "/workspace/invest/reports/2026-10-01_0883HK_valuation.md",
+      "expires_at": "2026-10-02T06:30:00+08:00"
+    }
+  ]
+}

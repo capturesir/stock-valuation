@@ -1,0 +1,51 @@
+{
+ "ok": true,
+ "attempts": [
+  {
+   "ok": true,
+   "source": "ADB AsianBondsOnline",
+   "url": "https://asianbondsonline.adb.org/hongkong/",
+   "value": 0.03686,
+   "data_date": null,
+   "http_status": 200,
+   "basis": "市場數據：ADB AsianBondsOnline 香港 10 年期政府債券 Latest Yield 3.686%（Close of 未標日期）"
+  },
+  {
+   "ok": true,
+   "source": "Trading Economics",
+   "url": "https://tradingeconomics.com/hong-kong/government-bond-yield",
+   "value": 0.03674,
+   "data_date": "2026-11-11",
+   "basis": "市場數據：Trading Economics 香港 10 年期政府債券孳息約 3.674%（2026-11-11；OTC 銀行同業報價）"
+  },
+  {
+   "ok": false,
+   "source": "Investing.com",
+   "url": "https://www.investing.com/rates-bonds/hong-kong-10-year-bond-yield",
+   "error": "頁面結構未解析（本次未作為主來源）",
+   "http_status": 200
+  }
+ ],
+ "cross_checks": [
+  {
+   "ok": true,
+   "source": "Trading Economics",
+   "url": "https://tradingeconomics.com/hong-kong/government-bond-yield",
+   "value": 0.03674,
+   "data_date": "2026-11-11",
+   "basis": "市場數據：Trading Economics 香港 10 年期政府債券孳息約 3.674%（2026-11-11；OTC 銀行同業報價）"
+  },
+  {
+   "ok": false,
+   "source": "Investing.com",
+   "url": "https://www.investing.com/rates-bonds/hong-kong-10-year-bond-yield",
+   "error": "頁面結構未解析（本次未作為主來源）",
+   "http_status": 200
+  }
+ ],
+ "value": 0.03686,
+ "data_date": null,
+ "source": "ADB AsianBondsOnline",
+ "url": "https://asianbondsonline.adb.org/hongkong/",
+ "basis": "市場數據：ADB AsianBondsOnline 香港 10 年期政府債券 Latest Yield 3.686%（Close of 未標日期）"
+}
