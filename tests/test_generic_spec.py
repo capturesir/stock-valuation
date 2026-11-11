@@ -132,6 +132,27 @@ def test_heavy_capex_is_normalised_towards_sustainable_level():
     assert any("資本開支" in g for g in spec["data_gaps"])
 
 
+def test_unmapped_industry_keeps_beta_in_sane_range(tmp_path):
+    """D/E must use consistent units when deriving βU from the regression beta.
+
+    Alibaba (9988.HK) has no Damodaran industry match. Comparing debt in
+    currency units against market cap in millions inflated D/E by 1e6, collapsed
+    βU to ~0 and produced a 3.5% WACC / 909 HKD fair value against a 100 HKD
+    price. Guard the whole path: the adopted beta must stay near the regression.
+    """
+    fund = _fund()
+    fund["info"]["industry"] = "Quantum Widgets"
+    fund["info"]["beta"] = 0.401
+    snap = _snap()
+    snap["ticker"] = "TEST.X"          # not in method_a.IND, forces the fallback
+    spec = G.build_generic_spec(snap, fund, {}, use_llm=False)
+    out = build_and_run(spec, out_dir=str(tmp_path))["json"]
+
+    adopted = out["discount"]["beta_adopted"]["value"]
+    assert 0.2 < adopted < 1.0, f"β 被壓成 {adopted}"
+    assert out["discount"]["wacc"]["value"] > 0.05
+
+
 def test_validate_paths_accepts_the_rules_path():
     g = [0.05] * 10
     m = [0.2] * 10

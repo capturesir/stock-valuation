@@ -46,6 +46,7 @@ INDUSTRY_MAP = {
     "utilities - regulated electric": "Power",
     "utilities - independent power producers": "Power",
     "retail - cyclical": "Retail (General)",
+    "internet retail": "Retail (General)",
     "retail - defensive": "Retail (Grocery and Food)",
     "restaurants": "Restaurant/Dining",
     "medical devices": "Healthcare Products",
@@ -188,7 +189,13 @@ def resolve_industry(ticker: str, info: dict, tax: float, d_over_e: float, gaps:
             "亦無可用迴歸 Beta，無法按方法 A 計算折現率。"
         )
     bu = float(reg) / (1 + (1 - tax) * d_over_e)
+    # Guard the derivation: an absurd βU means the inputs were inconsistent
+    # (units, missing debt, extreme D/E) and would distort WACC silently.
+    if not (0.05 <= bu <= 3.0):
+        gaps.append(f"由迴歸 Beta 還原的 βU {bu:.4f} 不合理，已改用迴歸 Beta {float(reg):.3f} 作 βU。")
+        bu = float(reg)
     label = f"未分類（{info.get('industry') or info.get('sector') or ticker}）"
+
     MA.register_industry(
         label, bu, bu,
         f"方法 A 例外：Yahoo 迴歸 Beta {reg} 按 D/E {d_over_e:.3f}、稅率 {tax:.1%} 還原為 βU {bu:.4f}；"
@@ -377,7 +384,11 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     if kd is None or not (0 < kd < 0.5):
         kd = snap["rf"]["value"] + MA.DEFAULT_SPREAD.get(code, 0.005)
         gaps.append("利息費用／總債務不可用，Kd 以 Rf＋Damodaran 該國違約息差代替。")
-    d_over_e = (debt or 0.0) / e_mkt_model if e_mkt_model else 0.0
+    # keep units consistent: debt is in currency units, E is in millions.
+    # (Using the raw debt here inflated D/E by 1e6, collapsed βU to ~0 and sent
+    # Alibaba's WACC to 3.5% — caught by the fresh-ticker acceptance test.)
+    d_over_e = ((debt or 0.0) / 1e6) / e_mkt_model if e_mkt_model else 0.0
+
 
     industry = resolve_industry(ticker, info, tax, d_over_e, gaps)
 
