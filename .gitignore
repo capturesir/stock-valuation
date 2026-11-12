@@ -20,3 +20,6 @@ venv/
 out/signals.json
 out/signals/
 out/signals.invalid.json
+
+# local run history for the web 錯誤 panel
+out/_run_history.json

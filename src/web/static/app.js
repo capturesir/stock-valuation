@@ -18,6 +18,10 @@
     valDate: $("val-date"),
     noLlm: $("no-llm"),
     btnValuate: $("btn-valuate"),
+    btnStop: $("btn-stop"),
+    btnErrors: $("btn-errors"),
+    errorsPanel: $("errors-panel"),
+    errorsList: $("errors-list"),
     btnCheck: $("btn-check"),
     rerun: $("rerun-if-needed"),
     statusPanel: $("status-panel"),
@@ -48,6 +52,7 @@
   let lastLookup = null;
   let pollTimer = null;
   let tickTimer = null;
+  let currentJobId = null;
   let currentWorkbook = null;
   let currentMeta = null;
   let currentSignalsDl = null;
@@ -118,7 +123,7 @@
     return data;
   }
 
-  const STEP_MARK = { done: "✓", active: "", skipped: "—", pending: "·", error: "!" };
+  const STEP_MARK = { done: "✓", active: "", skipped: "—", pending: "·", error: "!", cancelled: "■" };
 
   function renderJobProgress(job) {
     const steps = (job && job.steps) || [];
@@ -150,6 +155,17 @@
       } else {
         mark.textContent = STEP_MARK[s.status] || "·";
       }
+      let err = li.querySelector(".jp-error");
+      if (s.error) {
+        if (!err) {
+          err = document.createElement("span");
+          err.className = "jp-error";
+          li.appendChild(err);
+        }
+        err.textContent = `：${s.error}`;
+      } else if (err) {
+        err.remove();
+      }
       let note = li.querySelector(".jp-note");
       if (s.note) {
         if (!note) {
@@ -168,8 +184,13 @@
     const settled = steps.filter((s) => s.status === "done" || s.status === "skipped").length;
     els.jpCount.textContent = `${settled}/${steps.length}`;
     els.jpActivity.textContent = job.activity || job.message || "估值進行中…";
-    const running = job.status !== "done" && job.status !== "error";
+    const running = job.status === "running" || job.status === "queued" || job.status === "cancelling";
     els.jpSpinner.classList.toggle("hidden", !running);
+    if (els.btnStop) {
+      els.btnStop.classList.toggle("hidden", !running);
+      els.btnStop.disabled = job.status === "cancelling";
+      els.btnStop.textContent = job.status === "cancelling" ? "停止中…" : "停止";
+    }
     els.jobProgress.dataset.phase = job.phase || "fetch";
     els.jobProgress.dataset.status = job.status || "running";
   }
@@ -303,6 +324,9 @@
     await checkFilings(currentTicker);
   });
 
+  if (els.btnStop) els.btnStop.addEventListener("click", stopValuation);
+  if (els.btnErrors) els.btnErrors.addEventListener("click", toggleErrors);
+
   async function startValuation(ticker) {
     clearRunState();
     show(els.statusPanel);
@@ -320,11 +344,71 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      currentJobId = data.job.id;
       watchJob(data.job);
     } catch (err) {
       setError(els.runError, err.message || "無法開始估值。");
       els.btnValuate.disabled = false;
+      if (els.btnStop) hide(els.btnStop);
     }
+  }
+
+  async function stopValuation() {
+    if (!currentJobId) return;
+    if (els.btnStop) { els.btnStop.disabled = true; els.btnStop.textContent = "停止中…"; }
+    try {
+      const data = await api(`/api/jobs/${encodeURIComponent(currentJobId)}/cancel`, { method: "POST" });
+      if (data && data.job) renderJobProgress(data.job);
+    } catch (err) {
+      setError(els.runError, err.message || "無法停止估值。");
+      if (els.btnStop) { els.btnStop.disabled = false; els.btnStop.textContent = "停止"; }
+    }
+  }
+
+  async function toggleErrors() {
+    const box = els.errorsPanel;
+    if (!box) return;
+    if (!box.classList.contains("hidden")) { hide(box); return; }
+    show(box);
+    els.errorsList.textContent = "載入中…";
+    try {
+      const data = await api("/api/errors");
+      renderErrors(data.runs || []);
+    } catch (err) {
+      els.errorsList.textContent = err.message || "無法讀取錯誤紀錄。";
+    }
+  }
+
+  function renderErrors(runs) {
+    const box = els.errorsList;
+    box.innerHTML = "";
+    if (!runs.length) {
+      box.textContent = "最近沒有執行紀錄。";
+      return;
+    }
+    runs.forEach((run) => {
+      const item = document.createElement("div");
+      item.className = `err-item err-${run.status || "unknown"}`;
+      const head = document.createElement("div");
+      head.className = "err-head";
+      const when = run.finished_at ? new Date(run.finished_at * 1000).toLocaleString() : "";
+      const state = { done: "完成", error: "失敗", cancelled: "已停止" }[run.status] || run.status;
+      head.textContent = `${run.ticker || "?"}　${state}　${when}`;
+      item.appendChild(head);
+      if (run.error_step) {
+        const step = document.createElement("div");
+        step.className = "err-step";
+        step.textContent = `${run.stopped ? "停止於" : "出錯步驟"}：${run.error_step}`;
+        item.appendChild(step);
+      }
+      if (run.error) {
+        const msg = document.createElement("div");
+        msg.className = "err-msg";
+        msg.textContent = run.error;
+        item.appendChild(msg);
+      }
+      box.appendChild(item);
+    });
   }
 
   function watchJob(job) {
@@ -333,7 +417,7 @@
       const sec = Math.max(0, Math.round((Date.now() - started) / 1000));
       const st = j && j.status ? j.status : "running";
       renderJobProgress(j);
-      const finished = st === "done" || st === "error";
+      const finished = st === "done" || st === "error" || st === "cancelled";
       els.progress.textContent = finished
         ? `狀態：${st}　全程 ${sec} 秒。`
         : `狀態：${st}　已過 ${sec} 秒。請稍候，不要關閉此頁。`;
@@ -349,6 +433,12 @@
       els.btnValuate.disabled = false;
       job = j;
       updateProgress(j);
+      if (els.btnStop) hide(els.btnStop);
+      currentJobId = null;
+      if (j.status === "cancelled") {
+        setError(els.runError, "已停止：這次估值沒有產生結果。");
+        return;
+      }
       if (j.status === "error") {
         hide(els.progress);
         setError(els.runError, j.error || j.message || "估值失敗。");
@@ -374,7 +464,7 @@
         const data = await api(`/api/jobs/${encodeURIComponent(job.id)}`);
         job = data.job;
         updateProgress(job);
-        if (job.status === "done" || job.status === "error") {
+        if (job.status === "done" || job.status === "error" || job.status === "cancelled") {
           await finish(job);
         }
       } catch (err) {

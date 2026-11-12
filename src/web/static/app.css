@@ -249,3 +249,23 @@ footer p { margin: 0; }
 }
 @media (max-width: 640px) { .jp-steps { grid-template-columns: 1fr; } }
 .jp-note { font-size: 0.76rem; color: #9aa7b4; font-style: normal; }
+
+/* ---- 停止／錯誤紀錄 ---- */
+.btn.danger { border-color: #e3b4b4; color: var(--bad); }
+.btn.danger:disabled { opacity: 0.55; cursor: default; }
+.btn.small { font-size: 0.82rem; padding: 0.28rem 0.6rem; }
+.errors-bar { margin-top: 0.55rem; }
+.errors-panel {
+  margin-top: 0.5rem; border: 1px solid var(--line); border-radius: 6px;
+  background: #fbfcfe; max-height: 320px; overflow: auto;
+}
+.errors-list { padding: 0.6rem 0.7rem; display: grid; gap: 0.5rem; }
+.err-item { border-left: 3px solid var(--line); padding: 0.3rem 0.55rem; background: #fff; border-radius: 4px; }
+.err-item.err-error { border-left-color: var(--bad); }
+.err-item.err-cancelled { border-left-color: var(--warn); }
+.err-item.err-done { border-left-color: var(--good); }
+.err-head { font-size: 0.85rem; font-weight: 700; color: var(--ink); }
+.err-step { font-size: 0.8rem; color: var(--warn); margin-top: 0.15rem; }
+.err-msg { font-size: 0.8rem; color: var(--bad); white-space: pre-wrap; word-break: break-word; margin-top: 0.15rem; }
+.jp-error { font-size: 0.76rem; color: var(--bad); }
+.jp-steps li[data-status="cancelled"] { color: var(--warn); font-weight: 700; }

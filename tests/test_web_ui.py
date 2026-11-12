@@ -190,7 +190,7 @@ def _wait_job(client, job_id, timeout=3.0):
 def test_valuate_wired_to_run_ticker_and_missing_spec_error(client, monkeypatch):
     seen = {}
 
-    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None):
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None, should_stop=None):
         seen["ticker"] = ticker
         seen["use_llm"] = use_llm
         seen["valuation_date"] = valuation_date
@@ -210,7 +210,7 @@ def test_valuate_wired_to_run_ticker_and_missing_spec_error(client, monkeypatch)
 
 
 def test_valuate_nonsense_ticker_error_path(client, monkeypatch):
-    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None):
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None, should_stop=None):
         raise RuntimeError(f"無法取得 {ticker} 市價：Yahoo chart 無結果")
 
     monkeypatch.setattr("src.web.jobs.run_ticker", fake_run)
@@ -224,7 +224,7 @@ def test_valuate_success_uses_existing_workbook(client, monkeypatch):
     xlsx = ROOT / "out" / "2026-11-11_NVDA" / "2026-11-11_NVDA_FCFF.xlsx"
     js = ROOT / "out" / "2026-11-11_NVDA" / "2026-11-11_NVDA.json"
 
-    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None):
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None, should_stop=None):
         import json
         payload = json.loads(js.read_text(encoding="utf-8"))
         return {
@@ -257,7 +257,7 @@ def test_second_concurrent_valuation_rejected(client, monkeypatch):
     started = threading.Event()
     release = threading.Event()
 
-    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None):
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None, should_stop=None):
         started.set()
         release.wait(timeout=3)
         raise RuntimeError("stopped")
@@ -308,7 +308,7 @@ def test_check_filings_rerun_if_needed_starts_job(client, monkeypatch):
     )
     called = {}
 
-    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None):
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None, should_stop=None):
         called["ticker"] = ticker
         raise RuntimeError("wiring only")
 
@@ -338,7 +338,7 @@ def _wait_job_done(client, job_id, timeout=5.0):
 def test_valuate_job_publishes_steps_and_marks_failure(client, monkeypatch):
     from src.web import jobs as jobmod
 
-    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None):
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None, should_stop=None):
         progress("quote", "取得市價")
         progress("fundamentals", "讀取財報")
         progress("engine", "計算五情境")
@@ -363,7 +363,7 @@ def test_valuate_job_publishes_steps_and_marks_failure(client, monkeypatch):
 def test_valuate_job_finishes_at_full_progress(client, monkeypatch):
     from src.web import jobs as jobmod
 
-    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None):
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11", progress=None, should_stop=None):
         for key in [k for k, _ in jobmod.STEPS]:
             progress(key, f"做 {key}")
         return {
@@ -386,3 +386,61 @@ def test_valuate_job_finishes_at_full_progress(client, monkeypatch):
     assert job["progress"] == 100
     assert job["activity"] == "完成"
     assert all(s["status"] in ("done", "skipped") for s in job["steps"])
+
+
+def test_cancel_stops_a_running_valuation(client, monkeypatch, tmp_path):
+    from src.web import jobs as jobmod
+    from src.pipeline.orchestrator import ValuationCancelled
+
+    monkeypatch.setattr(jobmod, "HISTORY_PATH", tmp_path / "hist.json")
+
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11",
+                 progress=None, should_stop=None):
+        progress("quote", "取得市價")
+        for _ in range(200):
+            if should_stop and should_stop():
+                raise ValuationCancelled("用戶已停止估值")
+            time.sleep(0.01)
+        return {}
+
+    monkeypatch.setattr(jobmod, "run_ticker", fake_run)
+    r = client.post("/api/valuate", json={"ticker": "TEST", "no_llm": True})
+    job_id = r.json()["job"]["id"]
+
+    c = client.post(f"/api/jobs/{job_id}/cancel")
+    assert c.status_code == 200
+    assert c.json()["job"]["status"] in ("cancelling", "cancelled")
+
+    job = _wait_job_done(client, job_id)
+    assert job["status"] == "cancelled"
+    assert job["error"] is None
+    assert any(s["status"] == "cancelled" for s in job["steps"])
+    assert job["cancellable"] is False
+
+
+def test_error_history_keeps_last_three_runs(client, monkeypatch, tmp_path):
+    from src.web import jobs as jobmod
+
+    monkeypatch.setattr(jobmod, "HISTORY_PATH", tmp_path / "hist.json")
+
+    def fake_run(ticker, cfg=None, use_llm=True, valuation_date="2026-11-11",
+                 progress=None, should_stop=None):
+        progress("quote", "取得市價")
+        progress("engine", "計算五情境")
+        raise RuntimeError(f"{ticker} 模擬失敗")
+
+    monkeypatch.setattr(jobmod, "run_ticker", fake_run)
+    for t in ("AAA", "BBB", "CCC", "DDD"):
+        client.post("/api/valuate", json={"ticker": t, "no_llm": True})
+        _wait_job_done(client, jobmod.store.active_id or "")
+        # wait until the store frees up for the next run
+        for _ in range(100):
+            if jobmod.store.active() is None:
+                break
+            time.sleep(0.02)
+
+    runs = client.get("/api/errors").json()["runs"]
+    assert len(runs) == 3
+    assert [r["ticker"] for r in runs] == ["DDD", "CCC", "BBB"]   # newest first
+    assert runs[0]["error_step"] == "計算五情境並驗證"
+    assert "模擬失敗" in runs[0]["error"]

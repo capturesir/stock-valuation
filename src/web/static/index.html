@@ -25,6 +25,12 @@
         <button type="submit" id="btn-lookup" class="btn primary">查詢</button>
       </form>
       <p class="hint">先查詢並確認公司與市價，再點「估值」。NVDA 與 1830.HK 有內建人工覆核規格；其他代號會自動用 Yahoo 財報建立通用規格（信心較低，請看「資料缺口」）。</p>
+      <div class="errors-bar">
+        <button type="button" id="btn-errors" class="btn small">錯誤紀錄（最近 3 次）</button>
+        <div id="errors-panel" class="errors-panel hidden">
+          <div id="errors-list" class="errors-list"></div>
+        </div>
+      </div>
       <div id="lookup-error" class="banner error hidden" role="alert"></div>
 
       <div id="quote-card" class="card hidden">
@@ -62,6 +68,7 @@
         </div>
         <div class="row-actions">
           <button type="button" id="btn-valuate" class="btn primary">估值</button>
+          <button type="button" id="btn-stop" class="btn danger hidden">停止</button>
           <button type="button" id="btn-check" class="btn">檢查財報</button>
           <label class="check">
             <input type="checkbox" id="rerun-if-needed">

@@ -20,6 +20,10 @@ from ..export.report_md import write_report
 ROOT = Path(__file__).resolve().parents[2]
 
 
+class ValuationCancelled(RuntimeError):
+    """Raised when the user stops a running valuation from the web UI."""
+
+
 def load_config(path: Optional[Path] = None) -> dict:
     import yaml
     path = path or (ROOT / "config.yaml")
@@ -29,7 +33,8 @@ def load_config(path: Optional[Path] = None) -> dict:
 
 
 def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
-               valuation_date: str = "2026-11-11", progress=None) -> dict:
+               valuation_date: str = "2026-11-11", progress=None,
+               should_stop=None) -> dict:
     """Fetch -> assumptions -> engine -> verify -> Excel / markdown.
 
     ``progress`` is an optional callback ``(step_key, activity=None, skip=None)``
@@ -39,13 +44,20 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     cfg = cfg or load_config()
     ticker = _norm(ticker)
 
+    def _check_stop() -> None:
+        if should_stop is not None and should_stop():
+            raise ValuationCancelled("用戶已停止估值")
+
     def _step(key: str, activity: Optional[str] = None, skip: Optional[str] = None) -> None:
-        if progress is None:
-            return
-        try:
-            progress(key, activity, skip)
-        except Exception:      # a broken UI callback must never break a valuation
-            pass
+        # Cancellation is cooperative and checked at step boundaries: a step that
+        # is already running (usually one network call) finishes first.
+        _check_stop()
+        if progress is not None:
+            try:
+                progress(key, activity, skip)
+            except Exception:  # a broken UI callback must never break a valuation
+                pass
+        _check_stop()
 
     out_dir = ROOT / "out" / f"{valuation_date}_{ticker}"
     case_dir = ROOT / "cases" / ticker
@@ -194,6 +206,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     spec["llm_status"] = llm_status
     (case_dir / "spec_audit.json").write_text(json.dumps(_safe(spec), ensure_ascii=False, indent=1, default=str), encoding="utf-8")
 
+    _check_stop()
     _step("engine", "正在計算五情境並執行獨立驗證（verify_fcff）…")
     result = build_and_run(spec, out_dir=str(out_dir))
     outj = result["json"]

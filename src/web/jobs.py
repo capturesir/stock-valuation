@@ -1,14 +1,21 @@
 """Background valuation jobs: one run at a time, pollable status."""
 from __future__ import annotations
 
+import json
 import threading
 import time
 import traceback
 import uuid
+from pathlib import Path
 from typing import Optional
 
-from ..pipeline.orchestrator import run_ticker
+from ..pipeline.orchestrator import ROOT, ValuationCancelled, run_ticker
 from .services import norm_ticker, validate_date
+
+# The last few runs (status, failing step, message) survive a restart so the
+# 「錯誤」panel can show what happened previously. Local file, gitignored.
+HISTORY_PATH = ROOT / "out" / "_run_history.json"
+HISTORY_MAX = 3
 
 
 class JobBusy(Exception):
@@ -65,7 +72,7 @@ class JobStore:
         if not self.active_id:
             return None
         job = self.jobs.get(self.active_id)
-        if job and job.get("status") in ("running", "queued"):
+        if job and job.get("status") in ("running", "queued", "cancelling"):
             return job
         return None
 
@@ -75,7 +82,21 @@ class JobStore:
             "message", "error", "result", "started_at", "finished_at",
             "steps", "progress", "activity", "phase",
         ) if k in job}
+        out["cancellable"] = job.get("status") in ("running", "queued", "cancelling")
         return out
+
+    def cancel(self, job_id: str) -> Optional[dict]:
+        """Ask a running valuation to stop. Cooperative: the current step ends first."""
+        with self._lock:
+            job = self.jobs.get(job_id)
+            if job is None:
+                return None
+            if job.get("status") in ("running", "queued"):
+                job["cancel"].set()
+                job["status"] = "cancelling"
+                job["activity"] = "正在停止…（目前這一步完成後停止）"
+                job["phase"] = "stopping"
+            return job
 
 
     def start_valuation(self, ticker: str, valuation_date: Optional[str] = None,
@@ -101,6 +122,7 @@ class JobStore:
                 "progress": 0,
                 "activity": "準備開始…",
                 "phase": "fetch",
+                "cancel": threading.Event(),
                 "error": None,
                 "result": None,
                 "started_at": time.time(),
@@ -144,7 +166,7 @@ class JobStore:
 
         try:
             kwargs = {"ticker": job["ticker"], "use_llm": bool(job.get("use_llm", True)),
-                      "progress": progress}
+                      "progress": progress, "should_stop": job["cancel"].is_set}
             if job.get("valuation_date"):
                 kwargs["valuation_date"] = job["valuation_date"]
             result = run_ticker(**kwargs)
@@ -183,20 +205,78 @@ class JobStore:
                 job["phase"] = "done"
             job["status"] = "done"
             job["message"] = "估值完成（驗證通過）" if passed else "估值完成，但獨立驗證未通過"
+        except ValuationCancelled:
+            with lock:
+                for s in job.get("steps") or []:
+                    if s["status"] == "active":
+                        s["status"] = "cancelled"
+                        s["note"] = "用戶停止"
+                job["phase"] = "cancelled"
+                job["activity"] = "已停止"
+                job["progress"] = job.get("progress") or 0
+            job["status"] = "cancelled"
+            job["message"] = "已停止（未產生估值）"
+            job["error"] = None
         except Exception as exc:
+            message = str(exc) or type(exc).__name__
             with lock:
                 for s in job.get("steps") or []:
                     if s["status"] == "active":
                         s["status"] = "error"
+                        s["error"] = message          # shown inline next to the step
                 job["phase"] = "error"
-                job["activity"] = f"失敗於「{_active_label(job)}」步驟"
+                job["activity"] = f"失敗於「{_active_label(job)}」：{message}"
             job["status"] = "error"
-            job["error"] = str(exc) or type(exc).__name__
+            job["error"] = message
             job["error_detail"] = traceback.format_exc()
             job["message"] = "估值失敗"
 
         finally:
             job["finished_at"] = time.time()
+            _save_history(job)
+
+
+def _history_entry(job: dict) -> dict:
+    steps = job.get("steps") or []
+    failed = next((s for s in steps if s.get("status") == "error"), None)
+    stopped = next((s for s in steps if s.get("status") == "cancelled"), None)
+    return {
+        "id": job.get("id"),
+        "ticker": job.get("ticker"),
+        "valuation_date": job.get("valuation_date"),
+        "started_at": job.get("started_at"),
+        "finished_at": job.get("finished_at"),
+        "status": job.get("status"),
+        "message": job.get("message"),
+        "error": job.get("error"),
+        "error_step": (failed or stopped or {}).get("label"),
+        "stopped": bool(stopped and not failed),
+        "steps": [
+            {k: s.get(k) for k in ("key", "label", "status", "note", "error") if s.get(k)}
+            for s in steps
+        ],
+    }
+
+
+def _save_history(job: dict) -> None:
+    """Keep the newest HISTORY_MAX runs in out/_run_history.json (never fatal)."""
+    try:
+        runs = load_history()
+        runs.insert(0, _history_entry(job))
+        HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
+        HISTORY_PATH.write_text(
+            json.dumps(runs[:HISTORY_MAX], ensure_ascii=False, indent=1), encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def load_history() -> list[dict]:
+    try:
+        data = json.loads(Path(HISTORY_PATH).read_text(encoding="utf-8"))
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
 
 
 store = JobStore()

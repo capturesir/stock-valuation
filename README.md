@@ -443,7 +443,11 @@ AI 正在提出增長與利潤率假設（deepseek-flash）…
 
 這些文字由本機程式在進入每一步時寫入，**不呼叫模型、不消耗任何 token**；AI 的實際思考內容不會、也不需要傳到前端。
 
-想用程式監看同一份進度：`GET /api/jobs/<id>` 會回傳 `steps`（每步 key／label／status／note）、`progress`（0–100）、`activity`（單行現況）、`phase`（fetch／ai／calc／done／error）。
+想用程式監看同一份進度：`GET /api/jobs/<id>` 會回傳 `steps`（每步 key／label／status／note／error）、`progress`（0–100）、`activity`（單行現況）、`phase`（fetch／ai／calc／done／error）、`cancellable`。
+
+**停止**：估值進行中時，「估值」旁邊會出現「停止」。按下後按鈕變成「停止中…」，系統在**目前這一步結束後**停止（通常是幾秒內；若正在等 AI 回覆，就要等該次請求結束），狀態變為 `cancelled`，該步標 `■`，不會產出 Excel／訊號，也不會覆寫上次結果。合作的停止點在每個步驟邊界，API 為 `POST /api/jobs/<id>/cancel`。
+
+**錯誤**：任何一步出錯，該步會標 `!` 並直接在行內顯示錯誤文字（例如「取得市價：Yahoo chart HTTP 404」），上方紅色橫幅也會顯示同一訊息。頁面上方有「錯誤紀錄（最近 3 次）」按鈕，可展開最近三次執行的結果：代號、時間、完成／失敗／已停止、出錯或停止的步驟、錯誤訊息。紀錄存於 `out/_run_history.json`（已列入 `.gitignore`，只保留最近 3 次），API 為 `GET /api/errors`。
 
 ### 3.4 估值完成後的分頁
 

@@ -143,6 +143,20 @@ def api_job(job_id: str):
     return {"ok": True, "job": jobmod.store.public(job)}
 
 
+@app.post("/api/jobs/{job_id}/cancel")
+def api_job_cancel(job_id: str):
+    job = jobmod.store.cancel(job_id)
+    if not job:
+        raise _http_error(404, "找不到此工作。")
+    return {"ok": True, "job": jobmod.store.public(job)}
+
+
+@app.get("/api/errors")
+def api_errors():
+    """Last few runs (status, failing step, message) for the 錯誤 panel."""
+    return {"ok": True, "runs": jobmod.load_history()}
+
+
 @app.get("/api/jobs/{job_id}/sheets")
 def api_job_sheets(job_id: str):
     job = jobmod.store.get(job_id)
