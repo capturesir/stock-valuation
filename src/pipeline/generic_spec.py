@@ -402,8 +402,30 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         y0 = (rev_est.get("0y") or {})
         y1 = (rev_est.get("+1y") or {})
         prev_rev0 = y0.get("yearAgoRevenue")
-        if y0.get("avg") and prev_rev0:
-            g0 = float(y0["avg"]) / float(prev_rev0) - 1
+        if y0.get("avg"):
+            avg0 = float(y0["avg"])
+            g_from_stmt = avg0 / rev - 1.0        # consensus vs last reported year
+            g_from_yahoo = None
+            if prev_rev0:
+                try:
+                    g_from_yahoo = avg0 / float(prev_rev0) - 1.0
+                except (TypeError, ValueError, ZeroDivisionError):
+                    g_from_yahoo = None
+            # Yahoo's yearAgoRevenue is sometimes a different scope or period
+            # (Toyota 7203.T: 18.3tn vs 50.7tn actually reported), which turned
+            # into a +197% first year. Trust it only when it is roughly the same
+            # size as the reported revenue.
+            same_scale = prev_rev0 and abs(float(prev_rev0) / rev - 1.0) <= 0.4
+            if g_from_yahoo is not None and same_scale:
+                g0 = g_from_yahoo
+            else:
+                g0 = g_from_stmt
+                if g_from_yahoo is not None:
+                    gaps.append(
+                        f"Yahoo 0y 的 yearAgoRevenue（{float(prev_rev0) / 1e6:,.0f} 百萬）與財報營收"
+                        f"（{rev / 1e6:,.0f} 百萬）規模不符，已改用「共識營收 ÷ 最新年度營收」"
+                        f"計算首年增長（{g0:+.1%}）。"
+                    )
         if y1.get("avg") and y0.get("avg"):
             g1 = float(y1["avg"]) / float(y0["avg"]) - 1
         if g0 is not None:
@@ -411,6 +433,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
                          + (f"、下期 {g1:.2%}" if g1 is not None else ""))
     except (TypeError, ValueError):
         pass
+
     if g0 is None:
         g0 = rev_cagr if rev_cagr is not None else terminal_g
         g0 = max(min(g0, 0.6), -0.3)

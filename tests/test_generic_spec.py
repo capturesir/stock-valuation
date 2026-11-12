@@ -104,13 +104,29 @@ def test_refuses_loss_making_company():
 
 def test_absurd_consensus_growth_is_clamped_and_reported():
     fund = _fund()
-    fund["rev_est"] = {"0y": {"avg": 200000.0, "yearAgoRevenue": 100000.0},
-                       "+1y": {"avg": 900000.0, "yearAgoRevenue": None}}
+    # yearAgoRevenue matches the reported revenue, so the consensus is trusted;
+    # +0y = +100% (allowed), +1y = +250% (must be clamped to +150%)
+    fund["rev_est"] = {"0y": {"avg": 796_440_000_000.0, "yearAgoRevenue": 398_220_000_000.0},
+                       "+1y": {"avg": 2_789_000_000_000.0}}
     spec = G.build_generic_spec(_snap(), fund, {}, use_llm=False)
-    # 100% -> allowed (<=150%); 350% -> clamped to 150%
     assert spec["growths"][0] == pytest.approx(1.0)
     assert spec["growths"][1] == pytest.approx(1.5)
     assert any("截斷" in g for g in spec["data_gaps"])
+
+
+def test_consensus_with_mismatched_year_ago_uses_reported_revenue():
+    """Yahoo's 0y yearAgoRevenue is sometimes a different scope (Toyota: 18tn vs 51tn).
+
+    Trusting it produced a +197% first year, a 150% clamp hit and a 9,077 JPY fair
+    value on a 3,408 price. Use the reported revenue instead when the scales differ.
+    """
+    fund = _fund()
+    fund["rev_est"] = {"0y": {"avg": 450_000_000_000.0, "yearAgoRevenue": 150_000_000_000.0},
+                       "+1y": {"avg": 468_000_000_000.0}}
+    spec = G.build_generic_spec(_snap(), fund, {}, use_llm=False)
+
+    assert spec["growths"][0] == pytest.approx(450_000.0 / 398_220.0 - 1, rel=1e-3)
+    assert any("yearAgoRevenue" in g for g in spec["data_gaps"])
 
 
 def test_heavy_capex_is_normalised_towards_sustainable_level():
