@@ -150,6 +150,17 @@
       } else {
         mark.textContent = STEP_MARK[s.status] || "·";
       }
+      let note = li.querySelector(".jp-note");
+      if (s.note) {
+        if (!note) {
+          note = document.createElement("span");
+          note.className = "jp-note";
+          li.appendChild(note);
+        }
+        note.textContent = `（${s.note}）`;
+      } else if (note) {
+        note.remove();
+      }
     });
     const pct = Number.isFinite(job.progress) ? job.progress : 0;
     els.jpFill.style.width = pct + "%";

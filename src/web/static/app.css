@@ -248,3 +248,4 @@ footer p { margin: 0; }
   border-radius: 50%; animation: jp-spin 0.7s linear infinite;
 }
 @media (max-width: 640px) { .jp-steps { grid-template-columns: 1fr; } }
+.jp-note { font-size: 0.76rem; color: #9aa7b4; font-style: normal; }
