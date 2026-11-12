@@ -29,9 +29,24 @@ def load_config(path: Optional[Path] = None) -> dict:
 
 
 def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
-               valuation_date: str = "2026-11-11") -> dict:
+               valuation_date: str = "2026-11-11", progress=None) -> dict:
+    """Fetch -> assumptions -> engine -> verify -> Excel / markdown.
+
+    ``progress`` is an optional callback ``(step_key, activity=None, skip=None)``
+    used by the web UI to show which step is running. The activity strings are
+    written locally and cost no model tokens.
+    """
     cfg = cfg or load_config()
     ticker = _norm(ticker)
+
+    def _step(key: str, activity: Optional[str] = None, skip: Optional[str] = None) -> None:
+        if progress is None:
+            return
+        try:
+            progress(key, activity, skip)
+        except Exception:      # a broken UI callback must never break a valuation
+            pass
+
     out_dir = ROOT / "out" / f"{valuation_date}_{ticker}"
     case_dir = ROOT / "cases" / ticker
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -41,6 +56,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     snap = {"ticker": ticker, "data_gaps": [], "valuation_date": valuation_date}
 
     # prices
+    _step("quote", f"正在向 Yahoo 取得 {ticker} 市價…")
     ch = yahoo.chart_quote(ticker)
     (case_dir / "yahoo_chart.json").write_text(json.dumps(ch, ensure_ascii=False, indent=1), encoding="utf-8")
     if not ch.get("ok"):
@@ -51,6 +67,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     snap["price_url"] = f"https://finance.yahoo.com/quote/{ticker}"
 
     # fundamentals
+    _step("fundamentals", "正在讀取年度財報、估值倍數與分析師預測…")
     fund = yahoo.fundamentals(ticker)
     (case_dir / "yahoo_fundamentals.json").write_text(json.dumps(fund, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     info = fund.get("info") or {}
@@ -59,6 +76,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     snap["currency_yahoo"] = info.get("currency") or (ch.get("meta") or {}).get("currency")
 
     # Rf
+    _step("rf", "正在取得 10 年期政府債券孳息（無風險利率）…")
     if ticker.endswith(".HK"):
         rfd = rfmod.hk_10y(cfg)
     else:
@@ -94,6 +112,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
         snap["ib_compare"]["data_gaps"].append("具名券商報告原文未取得，named_brokers 留空。")
 
     # Filings metadata
+    _step("filings", "正在讀取最新業績公告（SEC／披露易）…")
     if ticker.endswith(".HK"):
         st = {}
         chk = detect.check_hk(ticker, st)
@@ -122,6 +141,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     llm_status = {"available": client.available(), "base_url": client.base_url or None,
                   "model": client.model or None, "used": False, "errors": []}
     if use_llm and client.available():
+        _step("ai_extract", f"AI 正在讀取財報摘要並整理資料缺口（{client.model}）…")
         # We still run rules for the engine path; LLM output is stored for audit if it succeeds.
         try:
             brief = json.dumps({"ticker": ticker, "company": snap.get("company_name"),
@@ -140,10 +160,20 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     else:
         if use_llm and not client.available():
             llm_status["errors"].append("未設定 LLM_BASE_URL／LLM_MODEL，或雲端未提供 LLM_API_KEY；改用規則後備。")
+        _step("ai_extract", "未設定 AI，跳過讀取財報摘要（改用規則後備）", skip="跳過：未設定 AI")
     snap["assumption_source"] = "llm" if llm_status.get("used") else "rules_fallback"
     snap["llm_status"] = llm_status
 
     # Build spec
+    is_generic = ticker not in ("NVDA", "1830.HK")
+    if is_generic and use_llm and client.available():
+        _step("ai_assume", f"AI 正在提出增長與利潤率假設（{client.model}）…")
+    elif is_generic:
+        _step("ai_assume", "未設定 AI，增長與利潤率由規則計算", skip="跳過：未設定 AI")
+    else:
+        _step("ai_assume", "內建規格已鎖定假設，不呼叫 AI", skip="內建規格")
+
+    _step("spec", "正在建立模型規格（行業 β、折現率、橋接項目）…")
     if ticker == "NVDA":
         spec = name_specs.spec_nvda(snap)
     elif ticker == "1830.HK":
@@ -164,6 +194,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     spec["llm_status"] = llm_status
     (case_dir / "spec_audit.json").write_text(json.dumps(_safe(spec), ensure_ascii=False, indent=1, default=str), encoding="utf-8")
 
+    _step("engine", "正在計算五情境並執行獨立驗證（verify_fcff）…")
     result = build_and_run(spec, out_dir=str(out_dir))
     outj = result["json"]
     # write assumptions csv
@@ -174,10 +205,12 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
                     "filings": snap.get("filings_check"), "ib": snap.get("ib_compare"),
                     "yahoo_urls": fund.get("urls")}, ensure_ascii=False, indent=1, default=str),
         encoding="utf-8")
+    _step("export", "正在產出 Excel 與繁中說明…")
     xlsx = out_dir / f"{valuation_date}_{ticker}_FCFF.xlsx"
     build_workbook(outj, str(xlsx))
     md = out_dir / f"{valuation_date}_{ticker}_valuation.md"
     write_report(outj, str(md))
+    _step("state", "正在寫入執行紀錄（state.json／run_meta.json）…")
     # state.json for filing reruns
     last = (snap.get("filings_check") or {}).get("latest_filing") or {}
     filing_date = last.get("filingDate") or hkex.parse_hk_datetime(last.get("datetime") or "") if last else None

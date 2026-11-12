@@ -72,6 +72,17 @@
     </section>
 
     <section id="status-panel" class="panel hidden">
+      <div id="job-progress" class="job-progress hidden" aria-live="polite">
+        <div class="jp-head">
+          <span id="jp-spinner" class="jp-spinner" aria-hidden="true"></span>
+          <span id="jp-activity" class="jp-activity">準備開始…</span>
+          <span id="jp-count" class="jp-count"></span>
+        </div>
+        <div id="jp-bar" class="jp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="jp-fill" class="jp-fill"></div>
+        </div>
+        <ol id="jp-steps" class="jp-steps"></ol>
+      </div>
       <div id="progress" class="banner info hidden"></div>
       <div id="run-error" class="banner error hidden" role="alert"></div>
       <div id="filings-box" class="card hidden">

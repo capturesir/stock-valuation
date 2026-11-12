@@ -18,6 +18,35 @@ class JobBusy(Exception):
         super().__init__(f"已有估值工作進行中（{ticker}）。請待其完成後再試。")
 
 
+# The valuation pipeline, in the order orchestrator.run_ticker performs it.
+# The web UI renders exactly this list, so keep the keys in sync with the
+# progress() calls in src/pipeline/orchestrator.py.
+STEPS = [
+    ("quote", "取得市價"),
+    ("fundamentals", "讀取財報與分析師預測"),
+    ("rf", "取得無風險利率"),
+    ("filings", "讀取最新業績公告"),
+    ("ai_extract", "AI 讀取財報摘要"),
+    ("ai_assume", "AI 提出增長與利潤率假設"),
+    ("spec", "建立模型規格"),
+    ("engine", "計算五情境並驗證"),
+    ("export", "產出 Excel 與說明"),
+    ("state", "寫入執行紀錄"),
+]
+STEP_LABELS = dict(STEPS)
+
+
+def _new_steps() -> list[dict]:
+    return [{"key": k, "label": lbl, "status": "pending"} for k, lbl in STEPS]
+
+
+def _active_label(job: dict) -> str:
+    for s in job.get("steps") or []:
+        if s.get("status") == "error":
+            return s.get("label") or s.get("key") or "未知"
+    return "未知"
+
+
 class JobStore:
     def __init__(self):
         self._lock = threading.Lock()
@@ -44,8 +73,10 @@ class JobStore:
         out = {k: job[k] for k in (
             "id", "kind", "ticker", "valuation_date", "use_llm", "status",
             "message", "error", "result", "started_at", "finished_at",
+            "steps", "progress", "activity", "phase",
         ) if k in job}
         return out
+
 
     def start_valuation(self, ticker: str, valuation_date: Optional[str] = None,
                         use_llm: bool = True) -> dict:
@@ -66,6 +97,10 @@ class JobStore:
                 "use_llm": use_llm,
                 "status": "running",
                 "message": "正在抓取市價、財報與假設，並計算五情境（可能需要數分鐘）…",
+                "steps": _new_steps(),
+                "progress": 0,
+                "activity": "準備開始…",
+                "phase": "fetch",
                 "error": None,
                 "result": None,
                 "started_at": time.time(),
@@ -78,12 +113,43 @@ class JobStore:
             return job
 
     def _run(self, job: dict) -> None:
+        lock = self._lock
+
+        def progress(key: str, activity: Optional[str] = None, skip: Optional[str] = None) -> None:
+            """Mark a pipeline step active (or skipped) and publish a one-line activity.
+
+            Purely local: the text is written by orchestrator, so showing it costs
+            no model tokens.
+            """
+            with lock:
+                steps = job.get("steps") or []
+                idx = next((i for i, s in enumerate(steps) if s["key"] == key), None)
+                if idx is None:
+                    return
+                for i, s in enumerate(steps):
+                    if i < idx and s["status"] in ("pending", "active"):
+                        s["status"] = "done"
+                if skip:
+                    steps[idx]["status"] = "skipped"
+                    steps[idx]["note"] = skip
+                    activity = activity or skip
+                else:
+                    steps[idx]["status"] = "active"
+                if activity:
+                    job["activity"] = activity
+                job["phase"] = ("ai" if key.startswith("ai_")
+                                else "calc" if key in ("spec", "engine") else "fetch")
+                done = sum(1 for s in steps if s["status"] in ("done", "skipped"))
+                job["progress"] = int(round(100 * done / max(1, len(steps))))
+
         try:
-            kwargs = {"ticker": job["ticker"], "use_llm": bool(job.get("use_llm", True))}
+            kwargs = {"ticker": job["ticker"], "use_llm": bool(job.get("use_llm", True)),
+                      "progress": progress}
             if job.get("valuation_date"):
                 kwargs["valuation_date"] = job["valuation_date"]
             result = run_ticker(**kwargs)
             js = result.get("json") or {}
+
             job["result"] = {
                 "ticker": js.get("ticker") or job["ticker"],
                 "asset": js.get("asset"),
@@ -108,13 +174,27 @@ class JobStore:
                 "out_dir": result.get("out_dir"),
             }
             passed = bool(result.get("verify_pass"))
+            with lock:
+                for s in job.get("steps") or []:
+                    if s["status"] in ("pending", "active"):
+                        s["status"] = "done"
+                job["progress"] = 100
+                job["activity"] = "完成"
+                job["phase"] = "done"
             job["status"] = "done"
             job["message"] = "估值完成（驗證通過）" if passed else "估值完成，但獨立驗證未通過"
         except Exception as exc:
+            with lock:
+                for s in job.get("steps") or []:
+                    if s["status"] == "active":
+                        s["status"] = "error"
+                job["phase"] = "error"
+                job["activity"] = f"失敗於「{_active_label(job)}」步驟"
             job["status"] = "error"
             job["error"] = str(exc) or type(exc).__name__
             job["error_detail"] = traceback.format_exc()
             job["message"] = "估值失敗"
+
         finally:
             job["finished_at"] = time.time()
 

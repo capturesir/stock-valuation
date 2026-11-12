@@ -22,6 +22,13 @@
     rerun: $("rerun-if-needed"),
     statusPanel: $("status-panel"),
     progress: $("progress"),
+    jobProgress: $("job-progress"),
+    jpSpinner: $("jp-spinner"),
+    jpActivity: $("jp-activity"),
+    jpCount: $("jp-count"),
+    jpBar: $("jp-bar"),
+    jpFill: $("jp-fill"),
+    jpSteps: $("jp-steps"),
     runError: $("run-error"),
     filingsBox: $("filings-box"),
     filingsStatus: $("filings-status"),
@@ -111,13 +118,64 @@
     return data;
   }
 
+  const STEP_MARK = { done: "✓", active: "", skipped: "—", pending: "·", error: "!" };
+
+  function renderJobProgress(job) {
+    const steps = (job && job.steps) || [];
+    if (!steps.length) return;
+    show(els.jobProgress);
+    if (els.jpSteps.children.length !== steps.length) {
+      els.jpSteps.innerHTML = "";
+      steps.forEach((s) => {
+        const li = document.createElement("li");
+        li.dataset.key = s.key;
+        const mark = document.createElement("span");
+        mark.className = "jp-mark";
+        const label = document.createElement("span");
+        label.className = "jp-label";
+        label.textContent = s.label;
+        li.appendChild(mark);
+        li.appendChild(label);
+        els.jpSteps.appendChild(li);
+      });
+    }
+    steps.forEach((s, i) => {
+      const li = els.jpSteps.children[i];
+      if (!li) return;
+      li.dataset.status = s.status;
+      li.title = s.note || "";
+      const mark = li.querySelector(".jp-mark");
+      if (s.status === "active") {
+        mark.innerHTML = '<span class="jp-dot-spin"></span>';
+      } else {
+        mark.textContent = STEP_MARK[s.status] || "·";
+      }
+    });
+    const pct = Number.isFinite(job.progress) ? job.progress : 0;
+    els.jpFill.style.width = pct + "%";
+    els.jpBar.setAttribute("aria-valuenow", String(pct));
+    const settled = steps.filter((s) => s.status === "done" || s.status === "skipped").length;
+    els.jpCount.textContent = `${settled}/${steps.length}`;
+    els.jpActivity.textContent = job.activity || job.message || "估值進行中…";
+    const running = job.status !== "done" && job.status !== "error";
+    els.jpSpinner.classList.toggle("hidden", !running);
+    els.jobProgress.dataset.phase = job.phase || "fetch";
+    els.jobProgress.dataset.status = job.status || "running";
+  }
+
   function clearRunState() {
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
     setError(els.runError, "");
     hide(els.progress);
     els.progress.textContent = "";
+    hide(els.jobProgress);
+    els.jpSteps.innerHTML = "";
+    els.jpFill.style.width = "0%";
+    els.jpActivity.textContent = "";
+    els.jpCount.textContent = "";
   }
+
 
   els.form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
@@ -263,8 +321,11 @@
     const updateProgress = (j) => {
       const sec = Math.max(0, Math.round((Date.now() - started) / 1000));
       const st = j && j.status ? j.status : "running";
-      const msg = (j && j.message) || "估值進行中…";
-      els.progress.textContent = `${msg}\n狀態：${st}　已過 ${sec} 秒。請稍候，不要關閉此頁。`;
+      renderJobProgress(j);
+      const finished = st === "done" || st === "error";
+      els.progress.textContent = finished
+        ? `狀態：${st}　全程 ${sec} 秒。`
+        : `狀態：${st}　已過 ${sec} 秒。請稍候，不要關閉此頁。`;
       show(els.progress);
     };
     updateProgress(job);
