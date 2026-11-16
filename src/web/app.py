@@ -40,7 +40,47 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 
 app = FastAPI(title="可攜式股票估值系統", docs_url=None, redoc_url=None)
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+class NoCacheStatic(StaticFiles):
+    """Serve static assets with revalidation.
+
+    Without this, browsers keep a 304-cached app.js after a fix and the old
+    JS keeps running, which looks like "the fix didn't work".
+    """
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+        return response
+
+
+app.mount("/static", NoCacheStatic(directory=str(STATIC_DIR)), name="static")
+
+
+@app.exception_handler(Exception)
+async def _unhandled(request, exc: Exception):
+    """Last-resort handler: turn any uncaught exception into JSON, not a bare 500.
+
+    The browser otherwise only shows "Internal Server Error", which hides the
+    real cause (upstream timeout, corrupt file, missing key) from the user and
+    from whoever is debugging.
+    """
+    import logging
+    import traceback
+
+    logging.getLogger("uvicorn.error").error(
+        "unhandled error on %s %s: %s\n%s",
+        request.method, request.url.path, exc, traceback.format_exc(),
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": f"伺服器內部錯誤：{type(exc).__name__}: {exc}",
+            "path": request.url.path,
+            "hint": "詳細堆疊已寫入 out/web.log；若為上游資料來源問題請稍後重試。",
+        },
+    )
 
 
 class ValuateBody(BaseModel):
@@ -98,7 +138,11 @@ def _signals_filename(doc: dict) -> str:
 
 @app.get("/")
 def index():
-    return FileResponse(STATIC_DIR / "index.html")
+    # No-cache so a redeployed app.js/index.html is picked up on reload.
+    return FileResponse(
+        STATIC_DIR / "index.html",
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
 
 
 @app.get("/api/health")
@@ -113,7 +157,16 @@ def health():
 
 @app.get("/api/lookup")
 def api_lookup(ticker: str = Query(..., min_length=1)):
-    result = services.lookup_ticker(ticker)
+    try:
+        result = services.lookup_ticker(ticker)
+    except Exception as exc:
+        # Never leak an unhandled exception as a bare 500: the UI can only show
+        # "Internal Server Error", which tells the user nothing actionable.
+        raise _http_error(
+            502,
+            f"查詢「{ticker}」時上游資料來源（Yahoo Finance）暫時無法連線：{exc}",
+            ticker=ticker,
+        )
     if not result.get("ok"):
         return JSONResponse(result, status_code=404)
     return result
@@ -188,11 +241,15 @@ def api_job_download(job_id: str):
 def api_workbook(ticker: str = Query(..., min_length=1), date: str | None = None):
     try:
         rec = services.resolve_workbook(ticker, date)
+        data = render_workbook(rec["xlsx"], rec.get("json"))
     except FileNotFoundError as exc:
         raise _http_error(404, str(exc))
     except ValueError as exc:
         raise _http_error(400, str(exc))
-    data = render_workbook(rec["xlsx"], rec.get("json"))
+    except PermissionError as exc:
+        raise _http_error(403, str(exc))
+    except Exception as exc:
+        raise _http_error(422, f"無法讀取 {ticker} 的 Excel：{type(exc).__name__}: {exc}")
     return {"ok": True, "meta": rec, "workbook": data}
 
 

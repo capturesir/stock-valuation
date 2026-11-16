@@ -107,20 +107,60 @@
     return `${p}${fmtNum(n, 0)}`;
   }
 
+  const NET_HINT = "無法連線到本機估值伺服器（Failed to fetch）。請確認伺服器仍在執行：終端機執行 "
+    + "`cd ~/stock-valuation && .venv/bin/python -m src.web`，或執行 ~/.local/bin/stock-valuation-start。";
+
   async function api(url, opts) {
-    const res = await fetch(url, opts);
+    let res;
+    try {
+      res = await fetch(url, opts);
+    } catch (e) {
+      // Network-layer failure: server down, restarted, or port closed.
+      // fetch() throws a bare TypeError("Failed to fetch"); replace it with
+      // something the user can act on instead of the browser's raw text.
+      const err = new Error(NET_HINT);
+      err.status = 0;
+      err.network = true;
+      throw err;
+    }
     const text = await res.text();
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
     if (!res.ok) {
-      const detail = data && (data.detail || data);
-      const msg = (detail && (detail.error || detail.message)) || (typeof detail === "string" ? detail : null) || text || `HTTP ${res.status}`;
-      const err = new Error(msg);
+      const err = new Error(extractErrorMessage(data, text, res.status));
       err.status = res.status;
       err.data = data;
       throw err;
     }
     return data;
+  }
+
+  // FastAPI can answer with several different `detail` shapes:
+  //   {"detail": {"error": "..."}}                 <- our _http_error()
+  //   {"detail": "plain string"}                    <- HTTPException(str)
+  //   {"detail": [{loc, msg, type}, ...]}           <- validation error (422)
+  //   {"error": "..."}                              <- some handlers
+  // Turn all of them into one readable line instead of "undefined".
+  function extractErrorMessage(data, rawText, status) {
+    const detail = data && (data.detail !== undefined ? data.detail : data);
+    if (detail) {
+      if (typeof detail === "string" && detail.trim()) return detail;
+      if (Array.isArray(detail)) {
+        const parts = detail.map((d) => {
+          if (!d || typeof d !== "object") return String(d);
+          const field = Array.isArray(d.loc) ? d.loc.filter((x) => x !== "query" && x !== "body").join(".") : "";
+          return (field ? `${field}：` : "") + (d.msg || d.type || "");
+        }).filter(Boolean);
+        if (parts.length) {
+          return (parts.join("；") || "輸入格式不正確") + "（請確認股票代號與估值日格式）";
+        }
+      }
+      if (detail.error) return detail.error;
+      if (detail.message) return detail.message;
+    }
+    if (data && data.error) return data.error;
+    if (rawText && rawText.length < 400) return rawText;
+    return `HTTP ${status}`;
   }
 
   const STEP_MARK = { done: "✓", active: "", skipped: "—", pending: "·", error: "!", cancelled: "■" };
@@ -315,12 +355,20 @@
   });
 
   els.btnValuate.addEventListener("click", async () => {
-    if (!currentTicker) return;
+    if (!currentTicker) {
+      setError(els.lookupErr, "請先按「查詢」確認股票代號與市價，再開始估值。");
+      els.ticker.focus();
+      return;
+    }
     await startValuation(currentTicker);
   });
 
   els.btnCheck.addEventListener("click", async () => {
-    if (!currentTicker) return;
+    if (!currentTicker) {
+      setError(els.lookupErr, "請先按「查詢」確認股票代號，再檢查財報。");
+      els.ticker.focus();
+      return;
+    }
     await checkFilings(currentTicker);
   });
 
@@ -347,6 +395,15 @@
       currentJobId = data.job.id;
       watchJob(data.job);
     } catch (err) {
+      // 409 = a job is already running. That is not a failure of this attempt:
+      // just follow the job that is already in progress instead of showing an
+      // error on top of it.
+      const active = err.data && err.data.active_job;
+      if (err.status === 409 && active && active.id) {
+        currentJobId = active.id;
+        watchJob(active);
+        return;
+      }
       setError(els.runError, err.message || "無法開始估值。");
       els.btnValuate.disabled = false;
       if (els.btnStop) hide(els.btnStop);
@@ -449,6 +506,8 @@
         if (meta.verify_pass === false) {
           const errs = (meta.verify_errors || []).join("；") || "獨立驗證未通過";
           setError(els.runError, `估值已產出，但驗證失敗：${errs}`);
+        } else {
+          setError(els.runError, "");
         }
         try {
           const data = await api(`/api/jobs/${encodeURIComponent(j.id)}/sheets`);
@@ -468,9 +527,19 @@
           await finish(job);
         }
       } catch (err) {
+        if (err.network) {
+          // Server restarting or briefly unreachable: keep polling for a short
+          // window instead of killing a valuation that may still be running.
+          job._netFails = (job._netFails || 0) + 1;
+          if (job._netFails <= 15) {
+            els.jpActivity.textContent = `與伺服器的連線中斷，正在重試（${job._netFails}/15）…`;
+            return;
+          }
+        }
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
         els.btnValuate.disabled = false;
+        if (els.btnStop) hide(els.btnStop);
         setError(els.runError, err.message || "無法取得估值進度。");
       }
     };
