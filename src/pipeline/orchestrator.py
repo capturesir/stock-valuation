@@ -269,6 +269,14 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
         "price_date": snap["price_date"],
         "fair_value_per_share": outj["fair_value_per_share"],
     }
+    # Append-only history: one record per run, so repeated valuations on the same
+    # day survive even though out/<date>_<ticker>/ is overwritten (R17–R20).
+    from . import runlog
+    runlog.append(ticker, runlog.record_from_calc(
+        outj, verify_pass=result["verify_pass"],
+        llm_total_tokens=(outj.get("llm_usage") or {}).get("total_tokens"),
+        adjustments=len(applied_adjustments),
+    ))
     (case_dir / "state.json").write_text(json.dumps(state, ensure_ascii=False, indent=1), encoding="utf-8")
     (out_dir / "run_meta.json").write_text(json.dumps({
         "verify_pass": result["verify_pass"], "verify_errors": result["verify_errors"],

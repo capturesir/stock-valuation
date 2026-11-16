@@ -237,3 +237,51 @@ def test_workbook_api_keeps_seven_tabs(client):
     from src.web.sheets import EXPECTED_SHEETS
     assert [s["name"] for s in body["workbook"]["sheets"]] == EXPECTED_SHEETS
     assert "research" in body and body["research"]["review"]["count"] > 0
+
+
+# ------------------------------------------------------------- run log ------
+
+def test_runlog_keeps_repeat_valuations_from_the_same_day(tmp_path, monkeypatch):
+    """Same-day re-runs must all appear: folders overwrite, the log does not."""
+    from src.pipeline import runlog
+
+    monkeypatch.setattr(runlog, "LOG_DIR", tmp_path / "history")
+    monkeypatch.setattr(runlog, "_path",
+                        lambda t: runlog.LOG_DIR / f"{t}.json")
+    for fair, ts in ((100.0, "2026-11-16T10:00:00"), (110.0, "2026-11-16T15:30:00")):
+        runlog.append("TESTX", {"valuation_date": "2026-11-16", "run_at": ts,
+                                "fair_value": fair, "price": 90.0, "currency": "USD"})
+
+    data = research.valuation_history("TESTX")
+    assert data["count"] == 2
+    assert data["runlog_points"] == 2
+    assert data["dense_dates"] == ["2026-11-16"]
+    assert [p["same_day_index"] for p in data["points"]] == [0, 1]
+    assert all(p["same_day_count"] == 2 for p in data["points"])
+    assert data["points"][0]["fair_value"] == 100.0   # ordered by run time
+    assert data["points"][1]["fair_value"] == 110.0
+
+
+def test_runlog_and_folder_scan_do_not_double_count(tmp_path, monkeypatch):
+    from src.pipeline import runlog
+
+    monkeypatch.setattr(runlog, "LOG_DIR", tmp_path / "history")
+    monkeypatch.setattr(runlog, "_path", lambda t: runlog.LOG_DIR / f"{t}.json")
+    runlog.append("TESTX", {"valuation_date": "2026-11-16", "run_at": "2026-11-16T10:00:00",
+                            "fair_value": 100.0, "price": 90.0})
+    runlog.append("TESTX", {"valuation_date": "2026-11-16", "run_at": "2026-11-16T11:00:00",
+                            "fair_value": 100.0, "price": 90.0})
+    data = research.valuation_history("TESTX")
+    assert data["count"] == 1        # identical numbers are one point, not two
+
+
+def test_runlog_write_failure_is_not_fatal(tmp_path, monkeypatch):
+    from src.pipeline import runlog
+
+    monkeypatch.setattr(runlog, "_path", lambda t: tmp_path / "nope" / "x" / f"{t}.json")
+    monkeypatch.setattr(runlog, "LOG_DIR", tmp_path / "nope" / "x")
+    # LOG_DIR cannot be created because "nope" is a file, not a directory
+    (tmp_path / "nope").write_text("", encoding="utf-8")
+    entry = runlog.append("TESTX", {"valuation_date": "2026-11-16", "fair_value": 1.0, "price": 1.0})
+    assert entry["ticker"] == "TESTX"     # returned, not raised
+    assert runlog.read("TESTX") == []

@@ -23,3 +23,6 @@ out/signals.invalid.json
 
 # local run history for the web 錯誤 panel
 out/_run_history.json
+
+# append-only per-run valuation log (R17–R20); rebuilt by running valuations
+out/history/

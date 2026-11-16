@@ -131,47 +131,87 @@ def load_calc(ticker: str, valuation_date: Optional[str] = None) -> Optional[dic
 
 
 def valuation_history(ticker: str) -> dict:
-    """Every valuation on disk: what was thought then, and the price then."""
+    """Every valuation we know about: what was thought then, and the price then.
+
+    Two sources are merged:
+    - out/history/<TICKER>.json, one record per run (keeps same-day re-runs);
+    - out/<date>_<ticker>/, which holds the latest run of each date and is the
+      only source for valuations made before the run log existed.
+    Points are de-duplicated by (date, fair value, price) so the overlap does
+    not double-count anything.
+    """
+    from ..pipeline import runlog
+
     ticker = adj.norm_ticker(ticker)
-    points = []
+    points: list[dict] = []
+    seen: set[tuple] = set()
+
+    def add(date, fair, price, *, source, run_at=None, currency=None, verify=None,
+            assumption_source=None, wacc=None, g=None, price_date=None,
+            json_path=None, run_id=None):
+        key = (date, round(float(fair), 4), round(float(price), 4))
+        if key in seen:
+            return
+        seen.add(key)
+        points.append({
+            "date": date,
+            "price_date": price_date,
+            "fair_value": float(fair),
+            "price": float(price),
+            "gap": float(fair) - float(price),
+            "gap_pct": (float(fair) / float(price) - 1.0) if price else None,
+            "verify_pass": verify,
+            "assumption_source": assumption_source,
+            "wacc": wacc,
+            "g": g,
+            "currency": currency,
+            "json": json_path,
+            "run_at": run_at,
+            "run_id": run_id,
+            "source": source,
+        })
+
+    for r in runlog.read(ticker):
+        fair, price = r.get("fair_value"), r.get("price")
+        if fair is None or price is None:
+            continue
+        add(r.get("valuation_date"), fair, price, source="runlog",
+            run_at=r.get("run_at"), currency=r.get("currency"),
+            verify=r.get("verify_pass"), assumption_source=r.get("assumption_source"),
+            wacc=r.get("wacc"), g=r.get("g"), price_date=r.get("price_date"),
+            json_path=None, run_id=r.get("run_id"))
+
     for v in services.find_valuations(ticker):
         if v.get("fair_value_per_share") is None or v.get("price") is None:
             continue
-        fair = float(v["fair_value_per_share"])
-        price = float(v["price"])
-        points.append({
-            "date": v["valuation_date"],
-            "price_date": v.get("price_date"),
-            "fair_value": fair,
-            "price": price,
-            "gap": fair - price,
-            "gap_pct": (fair / price - 1.0) if price else None,
-            "verify_pass": v.get("verify_pass"),
-            "assumption_source": v.get("assumption_source"),
-            "wacc": v.get("wacc"),
-            "g": v.get("g"),
-            "currency": (load_calc(ticker, v["valuation_date"]) or {}).get("currency"),
-            "json": v.get("json"),
-        })
-    points.sort(key=lambda p: p["date"])
-    # R20: several valuations on the same day are legal and must stay visible;
-    # the front end offsets them and groups the count instead of hiding any.
+        calc = load_calc(ticker, v["valuation_date"]) or {}
+        add(v["valuation_date"], v["fair_value_per_share"], v["price"], source="folder",
+            run_at=None, currency=calc.get("currency"),
+            verify=v.get("verify_pass"), assumption_source=v.get("assumption_source"),
+            wacc=v.get("wacc"), g=v.get("g"), price_date=v.get("price_date"),
+            json_path=v.get("json"), run_id=None)
+
+    points.sort(key=lambda p: (p["date"], p.get("run_at") or ""))
+    # R20: several valuations on one day stay visible; the front end offsets them
+    # and labels the count instead of hiding any of them.
     by_date: dict[str, int] = {}
     for p in points:
         by_date[p["date"]] = by_date.get(p["date"], 0) + 1
+    counter: dict[str, int] = {}
     for p in points:
+        idx = counter.get(p["date"], 0)
+        counter[p["date"]] = idx + 1
         p["same_day_count"] = by_date[p["date"]]
-        p["same_day_index"] = sum(
-            1 for q in points if q["date"] == p["date"] and q["fair_value"] <= p["fair_value"]
-        ) - 1
+        p["same_day_index"] = idx
     return {
         "ok": True,
         "ticker": ticker,
         "points": points,
         "count": len(points),
         "dense_dates": sorted(d for d, n in by_date.items() if n > 1),
-        "note": ("每個點是一次估值：當時的理論價與當時的市價。圖表隨每次估值累積，"
-                 "不會用今天的價格改寫歷史。"),
+        "runlog_points": sum(1 for p in points if p["source"] == "runlog"),
+        "note": ("每個點是一次估值：當時的理論價與當時的市價。同日重跑會各自保留，"
+                 "圖表隨每次估值累積，不會用今天的價格改寫歷史。"),
     }
 
 
