@@ -910,6 +910,21 @@
     }
   }
 
+  // Bookmarkable URLs: /?ticker=NVDA opens the quote, and &view=last also opens
+  // the latest stored result. Handy for sharing one company, and it is how the
+  // illustrated guide captures each step.
+  (async () => {
+    const params = new URLSearchParams(location.search);
+    const t = (params.get("ticker") || "").trim();
+    if (!t) return;
+    els.ticker.value = t;
+    els.form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    if (params.get("view") === "last") {
+      await new Promise((r) => setTimeout(r, 1500));
+      if (currentTicker && els.btnViewLast) els.btnViewLast.click();
+    }
+  })();
+
   // The research panel needs a few things from this module; exposing them keeps
   // the two files independent (no globals beyond this one object).
   window.App = {
