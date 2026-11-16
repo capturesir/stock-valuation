@@ -23,3 +23,14 @@ out/signals.invalid.json
 
 # local run history for the web 錯誤 panel
 out/_run_history.json
+
+# build / delivery artifacts
+dist/
+
+# request documents and delivery zips stay local; the source tree does not carry them
+docs/*.docx
+docs/*.zip
+
+# per-user statement adjustments: local audit state, exported into each run's
+# Excel「金額調整紀錄」and the calc JSON instead of being versioned here
+cases/*/adjustments.json
