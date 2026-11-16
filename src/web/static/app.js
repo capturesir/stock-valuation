@@ -85,6 +85,24 @@
     show(el);
   }
 
+  // Small, dependency-free toast: used by the research panel for save/delete
+  // confirmations so a successful edit is visible without a page reload.
+  function toast(msg, isError) {
+    let wrap = $("toast-wrap");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "toast-wrap";
+      wrap.className = "toast-wrap";
+      document.body.appendChild(wrap);
+    }
+    const t = document.createElement("div");
+    t.className = "toast" + (isError ? " bad" : "");
+    t.textContent = msg;
+    wrap.appendChild(t);
+    setTimeout(() => t.classList.add("show"), 10);
+    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 250); }, 4200);
+  }
+
   function fmtNum(v, digits) {
     if (v == null || v === "") return "—";
     const n = Number(v);
@@ -244,6 +262,41 @@
     els.jobProgress.dataset.status = job.status || "running";
   }
 
+  function renderEta(job, elapsed, finished) {
+    if (!els.jpEta) return;
+    const eta = job && job.eta;
+    if (finished) { els.jpEta.textContent = ""; return; }
+    if (!eta) { els.jpEta.textContent = ""; return; }
+    if (!eta.median_seconds) {
+      els.jpEta.textContent = eta.note || "資料不足，無法估時。";
+      return;
+    }
+    const total = Number(eta.median_seconds);
+    if (elapsed > total * 1.5) {
+      // R15: an estimate that is already exceeded must not pretend to be on track.
+      els.jpEta.textContent = `已超出粗估（中位數 ${Math.round(total)} 秒，樣本 ${eta.sample_size} 次），仍在執行，未完成。`;
+      return;
+    }
+    const pct = Math.min(100, Math.max(0, Number(job.progress) || 0));
+    const left = Math.max(1, Math.round(total * (1 - pct / 100)));
+    els.jpEta.textContent = `預估剩餘約 ${left} 秒（進度 ${pct}%；最近 ${eta.sample_size} 次完成的中位數 ${Math.round(total)} 秒）`;
+  }
+
+  function renderUsageLine(usage) {
+    if (!els.usageLine) return;
+    const u = usage || {};
+    if (!u.requests) {
+      els.usageLine.textContent = "本次沒有呼叫 AI：假設來自規則後備（assumption_source = rules_fallback）。";
+      show(els.usageLine);
+      return;
+    }
+    const unreported = u.unreported_requests ? `，另有 ${u.unreported_requests} 次未獲回報` : "";
+    els.usageLine.textContent =
+      `本次 AI 用量（服務商回報）：${u.requests} 次請求；輸入 ${(u.prompt_tokens || 0).toLocaleString()}` +
+      `／輸出 ${(u.completion_tokens || 0).toLocaleString()}／合計 ${(u.total_tokens || 0).toLocaleString()} tokens${unreported}。`;
+    show(els.usageLine);
+  }
+
   function clearRunState() {
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
@@ -255,6 +308,8 @@
     els.jpFill.style.width = "0%";
     els.jpActivity.textContent = "";
     els.jpCount.textContent = "";
+    if (els.jpEta) els.jpEta.textContent = "";
+    if (els.usageLine) { els.usageLine.textContent = ""; hide(els.usageLine); }
   }
 
 
@@ -369,8 +424,54 @@
       els.ticker.focus();
       return;
     }
+    // R13: the AI work list is shown before the run starts, not after.
+    const go = await askAiPlan("gate");
+    if (!go) return;
     await startValuation(currentTicker);
   });
+
+  if (els.btnAiPlan) els.btnAiPlan.addEventListener("click", async () => {
+    if (!currentTicker) {
+      setError(els.lookupErr, "請先按「查詢」確認股票代號，再看 AI 工作預覽。");
+      els.ticker.focus();
+      return;
+    }
+    await askAiPlan("preview");
+  });
+
+  async function askAiPlan(mode) {
+    if (mode === "gate" && els.noLlm.checked) return true;   // no AI, nothing to preview
+    if (!els.aiDialog) return true;
+    const useLlm = !els.noLlm.checked;
+    let plan = null;
+    try {
+      const date = els.valDate.value || "";
+      const qs = `ticker=${encodeURIComponent(currentTicker)}&use_llm=${useLlm}` + (date ? `&date=${encodeURIComponent(date)}` : "");
+      plan = await api(`/api/ai-plan?${qs}`);
+      const eta = await api(`/api/eta?use_llm=${useLlm}`);
+      window.Research && window.Research.setEta(eta);
+    } catch (err) {
+      // A failed preview must never block a valuation the user asked for.
+      if (mode === "gate") return true;
+      setError(els.runError, err.message || "無法取得 AI 工作預覽。");
+      return false;
+    }
+    if (window.Research) window.Research.renderAiPlan(plan);
+    els.aiDialogGo.textContent = mode === "gate" ? "開始估值" : "關閉";
+    return new Promise((resolve) => {
+      let decided = false;
+      const finish = (ok) => {
+        if (decided) return;
+        decided = true;
+        try { els.aiDialog.close(); } catch (_) {}
+        resolve(ok);
+      };
+      els.aiDialogGo.onclick = () => finish(true);
+      els.aiDialogCancel.onclick = (ev) => { ev.preventDefault(); finish(false); };
+      els.aiDialog.onclose = () => finish(mode === "preview");
+      els.aiDialog.showModal();
+    });
+  }
 
   els.btnCheck.addEventListener("click", async () => {
     if (!currentTicker) {
@@ -488,6 +589,7 @@
         ? `狀態：${st}　全程 ${sec} 秒。`
         : `狀態：${st}　已過 ${sec} 秒。請稍候，不要關閉此頁。`;
       show(els.progress);
+      renderEta(j, sec, finished);
     };
     updateProgress(job);
     if (tickTimer) clearInterval(tickTimer);
@@ -520,7 +622,8 @@
         }
         try {
           const data = await api(`/api/jobs/${encodeURIComponent(j.id)}/sheets`);
-          showWorkbook(data.workbook, data.meta, `/api/jobs/${encodeURIComponent(j.id)}/download`);
+          showWorkbook(data.workbook, data.meta, `/api/jobs/${encodeURIComponent(j.id)}/download`,
+                       data.research, data.usage || j.usage);
         } catch (err) {
           setError(els.runError, (els.runError.textContent ? els.runError.textContent + "\n" : "") + (err.message || "無法載入 Excel 分頁。"));
         }
@@ -612,7 +715,7 @@
       let dl = `/api/workbook/excel?ticker=${encodeURIComponent(ticker)}`;
       const usedDate = (data.meta && data.meta.valuation_date) || date;
       if (usedDate) dl += `&date=${encodeURIComponent(usedDate)}`;
-      showWorkbook(data.workbook, data.meta || meta || {}, dl);
+      showWorkbook(data.workbook, data.meta || meta || {}, dl, data.research, data.usage);
     } catch (err) {
       setError(els.runError, err.message || "無法載入上次估值。");
     }
@@ -664,7 +767,7 @@
     });
   }
 
-  function showWorkbook(workbook, meta, downloadUrl) {
+  function showWorkbook(workbook, meta, downloadUrl, research, usage) {
     currentWorkbook = workbook;
     show(els.resultPanel);
     const title = [meta.asset || meta.company, meta.ticker].filter(Boolean).join(" ");
@@ -730,6 +833,16 @@
     if (workbook && workbook.sheets && workbook.sheets.length) {
       showSheet(workbook, 0);
     }
+    // Research blocks (chart, review, forecast, reasons, usage) are rendered from
+    // the same response; they live inside this panel, not in new tabs (R03).
+    renderUsageLine(usage);
+    if (window.Research) {
+      try {
+        window.Research.render(research || null, meta || {}, usage || null);
+      } catch (err) {
+        if (window.console) console.error("research render failed", err);
+      }
+    }
     els.resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -792,5 +905,18 @@
       table.appendChild(tr);
     });
     els.sheetView.appendChild(table);
+    if (window.Research) {
+      try { window.Research.onTab(index); } catch (err) { if (window.console) console.error(err); }
+    }
   }
+
+  // The research panel needs a few things from this module; exposing them keeps
+  // the two files independent (no globals beyond this one object).
+  window.App = {
+    api,
+    toast,
+    currentTabIndex: () => currentTabIndex,
+    sheetCount: () => ((currentWorkbook && currentWorkbook.sheets) || []).length,
+    setTicker: (t) => { currentTicker = t; },
+  };
 })();
