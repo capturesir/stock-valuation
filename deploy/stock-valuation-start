@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# Start (or restart) the local valuation web UI in the background and keep it
+# alive independently of any terminal/agent session.
+#
+#   stock-valuation-start          # start if not running, restart if running
+#   stock-valuation-start status   # show whether it is listening
+#   stock-valuation-start stop     # stop it
+#
+# Why this exists: the server used to be launched from an agent/terminal
+# session, so whenever that session ended the process died and the browser
+# showed "Failed to fetch". This script detaches it with setsid/nohup and logs
+# to out/web.log.
+
+set -euo pipefail
+
+ROOT="${STOCK_VALUATION_ROOT:-$HOME/stock-valuation}"
+PY="$ROOT/.venv/bin/python"
+LOG_DIR="$ROOT/out"
+LOG="$LOG_DIR/web.log"
+PIDFILE="$LOG_DIR/web.pid"
+PORT="${VALUATION_WEB_PORT:-8765}"
+HOST="${VALUATION_WEB_HOST:-127.0.0.1}"
+
+mkdir -p "$LOG_DIR"
+
+is_listening() {
+  lsof -tiTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+case "${1:-start}" in
+  status)
+    if is_listening; then
+      echo "LISTENING on http://$HOST:$PORT/ (pid $(lsof -tiTCP:"$PORT" -sTCP:LISTEN | tr '\n' ' '))"
+      exit 0
+    fi
+    echo "NOT RUNNING (port $PORT)"
+    exit 1
+    ;;
+  stop)
+    if is_listening; then
+      pids=$(lsof -tiTCP:"$PORT" -sTCP:LISTEN)
+      echo "Stopping: $pids"
+      kill $pids 2>/dev/null || true
+      sleep 1
+      is_listening && kill -9 $(lsof -tiTCP:"$PORT" -sTCP:LISTEN) 2>/dev/null || true
+    fi
+    rm -f "$PIDFILE"
+    echo "Stopped."
+    exit 0
+    ;;
+esac
+
+if [ -x "$PY" ]; then :; else
+  echo "ERROR: 找不到 $PY（請確認 .venv 存在）" >&2
+  exit 1
+fi
+
+if is_listening; then
+  echo "已在執行中（port $PORT）。重啟以套用最新程式碼…"
+  kill $(lsof -tiTCP:"$PORT" -sTCP:LISTEN) 2>/dev/null || true
+  sleep 1
+fi
+
+cd "$ROOT"
+# setsid + nohup: fully detached from the calling shell/session so the server
+# survives the terminal or agent session exiting.
+if command -v setsid >/dev/null 2>&1; then
+  setsid nohup "$PY" -m src.web >>"$LOG" 2>&1 &
+else
+  # macOS has no setsid by default; nohup + disown is sufficient.
+  nohup "$PY" -m src.web >>"$LOG" 2>&1 &
+  disown || true
+fi
+echo $! > "$PIDFILE"
+
+for i in $(seq 1 30); do
+  sleep 0.5
+  if curl -fsS -m 2 "http://$HOST:$PORT/api/health" >/dev/null 2>&1; then
+    echo "OK: http://$HOST:$PORT/（pid $(cat "$PIDFILE")）"
+    exit 0
+  fi
+done
+
+echo "ERROR: 伺服器 30 秒內未就緒，請看 $LOG" >&2
+tail -20 "$LOG" >&2 || true
+exit 1

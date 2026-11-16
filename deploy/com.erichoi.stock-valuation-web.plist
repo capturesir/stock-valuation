@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.erichoi.stock-valuation-web</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/erichoi/stock-valuation/.venv/bin/python</string>
+    <string>-m</string>
+    <string>src.web</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/erichoi/stock-valuation</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/Users/erichoi/stock-valuation/out/web.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/erichoi/stock-valuation/out/web.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>VALUATION_WEB_HOST</key>
+    <string>127.0.0.1</string>
+    <key>VALUATION_WEB_PORT</key>
+    <string>8765</string>
+  </dict>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>
