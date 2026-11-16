@@ -10,8 +10,13 @@
   <header class="top">
     <div class="brand">
       <h1>可攜式股票估值系統</h1>
-      <p class="sub">與 CLI 的 run／check-filings 對應；查詢不會自動開始估值</p>
+      <p class="sub">查詢 → 覆核財報 → 估值 → 逐項追溯理論價；不會自動開始估值</p>
     </div>
+    <nav class="top-nav">
+      <a class="top-link" href="/settings">AI 設定</a>
+      <a class="top-link" href="/api/guide.pdf" target="_blank" rel="noopener">使用指南 PDF</a>
+      <a class="top-link" href="/api/package.zip">下載專案</a>
+    </nav>
     <p class="disclaimer">本系統產出不構成投資建議。</p>
   </header>
 
@@ -56,19 +61,24 @@
           </div>
         </div>
 
-        <div class="run-opts">
-          <label class="field">
-            <span>估值日（澳門時間，對應 --date）</span>
-            <input id="val-date" type="date">
-          </label>
-          <label class="check">
-            <input type="checkbox" id="no-llm">
-            <span>不使用語言模型（等同 --no-llm）</span>
-          </label>
-        </div>
+        <details id="advanced-opts" class="advanced">
+          <summary>進階選項</summary>
+          <div class="run-opts">
+            <label class="field">
+              <span>估值日（澳門時間，對應 --date）</span>
+              <input id="val-date" type="date">
+            </label>
+            <label class="check">
+              <input type="checkbox" id="no-llm">
+              <span>不使用語言模型（等同 --no-llm）</span>
+            </label>
+          </div>
+        </details>
+
         <div class="row-actions">
           <button type="button" id="btn-valuate" class="btn primary">估值</button>
           <button type="button" id="btn-stop" class="btn danger hidden">停止</button>
+          <button type="button" id="btn-ai-plan" class="btn">AI 工作預覽</button>
           <button type="button" id="btn-check" class="btn">檢查財報</button>
           <label class="check">
             <input type="checkbox" id="rerun-if-needed">
@@ -88,6 +98,7 @@
         <div id="jp-bar" class="jp-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <div id="jp-fill" class="jp-fill"></div>
         </div>
+        <p id="jp-eta" class="jp-eta"></p>
         <ol id="jp-steps" class="jp-steps"></ol>
       </div>
       <div id="progress" class="banner info hidden"></div>
@@ -110,18 +121,47 @@
           <button type="button" id="btn-export-signals" class="btn">匯出訊號</button>
         </div>
       </div>
+      <p id="usage-line" class="usage-line hidden"></p>
       <p id="signals-msg" class="hint hidden"></p>
+
       <div id="sheet-tabs" class="tabs" role="tablist"></div>
       <div id="sheet-scroll">
         <div id="sheet-view"></div>
       </div>
       <p id="sheet-note" class="hint"></p>
+
+      <!-- Integrated blocks: same page, no extra tab (R03). The chart belongs to
+           摘要; the forecast/usage pair belongs to the last original tab (R11). -->
+      <section id="chart-block" class="block" data-tab-only="first"></section>
+
+      <details id="review-block" class="block review">
+        <summary class="review-summary">財報逐項覆核與調整</summary>
+      </details>
+
+      <div id="last-tab-blocks">
+        <section id="usage-block" class="block" data-tab-only="last"></section>
+        <section id="forecast-block" class="block" data-tab-only="last"></section>
+        <section id="reasons-block" class="block" data-tab-only="last"></section>
+        <section id="trace-block" class="block" data-tab-only="last"></section>
+      </div>
     </section>
   </main>
+
+  <dialog id="ai-plan-dialog" class="modal">
+    <form method="dialog" class="modal-body">
+      <h2>這次估值 AI 會做什麼</h2>
+      <div id="ai-plan-body"></div>
+      <div class="modal-footer">
+        <button type="submit" id="ai-plan-cancel" class="btn" value="cancel">取消</button>
+        <button type="button" id="ai-plan-go" class="btn primary">開始估值</button>
+      </div>
+    </form>
+  </dialog>
 
   <footer>
     <p>本系統產出不構成投資建議。理論價由 Python 引擎按已列來源與假設計算。臨時估值不會寫入關注名單。</p>
   </footer>
   <script src="/static/app.js"></script>
+  <script src="/static/research.js"></script>
 </body>
 </html>

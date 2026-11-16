@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI 設定 · 可攜式股票估值系統</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>AI 設定</h1>
+      <p class="sub">更換 AI 服務只需填這裡，不必改程式碼</p>
+    </div>
+    <nav class="top-nav">
+      <a class="top-link" href="/">返回估值頁</a>
+    </nav>
+    <p class="disclaimer">本系統產出不構成投資建議。</p>
+  </header>
+
+  <main class="settings-wrap">
+    <section class="settings-card">
+      <h2>連線設定</h2>
+      <p class="muted">支援任何 OpenAI 相容的 Chat Completions 端點（DeepSeek、OpenAI、vLLM、Ollama、LM Studio…）。設定會寫入專案的 <code>.env</code>（已被 git 忽略、權限 600），並立即生效。</p>
+
+      <div class="settings-grid">
+        <label class="field">
+          <span>API 位址（base_url）</span>
+          <input id="base-url" class="input" type="text" placeholder="https://api.deepseek.com/v1 或 http://127.0.0.1:11434/v1" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>模型名稱（model）</span>
+          <input id="model" class="input" type="text" placeholder="deepseek-v4-flash / qwen2.5:7b" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>API Key（留空＝不變更）</span>
+          <input id="api-key" class="input" type="password" placeholder="貼上新的 Key；本地模型可留空" autocomplete="off">
+          <span id="key-state" class="key-state">—</span>
+        </label>
+      </div>
+
+      <div class="settings-actions">
+        <button type="button" id="btn-save" class="btn primary">儲存設定</button>
+        <button type="button" id="btn-test" class="btn">測試連線</button>
+        <button type="button" id="btn-reload" class="btn">重新讀取</button>
+      </div>
+
+      <div id="settings-status" class="settings-status" role="status"></div>
+      <p id="env-path" class="hint"></p>
+
+      <h2 style="margin-top:1.2rem">說明</h2>
+      <ul class="hint" style="padding-left:1.1rem">
+        <li>不填 Key 也能跑：估值會用規則後備（<code>assumption_source = rules_fallback</code>），結果仍然完整。</li>
+        <li>本地端點（127.0.0.1／localhost）不需要 Key。</li>
+        <li>Key 只會回傳長度與末四碼，完整值不會出現在瀏覽器。</li>
+        <li>測試連線會發送一次極小的請求，會計入你的 API 用量。</li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="/static/settings.js"></script>
+</body>
+</html>

@@ -14,9 +14,14 @@ def _xlsx(ticker: str) -> Path:
 
 def _assert_all_sheets(ticker: str, must_contain: dict[str, list[str]]):
     data = render_workbook(_xlsx(ticker))
-    assert [s["name"] for s in data["sheets"]] == EXPECTED_SHEETS
+    # The original seven tabs must still lead the workbook, in order. v1.1 adds
+    # research sheets after them for the Excel download (R23), so equality with
+    # EXPECTED_SHEETS is no longer the right assertion — the page-level tab set
+    # is covered by test_ui_sheet_whitelist below.
+    names = [s["name"] for s in data["sheets"]]
+    assert names[: len(EXPECTED_SHEETS)] == EXPECTED_SHEETS, names
     assert data["warnings"] == []
-    for sheet in data["sheets"]:
+    for sheet in data["sheets"][: len(EXPECTED_SHEETS)]:
         assert sheet["nonempty"] > 0, f"{ticker} 分頁「{sheet['name']}」空白"
         blob = sheet_text_blob(sheet)
         assert blob.strip(), f"{ticker} 分頁「{sheet['name']}」無文字"
@@ -51,3 +56,27 @@ def test_render_1830_all_seven_sheets():
         "來源": ["rf", "wacc"],
         "資料缺口": ["分析師"],
     })
+
+def test_ui_sheet_whitelist_returns_only_original_tabs(tmp_path):
+    """The page must keep the seven original tabs even when Excel has more.
+
+    v1.1 writes six research sheets into the same workbook (R23). Without a
+    whitelist they leaked into the tab strip, which R02/R03 forbid.
+    """
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    wb.remove(wb.active)
+    for name in EXPECTED_SHEETS:
+        wb.create_sheet(name)["A1"] = name
+    wb.create_sheet("財報覆核")["A1"] = "research-only"
+    path = tmp_path / "workbook.xlsx"
+    wb.save(path)
+
+    data = render_workbook(path, include=EXPECTED_SHEETS)
+    assert [s["name"] for s in data["sheets"]] == EXPECTED_SHEETS
+    assert data["extra_sheets"] == ["財報覆核"]
+
+    everything = render_workbook(path)
+    assert len(everything["sheets"]) == len(EXPECTED_SHEETS) + 1
+    assert everything["extra_sheets"] == []

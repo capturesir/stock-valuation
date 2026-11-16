@@ -34,3 +34,6 @@ docs/*.zip
 # per-user statement adjustments: local audit state, exported into each run's
 # Excel「金額調整紀錄」and the calc JSON instead of being versioned here
 cases/*/adjustments.json
+
+# append-only per-run valuation log (R17–R20); rebuilt by running valuations
+out/history/

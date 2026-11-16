@@ -71,12 +71,20 @@ def find_valuations(ticker: str) -> list[dict]:
                 meta = json.loads(mp.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 meta = {}
+        has_xlsx = bool(xlsx and xlsx.is_file())
+        has_json = js.is_file()
+        if not has_xlsx and not has_json:
+            # An aborted run (stopped, network failure, crash) leaves an empty
+            # date folder behind. Because the list is sorted newest-first, that
+            # folder used to become "the latest valuation" and hide the last
+            # good result — the UI then showed no Excel and download 404'd.
+            continue
         items.append({
             "ticker": ticker,
             "valuation_date": date,
             "folder": str(folder),
-            "xlsx": str(xlsx) if xlsx and xlsx.is_file() else None,
-            "json": str(js) if js.is_file() else None,
+            "xlsx": str(xlsx) if has_xlsx else None,
+            "json": str(js) if has_json else None,
             "md": str(md) if md and md.is_file() else None,
             "company": meta.get("company"),
             "price": meta.get("price"),
