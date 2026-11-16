@@ -35,11 +35,15 @@ from . import research
 from . import services
 from . import settings as settingsmod
 from ..pipeline import adjustments as adjmod
-from .sheets import render_workbook
+from .sheets import EXPECTED_SHEETS, render_workbook
 
 WEB_DIR = Path(__file__).resolve().parent
 STATIC_DIR = WEB_DIR / "static"
-DOCS_DIR = WEB_DIR.parents[2] / "docs"
+# src/web/app.py -> src/web -> src -> project root; docs/ sits at the root.
+DOCS_DIR = WEB_DIR.parents[1] / "docs"
+# R01–R03: the page keeps the original seven tabs. The research sheets added for
+# the Excel download are data for the in-page blocks, not extra tabs.
+UI_SHEETS = list(EXPECTED_SHEETS)
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
 
@@ -229,7 +233,7 @@ def api_job_sheets(job_id: str):
     if job.get("status") != "done" or not (job.get("result") or {}).get("xlsx"):
         raise _http_error(409, "估值尚未完成，或沒有可顯示的 Excel。", job_status=job.get("status"))
     rec = job["result"]
-    data = render_workbook(rec["xlsx"], rec.get("json"))
+    data = render_workbook(rec["xlsx"], rec.get("json"), include=UI_SHEETS)
     extra = research.research_payload(rec.get("ticker") or job.get("ticker") or "",
                                       valuation_date=rec.get("valuation_date"))
     return {"ok": True, "job_id": job_id, "meta": rec, "workbook": data,
@@ -255,7 +259,7 @@ def api_job_download(job_id: str):
 def api_workbook(ticker: str = Query(..., min_length=1), date: str | None = None):
     try:
         rec = services.resolve_workbook(ticker, date)
-        data = render_workbook(rec["xlsx"], rec.get("json"))
+        data = render_workbook(rec["xlsx"], rec.get("json"), include=UI_SHEETS)
     except FileNotFoundError as exc:
         raise _http_error(404, str(exc))
     except ValueError as exc:
@@ -357,10 +361,12 @@ def api_eta(use_llm: bool | None = None, ticker: str | None = None):
 
 @app.get("/settings")
 def settings_page():
-    return FileResponse(
-        STATIC_DIR / "settings.html",
-        headers={"Cache-Control": "no-cache, must-revalidate"},
-    )
+    page = STATIC_DIR / "settings.html"
+    if not page.is_file():
+        # FileResponse only fails when the response is sent, which surfaced as a
+        # 500 plus a full traceback. A missing page is a 404.
+        raise _http_error(404, "尚未提供 AI 設定頁（static/settings.html 不存在）。")
+    return FileResponse(page, headers={"Cache-Control": "no-cache, must-revalidate"})
 
 
 @app.get("/api/settings/llm")
@@ -400,10 +406,14 @@ def api_package():
 
 @app.get("/api/guide.pdf")
 def api_guide():
-    """R25: the illustrated user guide that ships with this version."""
-    candidates = sorted(DOCS_DIR.glob("*使用指南*.pdf")) or sorted(DOCS_DIR.glob("*.pdf"))
+    """R25: the illustrated user guide that ships with this version.
+
+    Only files this project produced are served. Falling back to "any PDF in
+    docs/" handed out a third-party guide that documented a different version.
+    """
+    candidates = sorted(DOCS_DIR.glob("*使用指南*.pdf"))
     if not candidates:
-        raise _http_error(404, "docs/ 內沒有使用指南 PDF。")
+        raise _http_error(404, "docs/ 內沒有本版使用指南 PDF（*使用指南*.pdf）。")
     return FileResponse(candidates[-1], media_type="application/pdf",
                         filename=candidates[-1].name)
 

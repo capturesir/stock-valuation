@@ -530,8 +530,14 @@ def _json_safe(v: Any):
     return str(v)
 
 
-def render_workbook(xlsx_path: str | Path, json_path: Optional[str | Path] = None) -> dict:
-    """Load a workbook and return a JSON-serialisable representation of every sheet."""
+def render_workbook(xlsx_path: str | Path, json_path: Optional[str | Path] = None,
+                    include: Optional[list[str]] = None) -> dict:
+    """Load a workbook and return a JSON-serialisable representation of every sheet.
+
+    ``include`` limits the result to the named sheets, in the order given. The
+    web UI passes the seven original tabs: the v1.1 research data also lives in
+    the workbook (R23), but the page must keep the original tab set (R01–R03).
+    """
     xlsx_path = Path(xlsx_path)
     if not xlsx_path.is_file():
         raise FileNotFoundError(f"找不到 Excel：{xlsx_path}")
@@ -543,9 +549,16 @@ def render_workbook(xlsx_path: str | Path, json_path: Optional[str | Path] = Non
     except Exception:
         wb_cached = None
 
+    if include:
+        names = [n for n in include if n in wb.sheetnames]
+        extra = [n for n in wb.sheetnames if n not in names]
+    else:
+        names = list(wb.sheetnames)
+        extra = []
+
     sheets = []
     eval_stats_all = {}
-    for name in wb.sheetnames:
+    for name in names:
         ws = wb[name]
         cached = wb_cached[name] if wb_cached and name in wb_cached.sheetnames else None
         engine = FormulaEngine()
@@ -667,9 +680,9 @@ def render_workbook(xlsx_path: str | Path, json_path: Optional[str | Path] = Non
 
     # If the calc sheet looks empty of numbers (shouldn't happen), note it.
     warnings = []
-    names = [s["name"] for s in sheets]
+    rendered_names = [s["name"] for s in sheets]
     for expected in EXPECTED_SHEETS:
-        if expected not in names:
+        if expected not in rendered_names:
             warnings.append(f"工作簿缺少分頁：{expected}")
     for s in sheets:
         nonempty = 0
@@ -688,6 +701,7 @@ def render_workbook(xlsx_path: str | Path, json_path: Optional[str | Path] = Non
     return {
         "path": str(xlsx_path),
         "sheets": sheets,
+        "extra_sheets": extra,
         "eval": eval_stats_all,
         "warnings": warnings,
     }
