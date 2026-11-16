@@ -9,11 +9,31 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+_SSL_CONTEXT: Optional[ssl.SSLContext] = None
+
+
+def _ssl_context() -> Optional[ssl.SSLContext]:
+    """HTTPS context with a working CA bundle (see httputil._ssl_context).
+
+    The python.org 3.10 install on this Mac ships without cert.pem, so the
+    default context fails HTTPS calls with CERTIFICATE_VERIFY_FAILED.
+    Prefer certifi; fall back to the system default.
+    """
+    global _SSL_CONTEXT
+    if _SSL_CONTEXT is None:
+        try:
+            import certifi
+            _SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            _SSL_CONTEXT = ssl.create_default_context()
+    return _SSL_CONTEXT
 
 
 class LLMError(RuntimeError):
@@ -96,7 +116,7 @@ class LLMClient:
         for attempt in range(self.max_retries):
             try:
                 req = urllib.request.Request(url, data=body, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                with urllib.request.urlopen(req, timeout=self.timeout, context=_ssl_context()) as resp:
                     raw = resp.read().decode("utf-8", errors="replace")
                 parsed = json.loads(raw)
                 text = (((parsed.get("choices") or [{}])[0].get("message") or {}).get("content")) or ""
