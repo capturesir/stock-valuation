@@ -285,3 +285,22 @@ def test_runlog_write_failure_is_not_fatal(tmp_path, monkeypatch):
     entry = runlog.append("TESTX", {"valuation_date": "2026-11-16", "fair_value": 1.0, "price": 1.0})
     assert entry["ticker"] == "TESTX"     # returned, not raised
     assert runlog.read("TESTX") == []
+
+
+# --------------------------------------------------- empty run folders ------
+
+def test_empty_run_folder_does_not_hide_the_last_good_result(tmp_path, monkeypatch):
+    """A stopped/crashed run leaves an empty date folder; it must not shadow a
+    real result because the list is sorted newest-first."""
+    from src.web import services
+
+    out = tmp_path / "out"
+    (out / "2026-11-11_TEST").mkdir(parents=True)
+    (out / "2026-11-11_TEST" / "2026-11-11_TEST_FCFF.xlsx").write_bytes(b"x")
+    (out / "2026-11-11_TEST" / "2026-11-11_TEST.json").write_text("{}", encoding="utf-8")
+    (out / "2026-11-16_TEST").mkdir(parents=True)          # aborted today, no files
+    monkeypatch.setattr(services, "ROOT", tmp_path)
+
+    found = services.find_valuations("TEST")
+    assert [f["valuation_date"] for f in found] == ["2026-11-11"]
+    assert services.latest_valuation("TEST")["xlsx"].endswith("_FCFF.xlsx")

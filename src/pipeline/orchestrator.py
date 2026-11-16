@@ -222,6 +222,24 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     _step("engine", "正在計算五情境並執行獨立驗證（verify_fcff）…")
     result = build_and_run(spec, out_dir=str(out_dir))
     outj = result["json"]
+    # The built-in specs (NVDA, 1830.HK) carry the date their assumptions were
+    # reviewed, and the engine names the JSON after it. Running the same ticker
+    # for another date therefore produced <run_date>_<ticker>/ containing
+    # <other_date>_<ticker>.json, which the "latest valuation" lookup could not
+    # read (the folder looked empty and 下載 last Excel 404'd).
+    # The folder stays the single source of truth for the run date; the model's
+    # own date is recorded instead of silently overwriting it.
+    calc_date = str(outj.get("valuation_date") or valuation_date)
+    canonical_json = out_dir / f"{valuation_date}_{ticker}.json"
+    produced = Path(result["path"])
+    if produced != canonical_json and produced.is_file():
+        produced.replace(canonical_json)
+        result["path"] = str(canonical_json)
+    if calc_date != valuation_date:
+        outj.setdefault("data_gaps", []).append(
+            f"內建規格的估值日固定為 {calc_date}（該日為假設覆核日）；本次以 {valuation_date} 執行，"
+            f"折現起點與輸出內部估值日仍為 {calc_date}。"
+        )
     # R16: what the provider actually reported for this run (retries included).
     outj["llm_usage"] = client.usage_summary()
     outj["adjustments_applied"] = applied_adjustments
