@@ -69,6 +69,40 @@ class LLMClient:
         self.max_retries = int(llm.get("max_retries") or 3)
         self.temperature = float(llm.get("temperature") or 0)
         self.json_mode = bool(llm.get("json_mode", True))
+        # R16: every response that reports usage is accumulated here so the run
+        # can show what the provider actually charged, retries included.
+        self.usage = {"requests": 0, "prompt_tokens": 0, "completion_tokens": 0,
+                      "total_tokens": 0, "reported": 0, "events": []}
+
+    def _record_usage(self, tag: str, usage: Optional[dict]) -> None:
+        usage = usage or {}
+        self.usage["requests"] += 1
+        prompt = usage.get("prompt_tokens")
+        completion = usage.get("completion_tokens")
+        total = usage.get("total_tokens")
+        if total is None and (prompt is not None or completion is not None):
+            total = (prompt or 0) + (completion or 0)
+        if total is None:
+            self.usage["events"].append({"tag": tag, "model": self.model, "reported": False})
+            return
+        self.usage["reported"] += 1
+        self.usage["prompt_tokens"] += int(prompt or 0)
+        self.usage["completion_tokens"] += int(completion or 0)
+        self.usage["total_tokens"] += int(total)
+        self.usage["events"].append({
+            "tag": tag, "model": self.model, "reported": True,
+            "prompt_tokens": int(prompt or 0), "completion_tokens": int(completion or 0),
+            "total_tokens": int(total),
+        })
+
+    def usage_summary(self) -> dict:
+        """Public view for the UI: never present an unreported count as zero."""
+        u = dict(self.usage)
+        u["requests"] = self.usage["requests"]
+        u["unreported_requests"] = self.usage["requests"] - self.usage["reported"]
+        u["note"] = ("服務商實際回報的用量，已包含重試與多次請求；"
+                     "未回報的請求不計入 token 總數。")
+        return u
 
     def available(self) -> bool:
         # A local server may not need a key, but we still require a base_url and a model.
@@ -122,12 +156,15 @@ class LLMClient:
                 text = (((parsed.get("choices") or [{}])[0].get("message") or {}).get("content")) or ""
                 data = _extract_json(text)
                 if data is None:
+                    self._record_usage(tag, parsed.get("usage"))
                     return LLMResult(ok=False, data=None, raw_text=text, source="rules_fallback",
                                      error=f"{tag} 無法從模型回覆解析 JSON", model=self.model,
                                      base_url=self.base_url, usage=parsed.get("usage") or {})
+                self._record_usage(tag, parsed.get("usage"))
                 return LLMResult(ok=True, data=data, raw_text=text, source="llm",
                                  model=self.model, base_url=self.base_url, usage=parsed.get("usage") or {})
             except urllib.error.HTTPError as e:
+                self._record_usage(tag, None)
                 last_err = f"HTTP {e.code}: {e.read()[:400].decode('utf-8', 'replace') if hasattr(e, 'read') else e}"
                 # 400 on json_mode: retry once without response_format
                 if e.code == 400 and "response_format" in payload:
@@ -139,6 +176,7 @@ class LLMClient:
                     continue
                 break
             except Exception as e:
+                self._record_usage(tag, None)
                 last_err = f"{type(e).__name__}: {e}"
                 if attempt + 1 < self.max_retries:
                     time.sleep(2 * (attempt + 1))

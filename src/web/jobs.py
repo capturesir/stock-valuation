@@ -15,7 +15,10 @@ from .services import norm_ticker, validate_date
 # The last few runs (status, failing step, message) survive a restart so the
 # 「錯誤」panel can show what happened previously. Local file, gitignored.
 HISTORY_PATH = ROOT / "out" / "_run_history.json"
-HISTORY_MAX = 3
+# R15 wants the last ten runs to estimate remaining time; the 錯誤 panel only
+# ever shows the newest three, so the file keeps ten.
+HISTORY_MAX = 10
+HISTORY_SHOWN = 3
 
 
 class JobBusy(Exception):
@@ -54,6 +57,16 @@ def _active_label(job: dict) -> str:
     return "未知"
 
 
+def _eta(use_llm: bool) -> dict:
+    """R15: a median of the last ten completed runs, or an explicit 'no data'."""
+    try:
+        from . import research
+        return research.eta_estimate(use_llm=use_llm)
+    except Exception:
+        return {"sample_size": 0, "median_seconds": None, "source": "none",
+                "note": "無法讀取歷史紀錄，這次不提供估時。"}
+
+
 class JobStore:
     def __init__(self):
         self._lock = threading.Lock()
@@ -80,7 +93,7 @@ class JobStore:
         out = {k: job[k] for k in (
             "id", "kind", "ticker", "valuation_date", "use_llm", "status",
             "message", "error", "result", "started_at", "finished_at",
-            "steps", "progress", "activity", "phase",
+            "steps", "progress", "activity", "phase", "eta", "usage",
         ) if k in job}
         out["cancellable"] = job.get("status") in ("running", "queued", "cancelling")
         return out
@@ -127,6 +140,7 @@ class JobStore:
                 "result": None,
                 "started_at": time.time(),
                 "finished_at": None,
+                "eta": _eta(use_llm),
             }
             self.jobs[job_id] = job
             self.active_id = job_id
@@ -196,6 +210,7 @@ class JobStore:
                 "out_dir": result.get("out_dir"),
             }
             passed = bool(result.get("verify_pass"))
+            job["usage"] = js.get("llm_usage") or {}
             with lock:
                 for s in job.get("steps") or []:
                     if s["status"] in ("pending", "active"):
@@ -240,12 +255,18 @@ def _history_entry(job: dict) -> dict:
     steps = job.get("steps") or []
     failed = next((s for s in steps if s.get("status") == "error"), None)
     stopped = next((s for s in steps if s.get("status") == "cancelled"), None)
+    started, finished = job.get("started_at"), job.get("finished_at")
+    duration = round(finished - started, 1) if started and finished else None
+    usage = job.get("usage") or {}
     return {
         "id": job.get("id"),
         "ticker": job.get("ticker"),
         "valuation_date": job.get("valuation_date"),
-        "started_at": job.get("started_at"),
-        "finished_at": job.get("finished_at"),
+        "use_llm": bool(job.get("use_llm", True)),
+        "duration": duration,
+        "token_total": usage.get("total_tokens"),
+        "started_at": started,
+        "finished_at": finished,
         "status": job.get("status"),
         "message": job.get("message"),
         "error": job.get("error"),

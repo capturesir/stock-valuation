@@ -46,6 +46,14 @@
     tabs: $("sheet-tabs"),
     sheetView: $("sheet-view"),
     sheetNote: $("sheet-note"),
+    btnAiPlan: $("btn-ai-plan"),
+    aiDialog: $("ai-plan-dialog"),
+    aiPlanBody: $("ai-plan-body"),
+    aiDialogGo: $("ai-plan-go"),
+    aiDialogCancel: $("ai-plan-cancel"),
+    jpEta: $("jp-eta"),
+    usageLine: $("usage-line"),
+    reviewBlock: $("review-block"),
   };
 
   let currentTicker = null;
@@ -56,6 +64,7 @@
   let currentWorkbook = null;
   let currentMeta = null;
   let currentSignalsDl = null;
+  let currentTabIndex = 0;
 
   function todayISO() {
     const n = new Date();
@@ -743,6 +752,7 @@
 
   function showSheet(workbook, index) {
     const sheet = workbook.sheets[index];
+    currentTabIndex = index;
     els.sheetView.innerHTML = "";
     const table = document.createElement("table");
     table.className = "sheet";

@@ -204,12 +204,29 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
 
     spec["assumption_source"] = snap["assumption_source"]
     spec["llm_status"] = llm_status
+    # R06/R07: adopted statement adjustments scale the model drivers before the
+    # engine runs, so the projection reflects them and the audit trail travels
+    # with the result (Excel, run_meta, calc JSON).
+    from . import adjustments as adjmod
+    spec, applied_adjustments = adjmod.apply_to_spec(spec, ticker)
+    if applied_adjustments:
+        spec.setdefault("corrections", []).extend([
+            {"item": f"財報金額調整：{a['item']}（{a['fy']}）",
+             "requested": f"原始 {a['original']:,.2f} → 採用 {a['adjusted']:,.2f}",
+             "adopted": a["effect"], "reason": a["reason"]}
+            for a in applied_adjustments
+        ])
     (case_dir / "spec_audit.json").write_text(json.dumps(_safe(spec), ensure_ascii=False, indent=1, default=str), encoding="utf-8")
 
     _check_stop()
     _step("engine", "正在計算五情境並執行獨立驗證（verify_fcff）…")
     result = build_and_run(spec, out_dir=str(out_dir))
     outj = result["json"]
+    # R16: what the provider actually reported for this run (retries included).
+    outj["llm_usage"] = client.usage_summary()
+    outj["adjustments_applied"] = applied_adjustments
+    Path(result["path"]).write_text(
+        json.dumps(outj, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     # write assumptions csv
     _assumptions_csv(outj, out_dir / f"{valuation_date}_{ticker}_assumptions.csv")
     # sources json
@@ -221,6 +238,16 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     _step("export", "正在產出 Excel 與繁中說明…")
     xlsx = out_dir / f"{valuation_date}_{ticker}_FCFF.xlsx"
     build_workbook(outj, str(xlsx))
+    # R23: the download must contain what the page shows. Built from the same
+    # files the UI reads; a failure here is reported but never fatal.
+    extra_sheets = []
+    try:
+        from ..web import research as researchmod
+        from ..export.xlsx_extra import add_research_sheets
+        extra_sheets = add_research_sheets(xlsx, researchmod.research_payload(
+            ticker, calc=outj, valuation_date=valuation_date))
+    except Exception as exc:  # pragma: no cover - defensive
+        snap["data_gaps"].append(f"附加研究分頁未能寫入 Excel：{type(exc).__name__}: {exc}")
     md = out_dir / f"{valuation_date}_{ticker}_valuation.md"
     write_report(outj, str(md))
     _step("state", "正在寫入執行紀錄（state.json／run_meta.json）…")
@@ -246,6 +273,9 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     (out_dir / "run_meta.json").write_text(json.dumps({
         "verify_pass": result["verify_pass"], "verify_errors": result["verify_errors"],
         "assumption_source": snap["assumption_source"], "llm_status": llm_status,
+        "llm_usage": outj.get("llm_usage") or {},
+        "adjustments_applied": applied_adjustments,
+        "extra_sheets": extra_sheets,
         "xlsx": str(xlsx), "md": str(md), "json": result["path"],
         "fair_value_per_share": outj["fair_value_per_share"],
         "wacc": outj["discount"]["wacc"]["value"], "g": outj["terminal"]["g"],
