@@ -21,6 +21,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 是否尚未建立任何帳號（登入頁用） */
+        get: operations["status_api_v1_auth_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 登入（網頁設定 Cookie；App 可要求令牌） */
+        post: operations["login_api_v1_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 登出此裝置 */
+        post: operations["logout_api_v1_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 系統名稱與 Logo（公開，登入頁也會用） */
+        get: operations["get_branding_api_v1_branding_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branding/logo/{variant}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Logo 檔案 */
+        get: operations["logo_api_v1_branding_logo__variant__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branding/icon/{name}.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 由 Logo 產生的 PWA 圖示 */
+        get: operations["icon_api_v1_branding_icon__name__png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/branding/manifest.webmanifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PWA manifest（名稱與圖示跟隨品牌設定） */
+        get: operations["manifest_api_v1_branding_manifest_webmanifest_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 目前登入的用戶 */
+        get: operations["me_api_v1_auth_me_get"];
+        /** 更改顯示名稱與偏好設定 */
+        put: operations["update_me_api_v1_auth_me_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 更改密碼（其他裝置會被登出） */
+        put: operations["change_password_api_v1_auth_me_password_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 全部用戶 */
+        get: operations["list_users_api_v1_admin_users_get"];
+        put?: never;
+        /** 新增用戶 */
+        post: operations["add_user_api_v1_admin_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 修改用戶：名稱、角色、啟用、重設密碼 */
+        put: operations["update_user_api_v1_admin_users__user_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 更改系統名稱（管理員） */
+        put: operations["put_branding_api_v1_admin_branding_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/branding/logo/{variant}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 上傳 Logo（light／dark；PNG 或 SVG，上限 512 KB；管理員） */
+        post: operations["upload_logo_api_v1_admin_branding_logo__variant__post"];
+        /** 移除 Logo（管理員） */
+        delete: operations["remove_logo_api_v1_admin_branding_logo__variant__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stocks/{ticker}/lookup": {
         parameters: {
             query?: never;
@@ -235,7 +459,7 @@ export interface paths {
         };
         /** AI 連線與預算（金鑰只顯示長度與末四碼） */
         get: operations["get_ai_api_v1_settings_ai_get"];
-        /** 更新 AI 連線與預算 */
+        /** 更新 AI 連線與預算（管理員；全系統共用一把金鑰） */
         put: operations["put_ai_api_v1_settings_ai_put"];
         post?: never;
         delete?: never;
@@ -300,6 +524,38 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdminUserIn */
+        AdminUserIn: {
+            /** Email */
+            email: string;
+            /**
+             * Display Name
+             * @default
+             */
+            display_name: string;
+            /**
+             * Role
+             * @default member
+             * @enum {string}
+             */
+            role: "admin" | "member";
+            /** Password */
+            password: string;
+        };
+        /** AdminUserUpdate */
+        AdminUserUpdate: {
+            /** Display Name */
+            display_name?: string | null;
+            /** Role */
+            role?: ("admin" | "member") | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /**
+             * Password
+             * @description 重設密碼；該用戶所有已登入的裝置會被登出
+             */
+            password?: string | null;
+        };
         /** AiSettingsIn */
         AiSettingsIn: {
             /** Provider */
@@ -355,6 +611,40 @@ export interface components {
             presets: {
                 [key: string]: unknown;
             }[];
+        };
+        /** AuthStatus */
+        AuthStatus: {
+            /**
+             * Needs Setup
+             * @description 尚未有任何帳號：需要先用指令建立第一個管理員
+             */
+            needs_setup: boolean;
+        };
+        /** Body_upload_logo_api_v1_admin_branding_logo__variant__post */
+        Body_upload_logo_api_v1_admin_branding_logo__variant__post: {
+            /** File */
+            file: string;
+        };
+        /** BrandingIn */
+        BrandingIn: {
+            /** Name */
+            name: string;
+        };
+        /** BrandingOut */
+        BrandingOut: {
+            /** Name */
+            name: string;
+            /** Logo Light Url */
+            logo_light_url?: string | null;
+            /** Logo Dark Url */
+            logo_dark_url?: string | null;
+            /**
+             * Has Custom Icon
+             * @default false
+             */
+            has_custom_icon: boolean;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -484,6 +774,31 @@ export interface components {
             /** Tail */
             tail: string | null;
         };
+        /** LoginIn */
+        LoginIn: {
+            /** Email */
+            email: string;
+            /** Password */
+            password: string;
+            /**
+             * Issue Token
+             * @description App／小程序用：回應中附上存取令牌（網頁用 Cookie，不需要）
+             * @default false
+             */
+            issue_token: boolean;
+        };
+        /** LoginOut */
+        LoginOut: {
+            user: components["schemas"]["UserOut"];
+            /** Token */
+            token?: string | null;
+        };
+        /** MeIn */
+        MeIn: {
+            /** Display Name */
+            display_name?: string | null;
+            prefs?: components["schemas"]["Prefs"] | null;
+        };
         /** MethodValue */
         MethodValue: {
             /** Method */
@@ -494,6 +809,13 @@ export interface components {
             value: number | null;
             /** Weight */
             weight?: number | null;
+        };
+        /** PasswordIn */
+        PasswordIn: {
+            /** Current Password */
+            current_password: string;
+            /** New Password */
+            new_password: string;
         };
         /** Plan */
         Plan: {
@@ -573,6 +895,27 @@ export interface components {
             cost_low_usd: number;
             /** Cost High Usd */
             cost_high_usd: number;
+        };
+        /**
+         * Prefs
+         * @description Per-user preferences. Display currency for portfolios and comparisons (D7); rebalancing (D8).
+         */
+        Prefs: {
+            /**
+             * Display Currency
+             * @default USD
+             */
+            display_currency: string;
+            /**
+             * Rebalance
+             * @default none
+             * @enum {string}
+             */
+            rebalance: "none" | "monthly" | "quarterly" | "annual";
+            /** Locale */
+            locale?: ("zh-Hant" | "zh-Hans" | "en") | null;
+            /** Theme */
+            theme?: ("light" | "dark" | "system") | null;
         };
         /** PricePoint */
         PricePoint: {
@@ -721,6 +1064,27 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /** UserOut */
+        UserOut: {
+            /** Id */
+            id: string;
+            /** Email */
+            email: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "admin" | "member";
+            /** Is Active */
+            is_active: boolean;
+            prefs: components["schemas"]["Prefs"];
+            /** Created At */
+            created_at: string;
+            /** Last Login At */
+            last_login_at?: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -806,11 +1170,500 @@ export interface operations {
             };
         };
     };
+    status_api_v1_auth_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthStatus"];
+                };
+            };
+        };
+    };
+    login_api_v1_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_api_v1_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_branding_api_v1_branding_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandingOut"];
+                };
+            };
+        };
+    };
+    logo_api_v1_branding_logo__variant__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
+            path: {
+                variant: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    icon_api_v1_branding_icon__name__png_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    manifest_api_v1_branding_manifest_webmanifest_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    me_api_v1_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_me_api_v1_auth_me_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_password_api_v1_auth_me_password_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_admin_users_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_user_api_v1_admin_users_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_api_v1_admin_users__user_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_branding_api_v1_admin_branding_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrandingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_logo_api_v1_admin_branding_logo__variant__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                variant: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_logo_api_v1_admin_branding_logo__variant__post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_logo_api_v1_admin_branding_logo__variant__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                variant: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandingOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     lookup_api_v1_stocks__ticker__lookup_get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -846,9 +1699,7 @@ export interface operations {
     };
     valuations_api_v1_stocks__ticker__valuations_get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -884,7 +1735,6 @@ export interface operations {
         parameters: {
             query?: {
                 days?: number;
-                access_token?: string | null;
             };
             header?: {
                 authorization?: string | null;
@@ -919,9 +1769,7 @@ export interface operations {
     };
     excel_api_v1_runs__run_id__excel_get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -955,9 +1803,7 @@ export interface operations {
     };
     list_watchlist_api_v1_watchlist_get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -989,9 +1835,7 @@ export interface operations {
     };
     add_api_v1_watchlist_post: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1027,9 +1871,7 @@ export interface operations {
     };
     remove_api_v1_watchlist__ticker__delete: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1066,7 +1908,6 @@ export interface operations {
                 mode?: "none" | "lite" | "standard" | "deep";
                 /** @description 逗號分隔，例如 T1,T3 */
                 tasks?: string | null;
-                access_token?: string | null;
             };
             header?: {
                 authorization?: string | null;
@@ -1099,9 +1940,7 @@ export interface operations {
     };
     start_api_v1_valuations_post: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1137,9 +1976,7 @@ export interface operations {
     };
     active_jobs_api_v1_jobs_get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1171,9 +2008,7 @@ export interface operations {
     };
     job_api_v1_jobs__job_id__get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1207,9 +2042,7 @@ export interface operations {
     };
     cancel_api_v1_jobs__job_id__cancel_post: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1243,9 +2076,7 @@ export interface operations {
     };
     events_api_v1_jobs__job_id__events_get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1277,9 +2108,7 @@ export interface operations {
     };
     get_ai_api_v1_settings_ai_get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1311,9 +2140,7 @@ export interface operations {
     };
     put_ai_api_v1_settings_ai_put: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1349,9 +2176,7 @@ export interface operations {
     };
     test_ai_api_v1_settings_ai_test_post: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1385,9 +2210,7 @@ export interface operations {
     };
     get_prices_api_v1_settings_prices_get: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1419,9 +2242,7 @@ export interface operations {
     };
     put_price_api_v1_settings_prices_put: {
         parameters: {
-            query?: {
-                access_token?: string | null;
-            };
+            query?: never;
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
@@ -1459,7 +2280,6 @@ export interface operations {
         parameters: {
             query?: {
                 month?: string | null;
-                access_token?: string | null;
             };
             header?: {
                 authorization?: string | null;

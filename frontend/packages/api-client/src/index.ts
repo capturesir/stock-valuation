@@ -21,6 +21,14 @@ export type AiSettingsOut = S["AiSettingsOut"];
 export type PriceRow = S["PriceRow"];
 export type UsageOut = S["UsageOut"];
 export type Mode = ValuateIn["mode"];
+export type UserOut = S["UserOut"];
+export type Prefs = S["Prefs"];
+export type Role = UserOut["role"];
+export type LoginOut = S["LoginOut"];
+export type AuthStatus = S["AuthStatus"];
+export type AdminUserIn = S["AdminUserIn"];
+export type AdminUserUpdate = S["AdminUserUpdate"];
+export type BrandingOut = S["BrandingOut"];
 
 export interface ClientConfig {
   /** "" = same origin (served behind Caddy); e.g. "https://valuation.example.com" for apps */
@@ -28,6 +36,10 @@ export interface ClientConfig {
   getToken?: () => string | null | undefined;
   getLocale?: () => string;
   fetch?: typeof fetch;
+  /** "include" when the API is on another origin and signs in with a cookie; same-origin by default */
+  credentials?: RequestCredentials;
+  /** called on 401 (signed out or session expired) before the error is thrown */
+  onUnauthorized?: () => void;
 }
 
 export class ApiError extends Error {
@@ -50,10 +62,12 @@ export function createClient(cfg: ClientConfig = {}) {
     return h;
   };
 
-  async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
+  async function req<T>(method: string, path: string, body?: unknown, form?: FormData): Promise<T> {
     const res = await doFetch(base + path, {
-      method, headers: headers(body !== undefined), body: body === undefined ? undefined : JSON.stringify(body),
+      method, headers: headers(body !== undefined), credentials: cfg.credentials ?? "same-origin",
+      body: form ?? (body === undefined ? undefined : JSON.stringify(body)),
     });
+    if (res.status === 401 && !path.startsWith("/auth/login")) cfg.onUnauthorized?.();
     if (res.status === 204) return undefined as T;
     const data = await res.json().catch(() => null);
     if (!res.ok) {
@@ -74,6 +88,29 @@ export function createClient(cfg: ClientConfig = {}) {
 
   return {
     health: () => req<Health>("GET", "/health"),
+
+    authStatus: () => req<AuthStatus>("GET", "/auth/status"),
+    login: (email: string, password: string, issueToken = false) =>
+      req<LoginOut>("POST", "/auth/login", { email, password, issue_token: issueToken }),
+    logout: () => req<void>("POST", "/auth/logout"),
+    me: () => req<UserOut>("GET", "/auth/me"),
+    updateMe: (body: { display_name?: string; prefs?: Prefs }) => req<UserOut>("PUT", "/auth/me", body),
+    changePassword: (current_password: string, new_password: string) =>
+      req<void>("PUT", "/auth/me/password", { current_password, new_password }),
+    users: () => req<UserOut[]>("GET", "/admin/users"),
+    addUser: (body: AdminUserIn) => req<UserOut>("POST", "/admin/users", body),
+    updateUser: (id: string, body: AdminUserUpdate) => req<UserOut>("PUT", `/admin/users/${enc(id)}`, body),
+
+    branding: () => req<BrandingOut>("GET", "/branding"),
+    saveBrandingName: (name: string) => req<BrandingOut>("PUT", "/admin/branding", { name }),
+    uploadLogo: (variant: "light" | "dark", file: Blob, filename = "logo") => {
+      const fd = new FormData();
+      fd.append("file", file, filename);
+      return req<BrandingOut>("POST", `/admin/branding/logo/${variant}`, undefined, fd);
+    },
+    removeLogo: (variant: "light" | "dark") => req<BrandingOut>("DELETE", `/admin/branding/logo/${variant}`),
+    /** absolute URL for an <img> (branding URLs from the API are root-relative) */
+    assetUrl: (path: string) => (cfg.baseUrl ?? "").replace(/\/$/, "") + path,
     lookup: (ticker: string) => req<Record<string, unknown>>("GET", `/stocks/${enc(ticker)}/lookup`),
     valuations: (ticker: string) => req<StockValuations>("GET", `/stocks/${enc(ticker)}/valuations`),
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),

@@ -11,8 +11,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
   useEffect(() => {
     store.set("sv.locale", locale);
-    document.documentElement.lang = locale;
-    document.title = createT(locale)("app.name");
+    document.documentElement.lang = locale;      // document.title follows branding (lib/branding.tsx)
   }, [locale]);
   const value = useMemo(() => ({ locale, setLocale, t: createT(locale), f: createFormat(locale) }), [locale]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

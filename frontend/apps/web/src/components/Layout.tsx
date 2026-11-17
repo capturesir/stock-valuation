@@ -2,9 +2,12 @@ import { LOCALES, type Locale } from "@sv/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { BrandMark, useBranding } from "../lib/branding";
 import { useI18n } from "../lib/i18n";
-import { Gear, List, Logo, Search, Trend } from "./Icons";
+import { useMe } from "../lib/session";
+import { Gear, List, Person, Search, Trend } from "./Icons";
 import { PwaPrompt } from "./PwaPrompt";
 
 export function Layout() {
@@ -14,6 +17,12 @@ export function Layout() {
   const ai = useQuery({ queryKey: ["ai-settings"], queryFn: api.aiSettings });
   const usage = useQuery({ queryKey: ["usage"], queryFn: () => api.usage() });
   const last = sessionLast();
+  const { name } = useBranding();
+  const me = useMe().data;
+  const qc = useQueryClient();
+  const signOut = async () => {
+    try { await api.logout(); } finally { qc.clear(); qc.setQueryData(["me"], null); nav("/"); }
+  };
 
   const go = (e: FormEvent) => {
     e.preventDefault();
@@ -27,7 +36,7 @@ export function Layout() {
     <>
       <header className="hdr">
         <div className="hdr-in">
-          <NavLink to="/" className="brand"><Logo /><span>{t("app.name")}</span></NavLink>
+          <NavLink to="/" className="brand"><BrandMark /><span>{name}</span></NavLink>
           <nav className="topnav" aria-label={t("nav.main")}>
             <NavLink to="/" end>{t("nav.watchlist")}</NavLink>
             {last && <NavLink to={`/stock/${last}`}>{t("nav.stock")}</NavLink>}
@@ -48,6 +57,13 @@ export function Layout() {
             {usage.data && <span className="muted muted-hide">
               {t("ai.month", { spent: f.usd(usage.data.total_usd), budget: f.usd(usage.data.budget_monthly_usd) })}</span>}
           </NavLink>
+          {me && (
+            <div className="usermenu">
+              {me.role === "admin" && <NavLink to="/admin" className="muted-hide">{t("nav.admin")}</NavLink>}
+              <NavLink to="/account" title={me.email}><Person size={16} /><span className="muted-hide">{me.display_name}</span></NavLink>
+              <button type="button" className="linkish" onClick={signOut}>{t("nav.signOut")}</button>
+            </div>
+          )}
         </div>
       </header>
       <Outlet />
@@ -55,6 +71,7 @@ export function Layout() {
         <NavLink to="/" end><List size={20} />{t("nav.watchlist")}</NavLink>
         <NavLink to={last ? `/stock/${last}` : "/"}><Trend size={20} />{t("nav.stock")}</NavLink>
         <NavLink to="/settings"><Gear size={20} />{t("nav.settings")}</NavLink>
+        <NavLink to="/account"><Person size={20} />{t("nav.account")}</NavLink>
       </nav>
       <PwaPrompt />
     </>

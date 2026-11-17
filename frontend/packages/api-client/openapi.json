@@ -27,6 +27,905 @@
     }
    }
   },
+  "/api/v1/auth/status": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "是否尚未建立任何帳號（登入頁用）",
+    "operationId": "status_api_v1_auth_status_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AuthStatus"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/login": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "登入（網頁設定 Cookie；App 可要求令牌）",
+    "operationId": "login_api_v1_auth_login_post",
+    "parameters": [
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LoginOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/logout": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "登出此裝置",
+    "operationId": "logout_api_v1_auth_logout_post",
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     }
+    }
+   }
+  },
+  "/api/v1/branding": {
+   "get": {
+    "tags": [
+     "branding"
+    ],
+    "summary": "系統名稱與 Logo（公開，登入頁也會用）",
+    "operationId": "get_branding_api_v1_branding_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BrandingOut"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/branding/logo/{variant}": {
+   "get": {
+    "tags": [
+     "branding"
+    ],
+    "summary": "Logo 檔案",
+    "operationId": "logo_api_v1_branding_logo__variant__get",
+    "parameters": [
+     {
+      "name": "variant",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Variant"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/branding/icon/{name}.png": {
+   "get": {
+    "tags": [
+     "branding"
+    ],
+    "summary": "由 Logo 產生的 PWA 圖示",
+    "operationId": "icon_api_v1_branding_icon__name__png_get",
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Name"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/branding/manifest.webmanifest": {
+   "get": {
+    "tags": [
+     "branding"
+    ],
+    "summary": "PWA manifest（名稱與圖示跟隨品牌設定）",
+    "operationId": "manifest_api_v1_branding_manifest_webmanifest_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/me": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "目前登入的用戶",
+    "operationId": "me_api_v1_auth_me_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "更改顯示名稱與偏好設定",
+    "operationId": "update_me_api_v1_auth_me_put",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MeIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/auth/me/password": {
+   "put": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "更改密碼（其他裝置會被登出）",
+    "operationId": "change_password_api_v1_auth_me_password_put",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PasswordIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/users": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "全部用戶",
+    "operationId": "list_users_api_v1_admin_users_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/UserOut"
+         },
+         "title": "Response List Users Api V1 Admin Users Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "新增用戶",
+    "operationId": "add_user_api_v1_admin_users_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdminUserIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/users/{user_id}": {
+   "put": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "修改用戶：名稱、角色、啟用、重設密碼",
+    "operationId": "update_user_api_v1_admin_users__user_id__put",
+    "parameters": [
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "User Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdminUserUpdate"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/branding": {
+   "put": {
+    "tags": [
+     "branding"
+    ],
+    "summary": "更改系統名稱（管理員）",
+    "operationId": "put_branding_api_v1_admin_branding_put",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BrandingIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BrandingOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/branding/logo/{variant}": {
+   "post": {
+    "tags": [
+     "branding"
+    ],
+    "summary": "上傳 Logo（light／dark；PNG 或 SVG，上限 512 KB；管理員）",
+    "operationId": "upload_logo_api_v1_admin_branding_logo__variant__post",
+    "parameters": [
+     {
+      "name": "variant",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Variant"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_upload_logo_api_v1_admin_branding_logo__variant__post"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BrandingOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "branding"
+    ],
+    "summary": "移除 Logo（管理員）",
+    "operationId": "remove_logo_api_v1_admin_branding_logo__variant__delete",
+    "parameters": [
+     {
+      "name": "variant",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Variant"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BrandingOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/stocks/{ticker}/lookup": {
    "get": {
     "tags": [
@@ -42,22 +941,6 @@
       "schema": {
        "type": "string",
        "title": "Ticker"
-      }
-     },
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
       }
      },
      {
@@ -134,22 +1017,6 @@
       "schema": {
        "type": "string",
        "title": "Ticker"
-      }
-     },
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
       }
      },
      {
@@ -239,22 +1106,6 @@
       }
      },
      {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
-     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -329,22 +1180,6 @@
       }
      },
      {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
-     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -407,22 +1242,6 @@
     "summary": "觀察名單",
     "operationId": "list_watchlist_api_v1_watchlist_get",
     "parameters": [
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
      {
       "name": "authorization",
       "in": "header",
@@ -490,22 +1309,6 @@
     "summary": "加入觀察名單",
     "operationId": "add_api_v1_watchlist_post",
     "parameters": [
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
      {
       "name": "authorization",
       "in": "header",
@@ -588,22 +1391,6 @@
       "schema": {
        "type": "string",
        "title": "Ticker"
-      }
-     },
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
       }
      },
      {
@@ -708,22 +1495,6 @@
       "description": "逗號分隔，例如 T1,T3"
      },
      {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
-     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -788,22 +1559,6 @@
     "summary": "開始估值（背景執行）",
     "operationId": "start_api_v1_valuations_post",
     "parameters": [
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
      {
       "name": "authorization",
       "in": "header",
@@ -879,22 +1634,6 @@
     "summary": "進行中的工作",
     "operationId": "active_jobs_api_v1_jobs_get",
     "parameters": [
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
      {
       "name": "authorization",
       "in": "header",
@@ -974,22 +1713,6 @@
       }
      },
      {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
-     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -1061,22 +1784,6 @@
       "schema": {
        "type": "string",
        "title": "Job Id"
-      }
-     },
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
       }
      },
      {
@@ -1154,22 +1861,6 @@
       }
      },
      {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
-     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -1227,22 +1918,6 @@
     "summary": "AI 連線與預算（金鑰只顯示長度與末四碼）",
     "operationId": "get_ai_api_v1_settings_ai_get",
     "parameters": [
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
      {
       "name": "authorization",
       "in": "header",
@@ -1303,25 +1978,9 @@
     "tags": [
      "settings"
     ],
-    "summary": "更新 AI 連線與預算",
+    "summary": "更新 AI 連線與預算（管理員；全系統共用一把金鑰）",
     "operationId": "put_ai_api_v1_settings_ai_put",
     "parameters": [
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
      {
       "name": "authorization",
       "in": "header",
@@ -1398,22 +2057,6 @@
     "operationId": "test_ai_api_v1_settings_ai_test_post",
     "parameters": [
      {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
-     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -1481,22 +2124,6 @@
     "operationId": "get_prices_api_v1_settings_prices_get",
     "parameters": [
      {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
-     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -1563,22 +2190,6 @@
     "summary": "新增或修改一個模型的價格",
     "operationId": "put_price_api_v1_settings_prices_put",
     "parameters": [
-     {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
      {
       "name": "authorization",
       "in": "header",
@@ -1672,22 +2283,6 @@
       }
      },
      {
-      "name": "access_token",
-      "in": "query",
-      "required": false,
-      "schema": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "null"
-        }
-       ],
-       "title": "Access Token"
-      }
-     },
-     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -1747,6 +2342,95 @@
  },
  "components": {
   "schemas": {
+   "AdminUserIn": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "display_name": {
+      "type": "string",
+      "title": "Display Name",
+      "default": ""
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "member"
+      ],
+      "title": "Role",
+      "default": "member"
+     },
+     "password": {
+      "type": "string",
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "password"
+    ],
+    "title": "AdminUserIn"
+   },
+   "AdminUserUpdate": {
+    "properties": {
+     "display_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 80,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Display Name"
+     },
+     "role": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "admin",
+         "member"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Role"
+     },
+     "is_active": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Is Active"
+     },
+     "password": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Password",
+      "description": "重設密碼；該用戶所有已登入的裝置會被登出"
+     }
+    },
+    "type": "object",
+    "title": "AdminUserUpdate"
+   },
    "AiSettingsIn": {
     "properties": {
      "provider": {
@@ -1924,6 +2608,100 @@
      "presets"
     ],
     "title": "AiSettingsOut"
+   },
+   "AuthStatus": {
+    "properties": {
+     "needs_setup": {
+      "type": "boolean",
+      "title": "Needs Setup",
+      "description": "尚未有任何帳號：需要先用指令建立第一個管理員"
+     }
+    },
+    "type": "object",
+    "required": [
+     "needs_setup"
+    ],
+    "title": "AuthStatus"
+   },
+   "Body_upload_logo_api_v1_admin_branding_logo__variant__post": {
+    "properties": {
+     "file": {
+      "type": "string",
+      "contentMediaType": "application/octet-stream",
+      "title": "File"
+     }
+    },
+    "type": "object",
+    "required": [
+     "file"
+    ],
+    "title": "Body_upload_logo_api_v1_admin_branding_logo__variant__post"
+   },
+   "BrandingIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 40,
+      "minLength": 1,
+      "title": "Name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "BrandingIn"
+   },
+   "BrandingOut": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "logo_light_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Logo Light Url"
+     },
+     "logo_dark_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Logo Dark Url"
+     },
+     "has_custom_icon": {
+      "type": "boolean",
+      "title": "Has Custom Icon",
+      "default": false
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "BrandingOut"
    },
    "HTTPValidationError": {
     "properties": {
@@ -2329,6 +3107,82 @@
     ],
     "title": "KeyMask"
    },
+   "LoginIn": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "password": {
+      "type": "string",
+      "title": "Password"
+     },
+     "issue_token": {
+      "type": "boolean",
+      "title": "Issue Token",
+      "description": "App／小程序用：回應中附上存取令牌（網頁用 Cookie，不需要）",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "password"
+    ],
+    "title": "LoginIn"
+   },
+   "LoginOut": {
+    "properties": {
+     "user": {
+      "$ref": "#/components/schemas/UserOut"
+     },
+     "token": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Token"
+     }
+    },
+    "type": "object",
+    "required": [
+     "user"
+    ],
+    "title": "LoginOut"
+   },
+   "MeIn": {
+    "properties": {
+     "display_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 80,
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Display Name"
+     },
+     "prefs": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Prefs"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "title": "MeIn"
+   },
    "MethodValue": {
     "properties": {
      "method": {
@@ -2369,6 +3223,24 @@
      "value"
     ],
     "title": "MethodValue"
+   },
+   "PasswordIn": {
+    "properties": {
+     "current_password": {
+      "type": "string",
+      "title": "Current Password"
+     },
+     "new_password": {
+      "type": "string",
+      "title": "New Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "current_password",
+     "new_password"
+    ],
+    "title": "PasswordIn"
    },
    "Plan": {
     "properties": {
@@ -2588,6 +3460,62 @@
      "cost_high_usd"
     ],
     "title": "PlanTotal"
+   },
+   "Prefs": {
+    "properties": {
+     "display_currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "title": "Display Currency",
+      "default": "USD"
+     },
+     "rebalance": {
+      "type": "string",
+      "enum": [
+       "none",
+       "monthly",
+       "quarterly",
+       "annual"
+      ],
+      "title": "Rebalance",
+      "default": "none"
+     },
+     "locale": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "zh-Hant",
+         "zh-Hans",
+         "en"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Locale"
+     },
+     "theme": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "light",
+         "dark",
+         "system"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Theme"
+     }
+    },
+    "type": "object",
+    "title": "Prefs",
+    "description": "Per-user preferences. Display currency for portfolios and comparisons (D7); rebalancing (D8)."
    },
    "PricePoint": {
     "properties": {
@@ -3090,6 +4018,63 @@
      "by_ticker"
     ],
     "title": "UsageOut"
+   },
+   "UserOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "display_name": {
+      "type": "string",
+      "title": "Display Name"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "member"
+      ],
+      "title": "Role"
+     },
+     "is_active": {
+      "type": "boolean",
+      "title": "Is Active"
+     },
+     "prefs": {
+      "$ref": "#/components/schemas/Prefs"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "last_login_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Login At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "email",
+     "display_name",
+     "role",
+     "is_active",
+     "prefs",
+     "created_at"
+    ],
+    "title": "UserOut"
    },
    "ValidationError": {
     "properties": {

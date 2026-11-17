@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
-import { store } from "../lib/storage";
+import { useIsAdmin } from "../lib/session";
 
 type Preset = { id: string; label: string; base_url: string; model: string };
 
@@ -17,7 +17,7 @@ export function SettingsPage() {
   const [form, setForm] = useState<Partial<AiSettingsIn>>({});
   const [key, setKey] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  const [token, setToken] = useState(store.get("sv.token") ?? "");
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     // first visit: nothing saved yet, so start from the selected provider's preset
@@ -54,6 +54,8 @@ export function SettingsPage() {
           {["conn", "prices", "budget", "usage", "prefs", "privacy"].map((s) => <a key={s} href={`#${s}`}>{t(`settings.sec.${s}`)}</a>)}
         </nav>
         <div className="content">
+          {!isAdmin && <div className="banner info" role="note">{t("settings.adminOnly")}</div>}
+          <fieldset className="plain" disabled={!isAdmin}>
           <section id="conn" className="card" aria-labelledby="conn-h">
             <h2 id="conn-h">{t("settings.sec.conn")}</h2>
             <div role="group" aria-label={t("settings.provider")} className="presets">
@@ -112,6 +114,7 @@ export function SettingsPage() {
             <div><button className="btn primary" type="button" onClick={() => save.mutate({})}>{t("common.save")}</button></div>
           </section>
 
+          </fieldset>
           <section id="usage" className="card" aria-labelledby="usage-h">
             <h2 id="usage-h">{t("settings.sec.usage")}{u ? ` · ${u.month}` : ""}</h2>
             {u && <>
@@ -150,9 +153,6 @@ export function SettingsPage() {
                 <select value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>
                   {LOCALES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
                 </select></label>
-              <label className="field">{t("settings.token")}
-                <input type="password" value={token} autoComplete="off" onChange={(e) => { setToken(e.target.value); store.set("sv.token", e.target.value || null); }} />
-                <small>{t("settings.tokenHelp")}</small></label>
             </div>
           </section>
 

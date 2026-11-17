@@ -6,6 +6,9 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { I18nProvider, useI18n } from "./lib/i18n";
+import { AuthGate } from "./lib/session";
+import { AccountPage } from "./pages/AccountPage";
+import { AdminPage } from "./pages/AdminPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StockPage } from "./pages/StockPage";
 import { WatchlistPage } from "./pages/WatchlistPage";
@@ -24,15 +27,19 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={qc}>
       <I18nProvider>
         <BrowserRouter>
+          <AuthGate>
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<WatchlistPage />} />
               <Route path="stock/:ticker" element={<StockPage />} />
               <Route path="stock/:ticker/:tab" element={<StockPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="account" element={<AccountPage />} />
+              <Route path="admin" element={<AdminPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
+          </AuthGate>
         </BrowserRouter>
       </I18nProvider>
     </QueryClientProvider>

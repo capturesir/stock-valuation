@@ -10,22 +10,8 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       includeAssets: ["icon.svg", "apple-touch-icon.png"],
-      manifest: {
-        name: "估值工作台",
-        short_name: "估值工作台",
-        description: "股票估值：多方法理論價、估值走勢與 AI 分析（自帶金鑰）",
-        lang: "zh-Hant",
-        theme_color: "#1F5FBF",
-        background_color: "#F4F5F7",
-        display: "standalone",
-        start_url: "/",
-        icons: [
-          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
-          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
-          { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
-          { src: "icon.svg", sizes: "any", type: "image/svg+xml" },
-        ],
-      },
+      // served by the API so the name and icons follow the branding settings (index.html links it)
+      manifest: false,
       workbox: {
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
@@ -33,7 +19,7 @@ export default defineConfig({
           {
             // last-known valuations and watchlist stay readable offline
             urlPattern: ({ url, request }) =>
-              request.method === "GET" && /^\/api\/v1\/(watchlist|stocks\/[^/]+\/(valuations|prices)|settings\/ai|ai\/usage)/.test(url.pathname),
+              request.method === "GET" && /^\/api\/v1\/(watchlist|stocks\/[^/]+\/(valuations|prices)|settings\/ai|ai\/usage|branding|auth\/me)/.test(url.pathname),
             handler: "NetworkFirst",
             options: { cacheName: "sv-api", networkTimeoutSeconds: 6, expiration: { maxEntries: 200, maxAgeSeconds: 30 * 86400 } },
           },

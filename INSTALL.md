@@ -41,18 +41,26 @@ docker compose up -d --build
 docker compose ps
 ```
 
-打開 <http://localhost:8080>。
+建立第一個管理員帳號（只需做一次；密碼會在終端機詢問）：
+
+```bash
+docker compose exec api python -m backend.app.cli create-user --email you@example.com --name 你的名字 --role admin
+```
+
+打開 <http://localhost:8080>，以這個帳號登入。
 
 ### A3. 開始使用
 
-1. **（可選）設定 AI：** 右上角「AI 與費用」→ 選服務商 → 貼上你的 API 金鑰 →「測試連線」→「保存」。不設定也能估值，系統會使用規則後備。
+0. **新增其他用戶：** 管理員在右上角「系統管理」新增用戶，可設為「管理員」或「一般用戶」；同一頁可設定系統名稱與 Logo。每個用戶有自己的觀察名單；估值紀錄、市場與財報數據全系統共享。
+1. **（可選）設定 AI（管理員）：** 右上角「AI 與費用」→ 選服務商 → 貼上你的 API 金鑰 →「測試連線」→「保存」。不設定也能估值，系統會使用規則後備。
 2. **加入股票：** 在「觀察名單」輸入代號（例如 `0883.HK`、`NVDA`）。
 3. **估值：** 打開股票 →「重新估值」→ 查看 AI 工作清單與預估費用 →「開始估值」。
 4. 以前用 v1 做過的估值（`out/` 資料夾）會在第一次啟動時自動匯入，走勢圖從第一天起就有歷史。
 
 ### A4. 在手機上使用（PWA）
 
-- 同一網絡內：把 `.env` 的 `WEB_BIND` 改成 `0.0.0.0`，**並設定 `APP_API_TOKEN`**，然後 `docker compose up -d`，手機瀏覽器打開 `http://<電腦 IP>:8080`，在「AI 與費用 → 介面與存取」填入同一個令牌。
+- 同一網絡內：把 `.env` 的 `WEB_BIND` 改成 `0.0.0.0`，然後 `docker compose up -d`，手機瀏覽器打開 `http://<電腦 IP>:8080`，用自己的帳號登入。
+- `APP_API_TOKEN` 只給腳本或排程程式使用（以 `Authorization: Bearer <令牌>` 呼叫 API，具管理員權限），一般使用不需要設定。
 - 安裝到主畫面需要 HTTPS（`localhost` 除外）。有網域名稱時，把 `SITE_ADDRESS` 設為該網域，並把 `WEB_PORT=80`、`WEB_HTTPS_PORT=443`、`WEB_BIND=0.0.0.0`；Caddy 會自動申請及續期憑證。
 
 ### A5. 使用本地模型（免費）
@@ -116,6 +124,13 @@ pip install -r backend/requirements.txt
 # POSTGRES_PASSWORD／POSTGRES_DB（預設 valuation／change-me／valuation，與上面的 Docker 資料庫相同）。
 # 加密金鑰在未設定 APP_SECRET_KEY 時自動建立在 var/（已列入 .gitignore）
 uvicorn backend.app.main:app --port 8000 --reload
+```
+
+建立第一個管理員（只需一次）：
+
+```bash
+python -m backend.app.cli create-user --email you@example.com --name 你的名字 --role admin
+python -m backend.app.cli list-users           # 查看所有用戶
 ```
 
 API 文件：<http://localhost:8000/api/v1/docs>
