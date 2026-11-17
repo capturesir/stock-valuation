@@ -48,11 +48,26 @@ def _empty_all_tables(url: str) -> None:
     eng.dispose()
 
 
+@pytest.fixture(autouse=True)
+def fake_market(monkeypatch):
+    """No network in tests: market data comes from a deterministic fake source, synced inline."""
+    from backend.app.services import market, market_jobs
+    from market_fake import FakeSource
+
+    src = FakeSource()
+    old = market.get_source()
+    market.set_source(src)
+    monkeypatch.setattr(market_jobs, "INLINE", True)
+    yield src
+    market.set_source(old)
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch, pg_url):
     monkeypatch.setenv("APP_DATA_DIR", str(tmp_path))
     monkeypatch.setenv("DATABASE_URL", pg_url)
     monkeypatch.setenv("APP_IMPORT_LEGACY", "0")
+    monkeypatch.setenv("APP_MARKET_SCHEDULER", "0")
     for k in ("REDIS_URL", "APP_API_TOKEN", "APP_SECRET_KEY", "LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL"):
         monkeypatch.delenv(k, raising=False)
     from backend.app import config, db, jobs

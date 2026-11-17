@@ -10,6 +10,7 @@ from ..db import get_db
 from ..i18n import http_error, lang_dep
 from ..models import Run, User, WatchlistItem
 from ..schemas import WatchlistEntry, WatchlistIn
+from ..services import market, market_jobs
 from .common import iso, run_out, scenario, ticker_or_400
 
 router = APIRouter(tags=["watchlist"])
@@ -45,7 +46,11 @@ def add(body: WatchlistIn, user: User = Depends(require_user), db: Session = Dep
         company = db.scalar(select(Run.company).where(Run.ticker == t, Run.company.is_not(None)).limit(1))
         w = WatchlistItem(user_id=user.id, ticker=t, company=company)
         db.add(w)
+        sec = market.track(db, t)            # every ticker in use accumulates daily prices
         db.flush()
+        if sec.backfilled_at is None:
+            db.commit()                      # the background sync runs in its own transaction
+            market_jobs.submit_sync(t)
     return _entry(db, w)
 
 

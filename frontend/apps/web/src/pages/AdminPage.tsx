@@ -20,6 +20,7 @@ export function AdminPage() {
         <p className="muted" style={{ margin: "6px 0 0" }}>{t("admin.subtitle")}</p></div>
       <Users />
       <Branding />
+      <Market />
       <footer className="foot">{t("app.disclaimer")}</footer>
     </main>
   );
@@ -145,5 +146,56 @@ function LogoSlot({ variant, url, label, onFile, onRemove }: { variant: "light" 
         {url && <button className="btn small danger" type="button" onClick={onRemove}>{t("admin.brand.remove")}</button>}
       </div>
     </div>
+  );
+}
+
+function Market() {
+  const { t, f } = useI18n();
+  const status = useQuery({ queryKey: ["market-status"], queryFn: api.marketStatus });
+  const secs = useQuery({ queryKey: ["securities"], queryFn: api.securities });
+  const [msg, setMsg] = useState<Msg>(null);
+  const run = useMutation({ mutationFn: api.updateAllMarket, onSuccess: () => setMsg({ kind: "ok", text: t("admin.market.started") }),
+                            onError: (e) => setMsg({ kind: "err", text: errText(e) }) });
+  const st = status.data;
+  const last = st?.last_run as { finished_at?: string; synced?: number; failed?: unknown[] } | null | undefined;
+  return (
+    <section className="card" aria-labelledby="market-h">
+      <h2 id="market-h">{t("admin.sec.market")}</h2>
+      <p className="muted" style={{ margin: 0 }}>{t("admin.market.intro")}</p>
+      {st && <p className="small" style={{ margin: 0 }}>
+        {st.scheduler === "off" ? t("admin.market.off")
+          : t("admin.market.schedule", { times: st.times.join("、"), tz: st.timezone, next: st.next_runs[0]?.replace("T", " ").slice(0, 16) ?? "—" })}
+        {last?.finished_at && <> · {t("admin.market.lastRun", { at: f.datetime(last.finished_at), ok: last.synced ?? 0, failed: last.failed?.length ?? 0 })}</>}
+      </p>}
+      <div className="tbl-wrap">
+        <table className="tbl" style={{ minWidth: 720 }}>
+          <thead><tr><th scope="col">{t("admin.market.ticker")}</th><th scope="col" className="l">{t("admin.users.name")}</th>
+            <th scope="col">{t("admin.market.range")}</th><th scope="col">{t("admin.market.bars")}</th>
+            <th scope="col" className="l">{t("admin.market.check")}</th><th scope="col">{t("admin.market.updated")}</th></tr></thead>
+          <tbody>
+            {(secs.data ?? []).map((s) => {
+              const c = (s.checks as { total_return?: { status: string; max_deviation?: number; note?: string } } | null)?.total_return;
+              return (
+                <tr key={s.ticker}>
+                  <td><strong>{s.ticker}</strong></td>
+                  <td className="l" style={{ whiteSpace: "normal" }}>{s.name ?? "—"} <span className="muted small">{s.currency ?? ""}</span></td>
+                  <td>{s.first_date ?? "—"} – {s.last_date ?? "—"}</td>
+                  <td>{s.bars.toLocaleString()}</td>
+                  <td className="l">
+                    {s.last_error ? <span className="tag bad" title={s.last_error}>{t("admin.market.error")}</span>
+                      : c?.status === "ok" ? <span className="tag ok">{t("admin.market.ok")}</span>
+                      : c?.status === "warn" ? <span className="tag warn" title={c.note}>{t("admin.market.warn", { pct: f.pct(c.max_deviation ?? 0, 1, false) })}</span>
+                      : <span className="muted">—</span>}
+                  </td>
+                  <td>{s.updated_at ? f.datetime(s.updated_at) : "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div><button className="btn secondary" type="button" onClick={() => run.mutate()} disabled={run.isPending}>{t("admin.market.updateNow")}</button></div>
+      {msg && <div role="status" className={`banner ${msg.kind === "ok" ? "info" : "err"}`}>{msg.text}</div>}
+    </section>
   );
 }

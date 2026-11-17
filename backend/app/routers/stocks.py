@@ -1,6 +1,7 @@
 """Stocks: lookup, valuation history (trend chart), daily prices, Excel download."""
 from __future__ import annotations
 
+import datetime as dt
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query
@@ -10,9 +11,10 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..i18n import http_error, lang_dep
-from ..models import Run, WatchlistItem
+from ..models import Run, Security, WatchlistItem
 from ..schemas import PriceSeries, StockValuations
-from .common import run_out, ticker_or_400
+from ..services import market
+from .common import iso, run_out, ticker_or_400
 
 router = APIRouter(tags=["stocks"])
 
@@ -49,19 +51,33 @@ def valuations(ticker: str, db: Session = Depends(get_db)) -> dict:
     }
 
 
-@router.get("/stocks/{ticker}/prices", response_model=PriceSeries, summary="每日收市價")
-def prices(ticker: str, days: int = Query(365, ge=10, le=3650)) -> dict:
-    from src.fetch import yahoo
-
+@router.get("/stocks/{ticker}/prices", response_model=PriceSeries,
+            summary="每日價格（系統累積；首次使用時自動回補全部歷史）")
+def prices(ticker: str, days: int = Query(365, ge=10, le=36500), db: Session = Depends(get_db)) -> dict:
     t = ticker_or_400(ticker)
-    try:
-        ch = yahoo.chart_quote(t, days=days)
-    except Exception as exc:  # network down / blocked: the chart falls back to valuation-time prices
-        return {"ticker": t, "currency": None, "points": [], "error": f"{type(exc).__name__}: {exc}"}
-    if not ch.get("ok"):
-        return {"ticker": t, "currency": None, "points": [], "error": ch.get("error") or "無法取得市價"}
-    return {"ticker": t, "currency": (ch.get("meta") or {}).get("currency"),
-            "points": [{"date": p["date"], "close": p["close"]} for p in ch.get("closes") or []]}
+    sec = db.get(Security, t)
+    error = None
+    stale = sec is None or sec.backfilled_at is None or sec.updated_at is None or \
+        dt.datetime.now(dt.timezone.utc) - _aware(sec.updated_at) > dt.timedelta(hours=20)
+    if stale:
+        try:
+            market.sync(db, t)
+        except Exception as exc:   # keep serving what is stored; say why it is not fresh
+            error = f"{type(exc).__name__}: {exc}"
+        sec = db.get(Security, t)
+    start = dt.date.today() - dt.timedelta(days=days)
+    pts = market.series(db, t, start=start)
+    return {"ticker": t, "currency": sec.currency if sec else None,
+            "points": [{"date": p.date.isoformat(), "close": p.close, "adj_close": round(p.adj_close, 6)} for p in pts],
+            "coverage": {"first_date": sec.first_date.isoformat() if sec and sec.first_date else None,
+                         "last_date": sec.last_date.isoformat() if sec and sec.last_date else None,
+                         "bars": sec.bars if sec else 0,
+                         "updated_at": iso(sec.updated_at) if sec and sec.updated_at else None},
+            "error": None if error is None else (error if not pts else f"未能更新，顯示已保存的數據：{error}")}
+
+
+def _aware(ts: dt.datetime) -> dt.datetime:
+    return ts if ts.tzinfo else ts.replace(tzinfo=dt.timezone.utc)
 
 
 @router.get("/runs/{run_id}/excel", summary="下載該次估值的 Excel")

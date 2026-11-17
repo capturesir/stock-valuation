@@ -193,6 +193,8 @@ def execute(job_id: str, payload: dict) -> None:
     with session() as db:
         run = None
         if status == "done" and calc:
+            from . import market
+            market.track(db, job["ticker"])
             run = persist_run(db, calc, status="done", ai_mode=job["mode"], trigger=payload.get("trigger") or "manual",
                               verify_pass=result.get("verify_pass"), calc_path=result.get("path"),
                               xlsx_path=result.get("xlsx"), ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out,

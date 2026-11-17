@@ -18,6 +18,7 @@ from .i18n import msg, pick
 from .auth import current_principal
 from .routers import auth as auth_router
 from .routers import branding as branding_router
+from .routers import market as market_router
 from .routers import settings as settings_router
 from .routers import stocks, valuations, watchlist
 from .schemas import Health
@@ -37,7 +38,28 @@ async def lifespan(app: FastAPI):
             n = import_legacy(db)
             if n:
                 log.info("imported %d legacy valuations from out/", n)
+        _track_tickers_in_use(db)
+    from . import scheduler
+    scheduler.start_inline()
     yield
+    scheduler.stop_inline()
+
+
+def _track_tickers_in_use(db) -> None:
+    """Tickers on any watchlist or with a valuation accumulate daily prices from now on."""
+    from sqlalchemy import select
+
+    from .models import Run, WatchlistItem
+    from .services import market
+    from src.pipeline.tickers import normalize
+
+    seen = set(db.scalars(select(WatchlistItem.ticker))) | set(db.scalars(select(Run.ticker).distinct()))
+    for t in sorted(seen):
+        try:
+            if normalize(t) == t:
+                market.track(db, t)
+        except Exception:
+            continue
 
 
 def create_app() -> FastAPI:
@@ -87,7 +109,7 @@ def create_app() -> FastAPI:
     app.include_router(branding_router.public, prefix=API)
     secured = [Depends(current_principal)]
     for r in (auth_router.me_router, auth_router.admin, branding_router.admin, stocks.router, watchlist.router, valuations.router,
-              settings_router.router):
+              settings_router.router, market_router.router):
         app.include_router(r, prefix=API, dependencies=secured)
     return app
 

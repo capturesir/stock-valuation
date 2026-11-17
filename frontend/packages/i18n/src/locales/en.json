@@ -282,5 +282,20 @@
   "admin.brand.upload": "Upload",
   "admin.brand.remove": "Remove",
   "admin.brand.none": "Default icon",
-  "settings.adminOnly": "The AI connection, budgets and price table are shared by everyone; only administrators can change them."
+  "settings.adminOnly": "The AI connection, budgets and price table are shared by everyone; only administrators can change them.",
+  "admin.sec.market": "Market data",
+  "admin.market.intro": "Every ticker and FX pair ever used accumulates daily prices, dividends and splits. Prices are stored unadjusted; total return is computed here and checked against the source.",
+  "admin.market.schedule": "Daily update: {times} ({tz}) · next {next}",
+  "admin.market.off": "Daily update is off",
+  "admin.market.lastRun": "Last update {at}: {ok} synced, {failed} failed",
+  "admin.market.updateNow": "Update all now",
+  "admin.market.started": "Update started in the background.",
+  "admin.market.ticker": "Ticker",
+  "admin.market.range": "Range",
+  "admin.market.bars": "Days",
+  "admin.market.check": "Total-return check",
+  "admin.market.updated": "Updated",
+  "admin.market.ok": "Matches",
+  "admin.market.warn": "Off by {pct}",
+  "admin.market.error": "Error"
 }

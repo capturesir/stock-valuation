@@ -1081,7 +1081,7 @@
     "tags": [
      "stocks"
     ],
-    "summary": "每日收市價",
+    "summary": "每日價格（系統累積；首次使用時自動回補全部歷史）",
     "operationId": "prices_api_v1_stocks__ticker__prices_get",
     "parameters": [
      {
@@ -1099,7 +1099,7 @@
       "required": false,
       "schema": {
        "type": "integer",
-       "maximum": 3650,
+       "maximum": 36500,
        "minimum": 10,
        "default": 365,
        "title": "Days"
@@ -2338,6 +2338,388 @@
      }
     }
    }
+  },
+  "/api/v1/market/securities": {
+   "get": {
+    "tags": [
+     "market"
+    ],
+    "summary": "系統累積的證券與匯率：覆蓋期間、筆數、檢查結果",
+    "operationId": "securities_api_v1_market_securities_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/SecurityOut"
+         },
+         "title": "Response Securities Api V1 Market Securities Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/market/status": {
+   "get": {
+    "tags": [
+     "market"
+    ],
+    "summary": "每日更新排程與上次結果",
+    "operationId": "status_api_v1_market_status_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MarketStatus"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/market/revisions": {
+   "get": {
+    "tags": [
+     "market"
+    ],
+    "summary": "來源修正過的數字（舊值保存於此）",
+    "operationId": "revisions_api_v1_market_revisions_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 2000,
+       "minimum": 1,
+       "default": 200,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/RevisionOut"
+         },
+         "title": "Response Revisions Api V1 Market Revisions Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/market/sync/{ticker}": {
+   "post": {
+    "tags": [
+     "market"
+    ],
+    "summary": "立即更新一隻證券（full=true 重新回補全部歷史；管理員）",
+    "operationId": "sync_one_api_v1_admin_market_sync__ticker__post",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "full",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Full"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SyncResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/market/update-all": {
+   "post": {
+    "tags": [
+     "market"
+    ],
+    "summary": "立即執行每日更新（背景；管理員）",
+    "operationId": "update_all_api_v1_admin_market_update_all_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Update All Api V1 Admin Market Update All Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -2702,6 +3084,50 @@
      "name"
     ],
     "title": "BrandingOut"
+   },
+   "Coverage": {
+    "properties": {
+     "first_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Date"
+     },
+     "last_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Date"
+     },
+     "bars": {
+      "type": "integer",
+      "title": "Bars",
+      "default": 0
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "title": "Coverage"
    },
    "HTTPValidationError": {
     "properties": {
@@ -3154,6 +3580,67 @@
     ],
     "title": "LoginOut"
    },
+   "MarketStatus": {
+    "properties": {
+     "scheduler": {
+      "type": "string",
+      "enum": [
+       "worker",
+       "inline",
+       "off"
+      ],
+      "title": "Scheduler"
+     },
+     "timezone": {
+      "type": "string",
+      "title": "Timezone"
+     },
+     "times": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Times"
+     },
+     "next_runs": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Next Runs"
+     },
+     "last_run": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Run"
+     },
+     "securities": {
+      "type": "integer",
+      "title": "Securities"
+     },
+     "bars": {
+      "type": "integer",
+      "title": "Bars"
+     }
+    },
+    "type": "object",
+    "required": [
+     "scheduler",
+     "timezone",
+     "times",
+     "next_runs",
+     "securities",
+     "bars"
+    ],
+    "title": "MarketStatus"
+   },
    "MeIn": {
     "properties": {
      "display_name": {
@@ -3525,7 +4012,20 @@
      },
      "close": {
       "type": "number",
-      "title": "Close"
+      "title": "Close",
+      "description": "未調整收市價（當日成交價）"
+     },
+     "adj_close": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adj Close",
+      "description": "按拆股與派息調整的總回報價格（最新一日等於收市價）"
      }
     },
     "type": "object",
@@ -3640,7 +4140,17 @@
      "source": {
       "type": "string",
       "title": "Source",
-      "default": "Yahoo Finance"
+      "default": "Yahoo Finance（系統每日累積）"
+     },
+     "coverage": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Coverage"
+       },
+       {
+        "type": "null"
+       }
+      ]
      },
      "error": {
       "anyOf": [
@@ -3661,6 +4171,61 @@
      "points"
     ],
     "title": "PriceSeries"
+   },
+   "RevisionOut": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "date": {
+      "type": "string",
+      "title": "Date"
+     },
+     "field": {
+      "type": "string",
+      "title": "Field"
+     },
+     "old": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Old"
+     },
+     "new": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "New"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "seen_at": {
+      "type": "string",
+      "title": "Seen At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "date",
+     "field",
+     "source",
+     "seen_at"
+    ],
+    "title": "RevisionOut"
    },
    "RunOut": {
     "properties": {
@@ -3877,6 +4442,140 @@
     ],
     "title": "RunOut"
    },
+   "SecurityOut": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "exchange": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Exchange"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "quote_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Quote Type"
+     },
+     "tracked": {
+      "type": "boolean",
+      "title": "Tracked"
+     },
+     "first_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Date"
+     },
+     "last_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Date"
+     },
+     "bars": {
+      "type": "integer",
+      "title": "Bars",
+      "default": 0
+     },
+     "backfilled_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Backfilled At"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     },
+     "last_error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Error"
+     },
+     "checks": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Checks"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "tracked"
+    ],
+    "title": "SecurityOut"
+   },
    "StockValuations": {
     "properties": {
      "ticker": {
@@ -3943,6 +4642,71 @@
      "previous"
     ],
     "title": "StockValuations"
+   },
+   "SyncResult": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "mode": {
+      "type": "string",
+      "title": "Mode"
+     },
+     "bars_added": {
+      "type": "integer",
+      "title": "Bars Added"
+     },
+     "bars_revised": {
+      "type": "integer",
+      "title": "Bars Revised"
+     },
+     "actions_added": {
+      "type": "integer",
+      "title": "Actions Added"
+     },
+     "actions_revised": {
+      "type": "integer",
+      "title": "Actions Revised"
+     },
+     "first_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Date"
+     },
+     "last_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Date"
+     },
+     "bars": {
+      "type": "integer",
+      "title": "Bars"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "mode",
+     "bars_added",
+     "bars_revised",
+     "actions_added",
+     "actions_revised",
+     "bars"
+    ],
+    "title": "SyncResult"
    },
    "UsageOut": {
     "properties": {

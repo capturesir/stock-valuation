@@ -286,7 +286,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 每日收市價 */
+        /** 每日價格（系統累積；首次使用時自動回補全部歷史） */
         get: operations["prices_api_v1_stocks__ticker__prices_get"];
         put?: never;
         post?: never;
@@ -520,6 +520,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/securities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 系統累積的證券與匯率：覆蓋期間、筆數、檢查結果 */
+        get: operations["securities_api_v1_market_securities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 每日更新排程與上次結果 */
+        get: operations["status_api_v1_market_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 來源修正過的數字（舊值保存於此） */
+        get: operations["revisions_api_v1_market_revisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/market/sync/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 立即更新一隻證券（full=true 重新回補全部歷史；管理員） */
+        post: operations["sync_one_api_v1_admin_market_sync__ticker__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/market/update-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 立即執行每日更新（背景；管理員） */
+        post: operations["update_all_api_v1_admin_market_update_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -643,6 +728,20 @@ export interface components {
              * @default false
              */
             has_custom_icon: boolean;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** Coverage */
+        Coverage: {
+            /** First Date */
+            first_date?: string | null;
+            /** Last Date */
+            last_date?: string | null;
+            /**
+             * Bars
+             * @default 0
+             */
+            bars: number;
             /** Updated At */
             updated_at?: string | null;
         };
@@ -793,6 +892,28 @@ export interface components {
             /** Token */
             token?: string | null;
         };
+        /** MarketStatus */
+        MarketStatus: {
+            /**
+             * Scheduler
+             * @enum {string}
+             */
+            scheduler: "worker" | "inline" | "off";
+            /** Timezone */
+            timezone: string;
+            /** Times */
+            times: string[];
+            /** Next Runs */
+            next_runs: string[];
+            /** Last Run */
+            last_run?: {
+                [key: string]: unknown;
+            } | null;
+            /** Securities */
+            securities: number;
+            /** Bars */
+            bars: number;
+        };
         /** MeIn */
         MeIn: {
             /** Display Name */
@@ -921,8 +1042,16 @@ export interface components {
         PricePoint: {
             /** Date */
             date: string;
-            /** Close */
+            /**
+             * Close
+             * @description 未調整收市價（當日成交價）
+             */
             close: number;
+            /**
+             * Adj Close
+             * @description 按拆股與派息調整的總回報價格（最新一日等於收市價）
+             */
+            adj_close?: number | null;
         };
         /** PriceRow */
         PriceRow: {
@@ -956,11 +1085,29 @@ export interface components {
             points: components["schemas"]["PricePoint"][];
             /**
              * Source
-             * @default Yahoo Finance
+             * @default Yahoo Finance（系統每日累積）
              */
             source: string;
+            coverage?: components["schemas"]["Coverage"] | null;
             /** Error */
             error?: string | null;
+        };
+        /** RevisionOut */
+        RevisionOut: {
+            /** Ticker */
+            ticker: string;
+            /** Date */
+            date: string;
+            /** Field */
+            field: string;
+            /** Old */
+            old?: number | null;
+            /** New */
+            new?: number | null;
+            /** Source */
+            source: string;
+            /** Seen At */
+            seen_at: string;
         };
         /** RunOut */
         RunOut: {
@@ -1020,6 +1167,40 @@ export interface components {
              */
             data_gaps: string[];
         };
+        /** SecurityOut */
+        SecurityOut: {
+            /** Ticker */
+            ticker: string;
+            /** Name */
+            name?: string | null;
+            /** Exchange */
+            exchange?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /** Quote Type */
+            quote_type?: string | null;
+            /** Tracked */
+            tracked: boolean;
+            /** First Date */
+            first_date?: string | null;
+            /** Last Date */
+            last_date?: string | null;
+            /**
+             * Bars
+             * @default 0
+             */
+            bars: number;
+            /** Backfilled At */
+            backfilled_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /** Last Error */
+            last_error?: string | null;
+            /** Checks */
+            checks?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /** StockValuations */
         StockValuations: {
             /** Ticker */
@@ -1032,6 +1213,27 @@ export interface components {
             runs: components["schemas"]["RunOut"][];
             latest: components["schemas"]["RunOut"] | null;
             previous: components["schemas"]["RunOut"] | null;
+        };
+        /** SyncResult */
+        SyncResult: {
+            /** Ticker */
+            ticker: string;
+            /** Mode */
+            mode: string;
+            /** Bars Added */
+            bars_added: number;
+            /** Bars Revised */
+            bars_revised: number;
+            /** Actions Added */
+            actions_added: number;
+            /** Actions Revised */
+            actions_revised: number;
+            /** First Date */
+            first_date?: string | null;
+            /** Last Date */
+            last_date?: string | null;
+            /** Bars */
+            bars: number;
         };
         /** UsageOut */
         UsageOut: {
@@ -2297,6 +2499,175 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UsageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    securities_api_v1_market_securities_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    status_api_v1_market_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revisions_api_v1_market_revisions_get: {
+        parameters: {
+            query?: {
+                ticker?: string | null;
+                limit?: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_one_api_v1_admin_market_sync__ticker__post: {
+        parameters: {
+            query?: {
+                full?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_all_api_v1_admin_market_update_all_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

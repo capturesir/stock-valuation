@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 
+from arq import cron
 from arq.connections import RedisSettings
 
 from .config import get_settings
@@ -19,12 +20,29 @@ async def run_valuation(ctx, job_id: str, payload: dict) -> None:
     await asyncio.to_thread(execute, job_id, payload)
 
 
+async def market_update(ctx) -> None:
+    from .scheduler import run_once
+    await asyncio.to_thread(run_once)
+
+
+async def market_update_now(ctx) -> None:
+    await market_update(ctx)
+
+
 async def startup(ctx) -> None:
     init_db()
 
 
+def _cron_jobs() -> list:
+    from .scheduler import enabled, utc_cron
+    if not enabled():
+        return []
+    return [cron(market_update, hour={h}, minute={m}, run_at_startup=False) for h, m in utc_cron()]
+
+
 class WorkerSettings:
-    functions = [run_valuation]
+    functions = [run_valuation, market_update_now]
+    cron_jobs = _cron_jobs()
     on_startup = startup
     max_jobs = 1
     job_timeout = 15 * 60

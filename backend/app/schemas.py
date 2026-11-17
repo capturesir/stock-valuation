@@ -66,14 +66,23 @@ class StockValuations(BaseModel):
 
 class PricePoint(BaseModel):
     date: str
-    close: float
+    close: float = Field(description="未調整收市價（當日成交價）")
+    adj_close: Optional[float] = Field(None, description="按拆股與派息調整的總回報價格（最新一日等於收市價）")
+
+
+class Coverage(BaseModel):
+    first_date: Optional[str] = None
+    last_date: Optional[str] = None
+    bars: int = 0
+    updated_at: Optional[str] = None
 
 
 class PriceSeries(BaseModel):
     ticker: str
     currency: Optional[str]
     points: list[PricePoint]
-    source: str = "Yahoo Finance"
+    source: str = "Yahoo Finance（系統每日累積）"
+    coverage: Optional[Coverage] = None
     error: Optional[str] = None
 
 
@@ -315,3 +324,53 @@ class BrandingOut(BaseModel):
 
 class BrandingIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=40)
+
+
+# ---------------------------------------------------------------- market data
+
+class SecurityOut(BaseModel):
+    ticker: str
+    name: Optional[str] = None
+    exchange: Optional[str] = None
+    currency: Optional[str] = None
+    quote_type: Optional[str] = None
+    tracked: bool
+    first_date: Optional[str] = None
+    last_date: Optional[str] = None
+    bars: int = 0
+    backfilled_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    last_error: Optional[str] = None
+    checks: Optional[dict] = None
+
+
+class MarketStatus(BaseModel):
+    scheduler: Literal["worker", "inline", "off"]
+    timezone: str
+    times: list[str]
+    next_runs: list[str]
+    last_run: Optional[dict] = None
+    securities: int
+    bars: int
+
+
+class SyncResult(BaseModel):
+    ticker: str
+    mode: str
+    bars_added: int
+    bars_revised: int
+    actions_added: int
+    actions_revised: int
+    first_date: Optional[str] = None
+    last_date: Optional[str] = None
+    bars: int
+
+
+class RevisionOut(BaseModel):
+    ticker: str
+    date: str
+    field: str
+    old: Optional[float] = None
+    new: Optional[float] = None
+    source: str
+    seen_at: str

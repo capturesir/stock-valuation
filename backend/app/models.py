@@ -5,7 +5,7 @@ import datetime as dt
 import uuid
 from typing import Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -143,3 +143,66 @@ class Price(Base):
     note: Mapped[Optional[str]] = mapped_column(Text)
     checked_on: Mapped[Optional[str]] = mapped_column(String(10))
     source_url: Mapped[Optional[str]] = mapped_column(Text)
+
+
+# ---------------------------------------------------------------- market data (§4 of the v2.1 roadmap)
+
+class Security(Base):
+    """Anything with a daily price series: stocks, ETFs, and FX pairs (ticker like ``USDHKD=X``).
+    Every ticker the system ever uses is tracked and updated daily, so history accumulates."""
+    __tablename__ = "securities"
+    ticker: Mapped[str] = mapped_column(String(24), primary_key=True)
+    name: Mapped[Optional[str]] = mapped_column(String(200))
+    exchange: Mapped[Optional[str]] = mapped_column(String(40))
+    currency: Mapped[Optional[str]] = mapped_column(String(8))
+    quote_type: Mapped[Optional[str]] = mapped_column(String(24))        # EQUITY | ETF | CURRENCY | INDEX …
+    timezone: Mapped[Optional[str]] = mapped_column(String(48))
+    source: Mapped[str] = mapped_column(String(24), default="yahoo")
+    tracked: Mapped[bool] = mapped_column(Boolean, default=True)
+    first_date: Mapped[Optional[dt.date]] = mapped_column(Date)
+    last_date: Mapped[Optional[dt.date]] = mapped_column(Date)
+    bars: Mapped[int] = mapped_column(Integer, default=0)
+    backfilled_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[Optional[str]] = mapped_column(Text)
+    checks: Mapped[Optional[dict]] = mapped_column(JSON)                  # e.g. total-return check vs the source
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class PriceBar(Base):
+    """One trading day, **unadjusted** (as traded that day). Splits never rewrite these rows;
+    split- and dividend-adjusted series are computed from them plus corporate_actions."""
+    __tablename__ = "price_bars"
+    ticker: Mapped[str] = mapped_column(ForeignKey("securities.ticker", ondelete="CASCADE"), primary_key=True)
+    date: Mapped[dt.date] = mapped_column(Date, primary_key=True)
+    open: Mapped[Optional[float]] = mapped_column(Float)
+    high: Mapped[Optional[float]] = mapped_column(Float)
+    low: Mapped[Optional[float]] = mapped_column(Float)
+    close: Mapped[float] = mapped_column(Float)
+    volume: Mapped[Optional[int]] = mapped_column(BigInteger)
+    source: Mapped[str] = mapped_column(String(24), default="yahoo")
+    fetched_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class CorporateAction(Base):
+    """Dividends (unadjusted cash per share, on the ex-date) and splits (ratio, e.g. 10 for 10-for-1)."""
+    __tablename__ = "corporate_actions"
+    ticker: Mapped[str] = mapped_column(ForeignKey("securities.ticker", ondelete="CASCADE"), primary_key=True)
+    date: Mapped[dt.date] = mapped_column(Date, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(12), primary_key=True)        # dividend | split
+    value: Mapped[float] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(24), default="yahoo")
+    fetched_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class PriceRevision(Base):
+    """A stored value the source later changed: the old value is kept here, never lost."""
+    __tablename__ = "price_revisions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ticker: Mapped[str] = mapped_column(String(24), index=True)
+    date: Mapped[dt.date] = mapped_column(Date)
+    field: Mapped[str] = mapped_column(String(24))                         # close | open | … | dividend | split
+    old: Mapped[Optional[float]] = mapped_column(Float)
+    new: Mapped[Optional[float]] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(24), default="yahoo")
+    seen_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)

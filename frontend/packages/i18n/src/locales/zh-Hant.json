@@ -282,5 +282,20 @@
   "admin.brand.upload": "上傳",
   "admin.brand.remove": "移除",
   "admin.brand.none": "使用預設圖示",
-  "settings.adminOnly": "AI 連線、預算與價格表全系統共用，只有管理員可以修改。"
+  "settings.adminOnly": "AI 連線、預算與價格表全系統共用，只有管理員可以修改。",
+  "admin.sec.market": "市場數據",
+  "admin.market.intro": "每個曾使用的代號與匯率都會每日累積價格、派息與拆股。價格以未調整數字保存，總回報由系統自行計算並與來源核對。",
+  "admin.market.schedule": "每日更新：{times}（{tz}）· 下次 {next}",
+  "admin.market.off": "每日更新已關閉",
+  "admin.market.lastRun": "上次更新 {at}：成功 {ok}，失敗 {failed}",
+  "admin.market.updateNow": "立即更新全部",
+  "admin.market.started": "已在背景開始更新。",
+  "admin.market.ticker": "代號",
+  "admin.market.range": "期間",
+  "admin.market.bars": "交易日",
+  "admin.market.check": "總回報核對",
+  "admin.market.updated": "更新於",
+  "admin.market.ok": "相符",
+  "admin.market.warn": "差 {pct}",
+  "admin.market.error": "錯誤"
 }

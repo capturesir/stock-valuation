@@ -29,6 +29,9 @@ export type AuthStatus = S["AuthStatus"];
 export type AdminUserIn = S["AdminUserIn"];
 export type AdminUserUpdate = S["AdminUserUpdate"];
 export type BrandingOut = S["BrandingOut"];
+export type SecurityOut = S["SecurityOut"];
+export type MarketStatus = S["MarketStatus"];
+export type SyncResult = S["SyncResult"];
 
 export interface ClientConfig {
   /** "" = same origin (served behind Caddy); e.g. "https://valuation.example.com" for apps */
@@ -108,6 +111,10 @@ export function createClient(cfg: ClientConfig = {}) {
       fd.append("file", file, filename);
       return req<BrandingOut>("POST", `/admin/branding/logo/${variant}`, undefined, fd);
     },
+    securities: () => req<SecurityOut[]>("GET", "/market/securities"),
+    marketStatus: () => req<MarketStatus>("GET", "/market/status"),
+    syncSecurity: (ticker: string, full = false) => req<SyncResult>("POST", `/admin/market/sync/${enc(ticker)}${q({ full: full ? "true" : undefined })}`),
+    updateAllMarket: () => req<{ started: boolean }>("POST", "/admin/market/update-all"),
     removeLogo: (variant: "light" | "dark") => req<BrandingOut>("DELETE", `/admin/branding/logo/${variant}`),
     /** absolute URL for an <img> (branding URLs from the API are root-relative) */
     assetUrl: (path: string) => (cfg.baseUrl ?? "").replace(/\/$/, "") + path,
