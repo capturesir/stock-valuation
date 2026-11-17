@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from .. import pricing
+from ..auth import Principal, current_principal
 from ..db import get_db
 from ..i18n import http_error, lang_dep
 from ..jobs import enqueue, new_job, store
@@ -51,7 +52,8 @@ def plan(ticker: str, mode: Mode = "standard", tasks: str | None = Query(None, d
 
 
 @router.post("/valuations", response_model=Job, status_code=202, summary="開始估值（背景執行）")
-async def start(body: ValuateIn, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+async def start(body: ValuateIn, who: Principal = Depends(current_principal), db: Session = Depends(get_db),
+                lang: str = Depends(lang_dep)) -> dict:
     t = ticker_or_400(body.ticker)
     st = store()
     if any(j["ticker"] == t for j in st.active()):
@@ -71,7 +73,7 @@ async def start(body: ValuateIn, db: Session = Depends(get_db), lang: str = Depe
                   estimate=p["total"] if use_llm else {**p["total"], "cost_usd": 0, "cost_low_usd": 0, "cost_high_usd": 0},
                   budget_usd=p["budget_per_run_usd"], note=note)
     st.put(job)
-    await enqueue(job, {"use_llm": use_llm, "trigger": "manual"})
+    await enqueue(job, {"use_llm": use_llm, "trigger": "manual", "requested_by": who.user.id if who.user else None})
     return st.get(job["id"]) or job
 
 

@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..auth import require_user
 from ..db import get_db
 from ..i18n import http_error, lang_dep
-from ..models import Run, WatchlistItem
+from ..models import Run, User, WatchlistItem
 from ..schemas import WatchlistEntry, WatchlistIn
 from .common import iso, run_out, scenario, ticker_or_400
 
@@ -30,27 +31,29 @@ def _entry(db: Session, w: WatchlistItem) -> dict:
 
 
 @router.get("/watchlist", response_model=list[WatchlistEntry], summary="觀察名單")
-def list_watchlist(db: Session = Depends(get_db)) -> list[dict]:
-    items = db.scalars(select(WatchlistItem).order_by(WatchlistItem.added_at)).all()
+def list_watchlist(user: User = Depends(require_user), db: Session = Depends(get_db)) -> list[dict]:
+    items = db.scalars(select(WatchlistItem).where(WatchlistItem.user_id == user.id)
+                       .order_by(WatchlistItem.added_at)).all()
     return [_entry(db, w) for w in items]
 
 
 @router.post("/watchlist", response_model=WatchlistEntry, status_code=201, summary="加入觀察名單")
-def add(body: WatchlistIn, db: Session = Depends(get_db)) -> dict:
+def add(body: WatchlistIn, user: User = Depends(require_user), db: Session = Depends(get_db)) -> dict:
     t = ticker_or_400(body.ticker)
-    w = db.scalar(select(WatchlistItem).where(WatchlistItem.ticker == t))
+    w = db.scalar(select(WatchlistItem).where(WatchlistItem.user_id == user.id, WatchlistItem.ticker == t))
     if w is None:
         company = db.scalar(select(Run.company).where(Run.ticker == t, Run.company.is_not(None)).limit(1))
-        w = WatchlistItem(ticker=t, company=company)
+        w = WatchlistItem(user_id=user.id, ticker=t, company=company)
         db.add(w)
         db.flush()
     return _entry(db, w)
 
 
 @router.delete("/watchlist/{ticker}", status_code=204, summary="移出觀察名單（不刪除估值紀錄）")
-def remove(ticker: str, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> None:
+def remove(ticker: str, user: User = Depends(require_user), db: Session = Depends(get_db),
+           lang: str = Depends(lang_dep)) -> None:
     t = ticker_or_400(ticker)
-    w = db.scalar(select(WatchlistItem).where(WatchlistItem.ticker == t))
+    w = db.scalar(select(WatchlistItem).where(WatchlistItem.user_id == user.id, WatchlistItem.ticker == t))
     if w is None:
         raise http_error(404, "not_in_watchlist", lang, ticker=t)
     db.delete(w)

@@ -107,19 +107,6 @@ def test_api_key_is_write_only_and_encrypted(configured):
     assert configured.get("/api/v1/settings/ai").json()["api_key"]["tail"] == "abcd"
 
 
-def test_token_required_when_configured(client, monkeypatch):
-    from backend.app import config
-    monkeypatch.setenv("APP_API_TOKEN", "s3cret")
-    config.reset_settings_cache()
-    try:
-        assert client.get("/api/v1/watchlist").status_code == 401
-        assert client.get("/api/v1/watchlist", headers={"Authorization": "Bearer s3cret"}).status_code == 200
-        assert client.get("/api/v1/health").status_code == 200          # health stays public
-    finally:
-        monkeypatch.delenv("APP_API_TOKEN")
-        config.reset_settings_cache()
-
-
 def test_plan_without_key_runs_nothing(client):
     p = client.get("/api/v1/ai/plan", params={"ticker": "0883.HK", "mode": "standard"}).json()
     assert not any(t["will_run"] for t in p["tasks"])

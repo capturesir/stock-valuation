@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import pricing
+from ..auth import Principal, require_admin
 from ..db import get_db
 from ..i18n import http_error, lang_dep
 from ..models import AiTask, Run
@@ -23,8 +24,9 @@ def get_ai(db: Session = Depends(get_db)) -> dict:
     return settings_store.public_ai_settings(db)
 
 
-@router.put("/settings/ai", response_model=AiSettingsOut, summary="更新 AI 連線與預算")
-def put_ai(body: AiSettingsIn, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+@router.put("/settings/ai", response_model=AiSettingsOut, summary="更新 AI 連線與預算（管理員；全系統共用一把金鑰）")
+def put_ai(body: AiSettingsIn, _: Principal = Depends(require_admin), db: Session = Depends(get_db),
+           lang: str = Depends(lang_dep)) -> dict:
     try:
         return settings_store.update_ai_settings(db, body.model_dump())
     except ValueError as exc:
@@ -32,7 +34,8 @@ def put_ai(body: AiSettingsIn, db: Session = Depends(get_db), lang: str = Depend
 
 
 @router.post("/settings/ai/test", summary="測試 AI 連線（一次極小請求，顯示 Token 與費用）")
-def test_ai(db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+def test_ai(_: Principal = Depends(require_admin), db: Session = Depends(get_db),
+            lang: str = Depends(lang_dep)) -> dict:
     from src.llm.client import LLMClient
 
     cfg = settings_store.llm_cfg(db)
@@ -57,7 +60,7 @@ def get_prices(db: Session = Depends(get_db)) -> list[dict]:
 
 
 @router.put("/settings/prices", response_model=PriceRow, summary="新增或修改一個模型的價格")
-def put_price(body: PriceRow, db: Session = Depends(get_db)) -> dict:
+def put_price(body: PriceRow, _: Principal = Depends(require_admin), db: Session = Depends(get_db)) -> dict:
     return settings_store.upsert_price(db, body.model_dump(exclude={"stale"}))
 
 

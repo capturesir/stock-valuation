@@ -15,10 +15,12 @@ from . import __version__
 from .config import get_settings
 from .db import init_db, session
 from .i18n import msg, pick
+from .auth import current_principal
+from .routers import auth as auth_router
+from .routers import branding as branding_router
 from .routers import settings as settings_router
 from .routers import stocks, valuations, watchlist
 from .schemas import Health
-from .security import require_token
 from .services import settings_store
 
 log = logging.getLogger("sv.api")
@@ -45,7 +47,8 @@ def create_app() -> FastAPI:
         description="股票估值系統 v2 後端。所有前端共用此 API。本系統產出不構成投資建議。",
         openapi_url=f"{API}/openapi.json", docs_url=f"{API}/docs", redoc_url=None,
     )
-    app.add_middleware(CORSMiddleware, allow_origins=s.cors_origins, allow_credentials=False,
+    # credentials: the web app signs in with a cookie; other origins must be listed in CORS_ORIGINS
+    app.add_middleware(CORSMiddleware, allow_origins=s.cors_origins, allow_credentials=True,
                        allow_methods=["GET", "POST", "PUT", "DELETE"],
                        allow_headers=["Authorization", "Content-Type", "Accept-Language"])
 
@@ -80,8 +83,11 @@ def create_app() -> FastAPI:
         return {"ok": db_state == "ok" and not queue.startswith("error"), "version": __version__,
                 "database": db_state, "queue": queue, "ai_configured": bool(ai.get("configured"))}
 
-    secured = [Depends(require_token)]
-    for r in (stocks.router, watchlist.router, valuations.router, settings_router.router):
+    app.include_router(auth_router.public, prefix=API)
+    app.include_router(branding_router.public, prefix=API)
+    secured = [Depends(current_principal)]
+    for r in (auth_router.me_router, auth_router.admin, branding_router.admin, stocks.router, watchlist.router, valuations.router,
+              settings_router.router):
         app.include_router(r, prefix=API, dependencies=secured)
     return app
 

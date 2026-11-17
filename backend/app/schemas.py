@@ -237,3 +237,81 @@ class UsageOut(BaseModel):
     daily: list[dict]
     by_task: list[dict]
     by_ticker: list[dict]
+
+
+# ---------------------------------------------------------------- accounts (D6)
+
+Role = Literal["admin", "member"]
+Rebalance = Literal["none", "monthly", "quarterly", "annual"]
+
+
+class Prefs(BaseModel):
+    """Per-user preferences. Display currency for portfolios and comparisons (D7); rebalancing (D8)."""
+    display_currency: str = Field("USD", pattern=r"^[A-Z]{3}$")
+    rebalance: Rebalance = "none"
+    locale: Optional[Literal["zh-Hant", "zh-Hans", "en"]] = None
+    theme: Optional[Literal["light", "dark", "system"]] = None
+
+
+class UserOut(BaseModel):
+    id: str
+    email: str
+    display_name: str
+    role: Role
+    is_active: bool
+    prefs: Prefs
+    created_at: str
+    last_login_at: Optional[str] = None
+
+
+class AuthStatus(BaseModel):
+    needs_setup: bool = Field(description="尚未有任何帳號：需要先用指令建立第一個管理員")
+
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+    issue_token: bool = Field(False, description="App／小程序用：回應中附上存取令牌（網頁用 Cookie，不需要）")
+
+
+class LoginOut(BaseModel):
+    user: UserOut
+    token: Optional[str] = None
+
+
+class MeIn(BaseModel):
+    display_name: Optional[str] = Field(None, min_length=1, max_length=80)
+    prefs: Optional[Prefs] = None
+
+
+class PasswordIn(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class AdminUserIn(BaseModel):
+    email: str
+    display_name: str = ""
+    role: Role = "member"
+    password: str
+
+
+class AdminUserUpdate(BaseModel):
+    display_name: Optional[str] = Field(None, min_length=1, max_length=80)
+    role: Optional[Role] = None
+    is_active: Optional[bool] = None
+    password: Optional[str] = Field(None, description="重設密碼；該用戶所有已登入的裝置會被登出")
+
+
+# ---------------------------------------------------------------- branding (5.2)
+
+class BrandingOut(BaseModel):
+    name: str
+    logo_light_url: Optional[str] = None
+    logo_dark_url: Optional[str] = None
+    has_custom_icon: bool = False
+    updated_at: Optional[str] = None
+
+
+class BrandingIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=40)

@@ -56,7 +56,7 @@ def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str =
                 source: str = "v2", verify_pass: Optional[bool] = None, calc_path: Optional[str] = None,
                 xlsx_path: Optional[str] = None, run_at: Optional[dt.datetime] = None,
                 ai_cost: float = 0.0, tokens_in: int = 0, tokens_out: int = 0,
-                valuation_date: Optional[str] = None) -> Run:
+                valuation_date: Optional[str] = None, requested_by: Optional[str] = None) -> Run:
     """``valuation_date`` is the day the run was made for. Built-in specs (NVDA, 1830.HK) carry a
     fixed assumption-review date in ``calc["valuation_date"]``, which must not stand in for it."""
     base = calc.get("fair_value_per_share")
@@ -72,6 +72,7 @@ def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str =
         verify_pass=verify_pass, assumption_source=calc.get("assumption_source"),
         ai_cost_usd=ai_cost, ai_tokens_in=tokens_in, ai_tokens_out=tokens_out,
         calc_json_path=calc_path, xlsx_path=xlsx_path, data_gaps=calc.get("data_gaps") or [],
+        requested_by=requested_by,
     )
     if run_at is not None:
         # store UTC so every row reads back the same way, whatever offset the source used
@@ -195,9 +196,10 @@ def execute(job_id: str, payload: dict) -> None:
             run = persist_run(db, calc, status="done", ai_mode=job["mode"], trigger=payload.get("trigger") or "manual",
                               verify_pass=result.get("verify_pass"), calc_path=result.get("path"),
                               xlsx_path=result.get("xlsx"), ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out,
-                              valuation_date=job["valuation_date"])
+                              valuation_date=job["valuation_date"], requested_by=payload.get("requested_by"))
         else:
             run = Run(ticker=job["ticker"], valuation_date=job["valuation_date"], status=status,
+                      requested_by=payload.get("requested_by"),
                       ai_mode=job["mode"], trigger=payload.get("trigger") or "manual", error=error,
                       ai_cost_usd=total_cost, ai_tokens_in=total_in, ai_tokens_out=total_out)
             db.add(run)

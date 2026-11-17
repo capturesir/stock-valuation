@@ -16,6 +16,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 DEFAULT_SERVER = "postgresql+psycopg://valuation:change-me@localhost:5432/valuation"
+ADMIN = ("admin@example.com", "admin-pass-123")
+MEMBER = ("member@example.com", "member-pass-123")
 
 
 @pytest.fixture(scope="session")
@@ -62,12 +64,43 @@ def client(tmp_path, monkeypatch, pg_url):
 
     try:
         with TestClient(create_app()) as c:
+            from backend.app.auth import create_user
+            from backend.app.db import session
+            with session() as s:
+                create_user(s, email=ADMIN[0], display_name="管理員", password=ADMIN[1], role="admin")
+            r = c.post("/api/v1/auth/login", json={"email": ADMIN[0], "password": ADMIN[1]})
+            assert r.status_code == 200, r.text
             yield c
     finally:
         db.reset_engine()
         jobs.reset_store()
         config.reset_settings_cache()
         _empty_all_tables(pg_url)
+
+
+@pytest.fixture()
+def client_as(client):
+    """Another signed-in browser: ``client_as(email, password)`` returns a fresh TestClient."""
+    made = []
+
+    def _make(email: str | None = None, password: str | None = None) -> TestClient:
+        c = TestClient(client.app)
+        if email:
+            r = c.post("/api/v1/auth/login", json={"email": email, "password": password})
+            assert r.status_code == 200, r.text
+        made.append(c)
+        return c
+    yield _make
+    for c in made:
+        c.close()
+
+
+@pytest.fixture()
+def member(client, client_as):
+    """A signed-in member (non-admin) alongside the admin ``client``."""
+    r = client.post("/api/v1/admin/users", json={"email": MEMBER[0], "display_name": "用戶", "password": MEMBER[1]})
+    assert r.status_code == 201, r.text
+    return client_as(*MEMBER)
 
 
 @pytest.fixture()
