@@ -99,7 +99,23 @@ docker compose down -v           # 連同所有資料一併刪除（無法復原
 
 ---
 
-## B. 本機開發（不用 Docker）
+## B. 本機開發與測試
+
+### B0. 一條指令（Linux／macOS，建議）
+
+資料庫用 Docker，API 與網頁直接在本機執行（改程式碼會自動重載）：
+
+```bash
+scripts/dev.sh                          # 啟動 PostgreSQL、Redis、API（:8000）、網頁（:5173）；Ctrl+C 結束
+scripts/dev.sh admin you@example.com    # 另開終端機：建立第一個管理員（只需一次，會詢問密碼）
+scripts/dev.sh test                     # 全部測試：v1 引擎、v2 API、前端型別檢查與建置、版本號
+scripts/dev.sh stop                     # 停止資料庫（資料保留）
+```
+
+打開 <http://localhost:5173> 登入。腳本不讀 `.env`，資料庫一律用預設帳號（valuation／change-me，只開在 127.0.0.1）；
+Python 依序使用 `$SV_PYTHON`、`./.venv`、`~/.venvs/stock-valuation`、`python3`，缺少的套件會自動安裝。
+
+以下 B1–B3 是同一件事的分步說明。
 
 ### B1. 需要甚麼
 

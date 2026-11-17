@@ -29,6 +29,9 @@
   - 系統管理頁新增「市場數據」：每個代號的期間、交易日數、總回報核對結果、錯誤，以及「立即更新全部」。
   - 數據來源為可替換介面，測試使用假來源，不連網。
 
+- **`scripts/dev.sh`**：本機開發與測試一條指令——啟動資料庫、API 與網頁（`scripts/dev.sh`）、建立管理員
+  （`scripts/dev.sh admin 電郵`）、執行全部測試（`scripts/dev.sh test`）。不讀 `.env`，舊格式的 `.env` 不會阻礙啟動。
+
 ### 變更
 - **只支援 PostgreSQL（D3）**：移除 SQLite；本機開發與測試連到 PostgreSQL（`docker-compose.dev.yml` 會把資料庫開在
   `127.0.0.1:5432`）；GitHub Actions 加 PostgreSQL 服務容器。
