@@ -30,6 +30,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          # `working-directory` does not apply to `uses:` steps; point the action at the
+          # package.json that declares `packageManager`, otherwise it finds no pnpm version.
+          package_json_file: frontend/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 22

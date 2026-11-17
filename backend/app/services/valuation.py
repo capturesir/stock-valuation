@@ -55,10 +55,14 @@ def trading_ccy(calc: dict) -> Optional[str]:
 def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str = "none", trigger: str = "manual",
                 source: str = "v2", verify_pass: Optional[bool] = None, calc_path: Optional[str] = None,
                 xlsx_path: Optional[str] = None, run_at: Optional[dt.datetime] = None,
-                ai_cost: float = 0.0, tokens_in: int = 0, tokens_out: int = 0) -> Run:
+                ai_cost: float = 0.0, tokens_in: int = 0, tokens_out: int = 0,
+                valuation_date: Optional[str] = None) -> Run:
+    """``valuation_date`` is the day the run was made for. Built-in specs (NVDA, 1830.HK) carry a
+    fixed assumption-review date in ``calc["valuation_date"]``, which must not stand in for it."""
     base = calc.get("fair_value_per_share")
     run = Run(
-        ticker=calc["ticker"], company=calc.get("asset"), valuation_date=str(calc.get("valuation_date"))[:10],
+        ticker=calc["ticker"], company=calc.get("asset"),
+        valuation_date=str(valuation_date or calc.get("valuation_date"))[:10],
         status=status, trigger=trigger, ai_mode=ai_mode, source=source,
         price=calc.get("price"), price_date=calc.get("price_date"),
         trading_ccy=trading_ccy(calc), model_ccy=calc.get("currency"),
@@ -70,7 +74,8 @@ def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str =
         calc_json_path=calc_path, xlsx_path=xlsx_path, data_gaps=calc.get("data_gaps") or [],
     )
     if run_at is not None:
-        run.run_at = run_at
+        # SQLite drops the offset and the API reads naive values back as UTC, so store UTC
+        run.run_at = run_at.astimezone(dt.timezone.utc) if run_at.tzinfo else run_at
     for s in calc.get("scenarios") or []:
         key = SCENARIOS.get(s.get("name"))
         if key and s.get("fair_value") is not None:
@@ -189,7 +194,8 @@ def execute(job_id: str, payload: dict) -> None:
         if status == "done" and calc:
             run = persist_run(db, calc, status="done", ai_mode=job["mode"], trigger=payload.get("trigger") or "manual",
                               verify_pass=result.get("verify_pass"), calc_path=result.get("path"),
-                              xlsx_path=result.get("xlsx"), ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out)
+                              xlsx_path=result.get("xlsx"), ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out,
+                              valuation_date=job["valuation_date"])
         else:
             run = Run(ticker=job["ticker"], valuation_date=job["valuation_date"], status=status,
                       ai_mode=job["mode"], trigger=payload.get("trigger") or "manual", error=error,

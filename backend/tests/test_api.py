@@ -233,14 +233,53 @@ def test_sse_stream_ends_with_terminal_state(configured, monkeypatch):
     assert states[-1] == "done" and len(states) >= 2
 
 
-def test_legacy_import_reads_v1_outputs(client):
+def test_legacy_import_reads_v1_outputs(client, tmp_path):
+    import shutil
+
+    from backend.app import ROOT
     from backend.app.db import session
     from backend.app.services.legacy import import_legacy
 
+    # Copy only the two versioned v1 runs: the real out/ also holds whatever the user has
+    # valued locally, which must not change the outcome of this test.
+    out = tmp_path / "out"
+    for name in ("2026-11-11_NVDA", "2026-11-11_1830.HK"):
+        shutil.copytree(ROOT / "out" / name, out / name)
     with session() as db:
-        n = import_legacy(db)
-        again = import_legacy(db, force=True)
+        n = import_legacy(db, out_dir=out)
+        again = import_legacy(db, out_dir=out, force=True)
     assert n == 2 and again == 0                        # NVDA and 1830.HK from out/, idempotent
     nv = client.get("/api/v1/stocks/NVDA/valuations").json()
     assert nv["latest"]["source"] == "legacy" and nv["latest"]["verify_pass"] is True
     assert nv["latest"]["has_excel"] is True
+
+
+def test_run_is_recorded_under_the_requested_date(configured, monkeypatch):
+    # built-in specs (NVDA, 1830.HK) report their fixed assumption-review date in the calc JSON;
+    # the run must still be recorded for the day it was made for
+    _install_fake_engine(monkeypatch)                    # fake calc says valuation_date 2026-11-17
+    job_id = configured.post("/api/v1/valuations",
+                             json={"ticker": "0883.HK", "mode": "none", "valuation_date": "2026-11-18"}).json()["id"]
+    _wait(configured, job_id)
+    latest = configured.get("/api/v1/stocks/0883.HK/valuations").json()["latest"]
+    assert latest["valuation_date"] == "2026-11-18"
+
+
+def test_legacy_run_time_keeps_its_offset(client, tmp_path):
+    # v1 logged local (Macau) wall time without an offset; SQLite stores no offset either, so
+    # it must come back as the same wall time, not shifted by 8 hours
+    import json as _json
+
+    from backend.app.db import session
+    from backend.app.services.legacy import import_legacy
+
+    hist = tmp_path / "out" / "history"
+    hist.mkdir(parents=True)
+    (hist / "AAA.json").write_text(_json.dumps([{
+        "ticker": "AAA", "run_at": "2026-11-17T21:40:42", "valuation_date": "2026-11-17",
+        "price": 10.0, "price_date": "2026-11-17", "fair_value": 12.0, "scenarios": {"基準": 12.0}}]),
+        encoding="utf-8")
+    with session() as db:
+        assert import_legacy(db, out_dir=tmp_path / "out") == 1
+    run = client.get("/api/v1/stocks/AAA/valuations").json()["latest"]
+    assert run["run_at"] == "2026-11-17T21:40:42+08:00"
