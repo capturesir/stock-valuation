@@ -1,0 +1,41 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-17T10:43:30Z"},
+  "title": "股票估值系統 v2.0 介面設計",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Watchlist.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 1150, "title": "① 觀察名單（首頁）", "expand": "fill", "is_interactive": true},
+    "Main.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 1900, "title": "② 個股總覽", "expand": "fill", "is_interactive": true},
+    "Valuation.dc.html": {"x": 3040, "y": 0, "w": 1440, "h": 2000, "title": "③ 估值工作區", "expand": "fill", "is_interactive": true},
+    "Statements.dc.html": {"x": 0, "y": 3200, "w": 1440, "h": 1400, "title": "④ 財報", "expand": "fill", "is_interactive": true},
+    "News.dc.html": {"x": 1520, "y": 3200, "w": 1440, "h": 1300, "title": "⑤ 新資訊", "expand": "fill", "is_interactive": true},
+    "History.dc.html": {"x": 3040, "y": 3200, "w": 1440, "h": 1400, "title": "⑥ 紀錄與比較", "expand": "fill", "is_interactive": true},
+    "RunPlan.dc.html": {"x": 0, "y": 5800, "w": 1440, "h": 1000, "title": "⑦ 重新估值：開跑前", "expand": "fill", "is_interactive": true},
+    "RunProgress.dc.html": {"x": 1520, "y": 5800, "w": 1440, "h": 1000, "title": "⑧ 估值進行中", "expand": "fill", "is_interactive": true},
+    "Settings.dc.html": {"x": 3040, "y": 5800, "w": 1440, "h": 1900, "title": "⑨ AI 與費用", "expand": "fill", "is_interactive": true},
+    "Mobile.dc.html": {"x": 0, "y": 8900, "w": 390, "h": 844, "title": "⑩ 手機版總覽", "is_interactive": true}
+  },
+  "order": [
+    "Main.dc.html", "Watchlist.dc.html", "Valuation.dc.html",
+    "Statements.dc.html", "News.dc.html", "History.dc.html",
+    "RunPlan.dc.html", "RunProgress.dc.html", "Settings.dc.html", "Mobile.dc.html"
+  ],
+  "notes": {
+    "t1": {"x": 0, "y": -260, "text": "股票估值系統 v2.0 · 核心畫面", "kind": "title1", "maxW": 4480},
+    "t2": {"x": 0, "y": 2960, "text": "財報、新資訊與紀錄", "kind": "title1", "maxW": 4480},
+    "t3": {"x": 0, "y": 5560, "text": "AI 工作與費用（自帶金鑰）", "kind": "title1", "maxW": 4480},
+    "t4": {"x": 0, "y": 8660, "text": "手機版", "kind": "title1", "maxW": 1600},
+    "s_watch": {"x": 0, "y": 2060, "w": 760, "size": "m", "fill": "blue", "text": "① 觀察名單（首頁）\n• 一眼看到每檔股票：市價、綜合理論價、差距、信心、主方法\n• 自動提醒：新財報／公告尚未反映、股價跌破悲觀價或升穿樂觀價\n• 每日只更新市價，不呼叫 AI，費用為 0\n• 金融股自動改用 DDM（例：奧米加銀行），不再硬套 FCFF\n• 頂部顯示本月 AI 費用與預算"},
+    "s_main": {"x": 1520, "y": 2060, "w": 760, "size": "m", "fill": "blue", "text": "② 個股總覽\n• 估值走勢圖：每日市價線＋DCF 基準階梯線＋悲觀–樂觀區間帶＋相對估值＋分析師目標價；可開關、可切換時間範圍\n• 時間軸事件標記（財報、盈喜、公告）；空心橙色＝新資訊尚未反映\n• 點任何一次估值看詳情，再開啟該次完整結果\n• 綜合理論價＝各方法加權（權重隨估值保存）；反向 DCF 檢查現價隱含甚麼\n• 足球場圖：各方法範圍與現價對照\n• 與上次比較：引擎計算變動歸因，AI 用文字解釋\n• AI 投資論點與風險，每點附來源 [S#]"},
+    "s_val": {"x": 3040, "y": 2060, "w": 760, "size": "m", "fill": "blue", "text": "③ 估值工作區\n• 左側切換方法：DCF（主）、相對估值、反向 DCF、DDM、綜合權重；不適用的方法寫明原因\n• 假設表逐格可改；每格標明來源：AI／規則／已改，理由附來源標籤\n• 折現率拆解：Rf、ERP、CRP、β、Kd → WACC\n• 五情境卡＋AI 建議機率 → 機率加權價\n• 敏感度熱圖（WACC × g），保證每格 WACC > g\n• 「Excel 檢視」保留原 7 張工作表"},
+    "s_stmt": {"x": 0, "y": 4660, "w": 760, "size": "m", "fill": "green", "text": "④ 財報\n• 三大報表、年度／季度；每次抓取都存快照，累積超過 Yahoo 的 4–5 年\n• 重編數字有標記，可看原始公布值\n• AI 異常偵測（T1）：一次性損益、重編、配股等，逐項「採用／忽略」\n• 採用後寫入調整紀錄並套用到下次估值，全程留痕可回溯"},
+    "s_news": {"x": 1520, "y": 4660, "w": 760, "size": "m", "fill": "green", "text": "⑤ 新資訊\n• 公告、業績、新聞時間軸，標明是否已反映於估值\n• AI 摘要（T2）：影響哪個驅動因子、方向、強度，引用原文\n• 「加入假設依據」把事件交給下次 T3 假設提案\n• 未反映的高影響事件會在總覽頂部提示重新估值"},
+    "s_hist": {"x": 3040, "y": 4660, "w": 760, "size": "m", "fill": "green", "text": "⑥ 紀錄與比較\n• 每次估值一行：觸發原因、AI 模式、各方法結果、市價、AI 費用、驗證\n• 中止或失敗的執行也保留，附原因\n• 任選兩次比較：瀑布圖逐項拆解理論價變動（各項加總＝總變動）\n• 每次都可下載當時的 Excel／JSON／訊號檔"},
+    "s_plan": {"x": 0, "y": 6860, "w": 760, "size": "m", "fill": "orange", "text": "⑦ 重新估值：開跑前\n• 選模式：不用 AI／精簡／標準／深度\n• AI 工作清單可逐項勾選；每項顯示預估 Token 與費用\n• 輸入沒變的任務直接用快取（費用 0）\n• 總預估範圍、本次上限、本月已用；超出上限不會發出請求\n• 顯示所用價格表與查價日期"},
+    "s_prog": {"x": 1520, "y": 6860, "w": 760, "size": "m", "fill": "orange", "text": "⑧ 估值進行中\n• 工作清單逐項打勾：○ 待執行 ◐ 執行中 ✔ 完成 ⟲ 快取 ↷ 略過 ✘ 失敗（改用規則）\n• 每項即時顯示實際 Token 與費用；頂部累計費用、預估、上限\n• 已用時間與預計剩餘時間\n• 可隨時停止，已完成的結果保留\n• 完成後顯示實際與預估對照"},
+    "s_set": {"x": 3040, "y": 7760, "w": 760, "size": "m", "fill": "orange", "text": "⑨ AI 與費用（自帶金鑰）\n• 選服務商：DeepSeek、OpenAI、Gemini、其他相容服務、本地模型（免費）\n• 金鑰只顯示長度與末四碼，不回傳瀏覽器；可存作業系統鑰匙圈\n• 價格表可編輯，附查價日期，過期會提示\n• 每次／每月預算與超出時的處理方式\n• 用量儀表板：每日費用、按任務、按股票\n• 列明會送出與不會送出的資料"},
+    "s_mob": {"x": 470, "y": 8900, "w": 700, "size": "m", "fill": "purple", "text": "⑩ 手機版\n• 同一套資料與元件，單欄排列\n• 底部分頁列：總覽、估值、財報、新資訊、紀錄\n• 走勢圖可左右滑動；「重新估值」固定在畫面底部"}
+  },
+  "designSystems": []
+}

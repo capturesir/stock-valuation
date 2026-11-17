@@ -1,10 +1,34 @@
 # 可攜式、可換模型的股票估值系統（A 組 FCFF 框架）
 
-- 版本：1.1
-- 日期：2026-11-11（亞洲／澳門時間，UTC+8）
-- 語言：繁體中文
+- 版本：2.0.0-alpha.1（v2 預覽版；v1.1 功能照常可用）
+- 日期：2026-11-17（亞洲／澳門時間，UTC+8）
+- 語言：繁體中文（介面另支援简体中文、English）
 - 倉庫：[https://github.com/capturesir/stock-valuation](https://github.com/capturesir/stock-valuation)
 - 本系統把既有 A 組 FCFF 框架（方法 A 折現率、五情境、可驗證 Excel、B 組相容訊號檔）打包成可在 **Windows、macOS 與 Linux** 本機運行、並改接其他大語言模型（含本地 OpenAI 相容伺服器）的程式集。
+
+## v2（預覽版）快速開始
+
+v2 把系統改為**前後端分離**：一個後端 API（`backend/`）服務電腦網站、手機網站（PWA），以及日後的手機 App 和微信小程序（`frontend/`），全部以 Docker 部署。AI 使用你自己的金鑰，開跑前顯示預估費用，執行中逐項打勾並累計費用。
+
+```bash
+cp .env.example .env        # 填入 APP_SECRET_KEY 與資料庫密碼
+docker compose up -d --build
+# 打開 http://localhost:8080
+```
+
+| 文件 | 內容 |
+| --- | --- |
+| [`INSTALL.md`](INSTALL.md) | 安裝（Docker／本機開發）、更新、備份、疑難排解 |
+| [`docs/architecture.md`](docs/architecture.md) | 技術架構與理由、API 一覽、多語言、安全 |
+| [`docs/design-system.html`](docs/design-system.html) | 設計規範（顏色、字體、元件、圖表、跨平台） |
+| [`docs/versioning.md`](docs/versioning.md) | 版本規則、發佈步驟、資料庫遷移 |
+| [`docs/系統改進計劃-v2.md`](docs/系統改進計劃-v2.md) | 改進計劃與路線圖 |
+| [`CHANGELOG.md`](CHANGELOG.md) | 更新日誌 |
+
+以下為 v1 的說明，v1 的命令列與網頁在 v2 開發期間照常可用。
+
+---
+
 - **本系統產出不構成投資建議。** 官方理論價由本機 Python 引擎按已列來源與假設計算，不是模型的記憶或心算。訊號檔是研究用輸出，不是下單指令。
 
 完整作業規則見 [`docs/估值框架作業手冊.md`](docs/估值框架作業手冊.md)。B 組相容訊號格式見 [`docs/signals-format.md`](docs/signals-format.md)。本 README 說明如何從 GitHub 部署，以及如何用網頁或命令列使用本系統。

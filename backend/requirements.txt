@@ -1,0 +1,8 @@
+# v2 backend = the v1 engine's requirements + API/queue/database packages.
+-r ../requirements.txt
+sqlalchemy>=2.0,<3
+alembic>=1.13,<2
+arq>=0.26,<1
+redis>=5,<6
+cryptography>=42
+psycopg[binary]>=3.2,<4

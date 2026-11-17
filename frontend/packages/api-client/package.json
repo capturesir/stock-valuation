@@ -1,0 +1,18 @@
+{
+  "name": "@sv/api-client",
+  "version": "2.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "由後端 OpenAPI 合約產生的型別與輕量請求函式；網頁、App、小程序共用",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "gen:spec": "cd ../../.. && python -c \"import json; from backend.app.main import app; print(json.dumps(app.openapi(), ensure_ascii=False, indent=1))\" > frontend/packages/api-client/openapi.json",
+    "gen": "pnpm gen:spec && openapi-typescript openapi.json -o src/schema.d.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.8.0",
+    "typescript": "5.8.3"
+  }
+}

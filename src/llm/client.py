@@ -64,7 +64,9 @@ class LLMClient:
         self.base_url = _env("LLM_BASE_URL", llm.get("base_url") or "").rstrip("/")
         self.model = _env("LLM_MODEL", llm.get("model") or "")
         key_env = llm.get("api_key_env") or "LLM_API_KEY"
-        self.api_key = _env("LLM_API_KEY") or _env(key_env)
+        # Environment first (v1 behaviour); the v2 backend passes a key it decrypted
+        # from its own settings store as cfg["llm"]["api_key"] when the env has none.
+        self.api_key = _env("LLM_API_KEY") or _env(key_env) or str(llm.get("api_key") or "").strip()
         self.timeout = float(llm.get("timeout_seconds") or 90)
         self.max_retries = int(llm.get("max_retries") or 3)
         self.temperature = float(llm.get("temperature") or 0)

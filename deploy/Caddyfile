@@ -1,0 +1,33 @@
+# SITE_ADDRESS examples:
+#   :80                      local / LAN, plain HTTP (PWA install works on localhost only)
+#   valuation.example.com    public: Caddy obtains and renews an HTTPS certificate itself
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# API: SSE progress streams must not be buffered
+	handle /api/* {
+		reverse_proxy {$API_UPSTREAM:api:8000} {
+			flush_interval -1
+		}
+	}
+
+	# PWA: the service worker and manifest must always be revalidated
+	@nocache path /sw.js /manifest.webmanifest /index.html
+	header @nocache Cache-Control "no-cache"
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

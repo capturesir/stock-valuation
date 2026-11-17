@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>重新估值：AI 工作清單</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+TC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;color:#111827;font-family:Inter,'Noto Sans TC',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+a{color:#1F5FBF}a:hover{color:#174A96}
+button,input{font:inherit}
+:focus-visible{outline:2px solid #1F5FBF;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; background: #F4F5F7; font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; color: #111827">
+
+<div aria-hidden="true" style="flex: 1 1 0; min-width: 0; position: relative; overflow: hidden">
+<div style="height: 64px; background: #FFFFFF; border-bottom: 1px solid #E3E6EB"></div>
+<div style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
+<div style="height: 72px; border-radius: 12px; background: #E9ECF1; width: 60%"></div>
+<div style="height: 48px; border-radius: 12px; background: #FDF1E4"></div>
+<div style="display: flex; gap: 20px"><div style="flex: 2; height: 420px; border-radius: 12px; background: #FFFFFF"></div><div style="flex: 1; height: 420px; border-radius: 12px; background: #FFFFFF"></div></div>
+<div style="display: flex; gap: 20px"><div style="flex: 2; height: 240px; border-radius: 12px; background: #FFFFFF"></div><div style="flex: 1; height: 240px; border-radius: 12px; background: #FFFFFF"></div></div>
+</div>
+<div style="position: absolute; inset: 0; background: rgba(17,24,39,0.45)"></div>
+</div>
+
+<aside role="dialog" aria-modal="true" aria-labelledby="run-plan-title" style="flex: 0 1 540px; min-width: 0; background: #FFFFFF; display: flex; flex-direction: column; box-shadow: -8px 0 24px rgba(17,24,39,0.12)">
+<div style="padding: 20px 24px; border-bottom: 1px solid #E3E6EB; display: flex; justify-content: space-between; gap: 12px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="run-plan-title" style="margin: 0; font-size: 20px">重新估值</h2>
+<span style="font-size: 13px; color: #5B6270">示例能源控股 · DEMO.HK · 設計稿示意數據</span>
+</div>
+<a href="Main.dc.html" aria-label="關閉" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: #374151">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg></a>
+</div>
+
+<div style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px">
+
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+<legend style="font-size: 14px; font-weight: 600; padding: 0; margin-bottom: 10px">AI 模式</legend>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid #E3E6EB; border-radius: 10px; cursor: pointer"><input type="radio" name="mode" style="margin-top: 3px; accent-color: #1F5FBF"><span style="display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">不用 AI</strong><span style="font-size: 12px; color: #5B6270">規則後備 · US$0</span></span></label>
+<label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid #E3E6EB; border-radius: 10px; cursor: pointer"><input type="radio" name="mode" style="margin-top: 3px; accent-color: #1F5FBF"><span style="display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">精簡</strong><span style="font-size: 12px; color: #5B6270">假設＋報告 · 約 US$0.01</span></span></label>
+<label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 2px solid #1F5FBF; background: #F5F8FE; border-radius: 10px; cursor: pointer"><input type="radio" name="mode" checked style="margin-top: 3px; accent-color: #1F5FBF"><span style="display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px; color: #174A96">標準（建議）</strong><span style="font-size: 12px; color: #374151">加財報偵測、新資訊 · 約 US$0.02–0.03</span></span></label>
+<label style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid #E3E6EB; border-radius: 10px; cursor: pointer"><input type="radio" name="mode" style="margin-top: 3px; accent-color: #1F5FBF"><span style="display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">深度</strong><span style="font-size: 12px; color: #5B6270">全部 8 項 · 約 US$0.05</span></span></label>
+</div>
+</fieldset>
+
+<div style="display: flex; gap: 12px; flex-wrap: wrap">
+<label style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600">估值日<input type="date" value="2026-11-17" style="min-height: 44px; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 10px; font-size: 14px; font-weight: 400"></label>
+<div style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; font-size: 14px"><span style="font-weight: 600">本次加入的新資訊</span><span style="font-size: 13px; color: #374151; line-height: 1.5; padding: 4px 0">2026-11-16 盈利預告（已加入假設依據）</span></div>
+</div>
+
+<fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<legend style="font-size: 14px; font-weight: 600; padding: 0; margin-bottom: 10px">AI 工作清單 · 可取消勾選</legend>
+
+<label style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid #E3E6EB; border-radius: 10px; background: #F8F9FB">
+<input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #1F5FBF">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">T1 財報異常偵測</strong><span style="font-size: 12px; color: #1E7F4F">⟲ 使用快取：財報自 11-10 沒有變動</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><strong style="font-size: 14px">US$0.000</strong><span style="font-size: 12px; color: #5B6270">0 Token</span></span>
+</label>
+
+<label style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid #E3E6EB; border-radius: 10px">
+<input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #1F5FBF">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">T2 新資訊摘要與影響評估</strong><span style="font-size: 12px; color: #5B6270">1 份公告＋近 30 日新聞標題</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><strong style="font-size: 14px">US$0.010</strong><span style="font-size: 12px; color: #5B6270">~20k 入 / 3k 出</span></span>
+</label>
+
+<label style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid #E3E6EB; border-radius: 10px">
+<input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #1F5FBF">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">T3 增長與利潤率假設（附逐年理由）</strong><span style="font-size: 12px; color: #5B6270">10 個預測年 × 3 項</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><strong style="font-size: 14px">US$0.007</strong><span style="font-size: 12px; color: #5B6270">~10k 入 / 3k 出</span></span>
+</label>
+
+<label style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px dashed #D5D9E0; border-radius: 10px">
+<input type="checkbox" style="width: 18px; height: 18px; accent-color: #1F5FBF">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px; color: #374151">T4 情境敘事與機率</strong><span style="font-size: 12px; color: #5B6270">深度模式項目</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span style="font-size: 14px; color: #5B6270">US$0.004</span><span style="font-size: 12px; color: #5B6270">~6k / 2k</span></span>
+</label>
+
+<label style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px dashed #D5D9E0; border-radius: 10px">
+<input type="checkbox" style="width: 18px; height: 18px; accent-color: #1F5FBF">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px; color: #374151">T6 反方審查</strong><span style="font-size: 12px; color: #5B6270">深度模式項目；理論價與市價差距大於 50% 時建議勾選</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span style="font-size: 14px; color: #5B6270">US$0.006</span><span style="font-size: 12px; color: #5B6270">~12k / 2k</span></span>
+</label>
+
+<label style="display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid #E3E6EB; border-radius: 10px">
+<input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #1F5FBF">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">T7 估值報告與變動解釋</strong><span style="font-size: 12px; color: #5B6270">投資論點、風險、與上次比較</span></span>
+<span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><strong style="font-size: 14px">US$0.005</strong><span style="font-size: 12px; color: #5B6270">~8k 入 / 2k 出</span></span>
+</label>
+</fieldset>
+
+<div style="border-radius: 12px; background: #F8F9FB; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap"><span style="font-size: 14px; font-weight: 600">預估總額</span><span style="font-size: 22px; font-weight: 700">US$0.021</span></div>
+<span style="font-size: 13px; color: #374151">約 38k 入 / 8k 出 · 範圍 US$0.02–0.03（含 15% 重試緩衝）</span>
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+<label style="display: flex; gap: 8px; align-items: center; font-size: 13px">本次上限 US$<input value="0.50" aria-label="本次上限（美元）" style="width: 64px; min-height: 36px; padding: 0 8px; border: 1px solid #D5D9E0; border-radius: 8px; font-size: 14px; text-align: right"></label>
+<span style="font-size: 13px; color: #374151">本月已用 US$0.42 / 5.00</span>
+</div>
+<div style="height: 8px; border-radius: 4px; background: #E3E6EB"><div style="width: 8.4%; height: 8px; border-radius: 4px; background: #1F5FBF"></div></div>
+<span style="font-size: 12px; color: #5B6270; line-height: 1.6">deepseek-flash · 尖峰時段 US$0.30 / 1.20 每百萬 Token（價格表 2026-11-17）· 預估已按最近 10 次實際用量校準（×1.08）</span>
+</div>
+</div>
+
+<div style="padding: 16px 24px; border-top: 1px solid #E3E6EB; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap">
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid #D5D9E0; color: #111827; text-decoration: none; font-size: 14px; box-sizing: border-box">取消</a>
+<a href="RunProgress.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 10px; background: #1F5FBF; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600; box-sizing: border-box">開始估值 · 約 US$0.02</a>
+</div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

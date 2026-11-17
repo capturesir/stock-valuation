@@ -4,6 +4,57 @@
 
 ---
 
+## 2.0.0-alpha.1 — 2026-11-17
+
+v2 的第一個預覽版：前後端分離、多前端共用一套 API、Docker 部署、自帶 AI 金鑰並顯示費用、
+多語言介面。**估值引擎與 v1 相同，同一輸入的理論價不變**；v1 的命令列與網頁照常可用。
+設計與架構見 `docs/architecture.md`、`docs/design-system.html`、`docs/系統改進計劃-v2.md`。
+
+### 新增
+- **後端 API v1（`backend/`）**：FastAPI，路徑 `/api/v1`，OpenAPI 3.1 合約
+  （`/api/v1/openapi.json`）。端點：健康檢查、查詢股票、估值紀錄（走勢圖資料）、每日市價、
+  觀察名單、AI 工作清單與預估費用、開始估值、工作狀態、SSE 進度串流、停止、AI 設定、
+  價格表、用量、Excel 下載。
+- **資料庫**：SQLAlchemy 2＋Alembic 遷移；Docker 用 PostgreSQL 16，本機開發用 SQLite。
+  資料表：估值紀錄、各方法各情境結果、AI 任務（預估與實際 Token／費用）、觀察名單、設定、
+  價格表。啟動時自動升級結構，並一次性匯入 v1 的 `out/` 估值。
+- **背景工作**：Redis＋arq worker（Docker），或 API 程序內排隊（本機）；估值一次一個，
+  可隨時停止，已完成的步驟保留；失敗與中止的執行也寫入紀錄。
+- **AI 費用**：8 個 AI 任務的登記表；開跑前按任務估算 Token 與費用（含 15% 重試緩衝），
+  按服務商回報的實際用量計算費用，並以最近 10 次的「實際÷預估」中位數自動校準。
+  每次與每月預算上限，超出時改用規則後備或拒絕開始（可選）。
+- **自帶金鑰**：服務商預設（DeepSeek、OpenAI、Gemini、其他相容、本地模型）；
+  金鑰以 Fernet 加密保存在伺服器，API 只回傳長度與末四碼；可測試連線並顯示該次費用。
+- **網頁＋PWA（`frontend/apps/web`）**：React＋Vite＋TypeScript。觀察名單、個股總覽
+  （估值走勢圖：每日市價、DCF 基準階梯線、悲觀–樂觀區間）、估值、紀錄、重新估值側欄
+  （AI 工作清單、預估費用、即時打勾與累計費用）、AI 與費用設定。可安裝到主畫面，
+  離線時顯示最近載入的估值；手機版改用底部分頁列。
+- **多語言**：繁體中文（預設）、简体中文、English。共用語言檔 `@sv/i18n`（不依賴框架，
+  App 與小程序可直接用），含數字、貨幣、百分比、日期格式；按瀏覽器語言自動選擇，可手動切換。
+  API 錯誤附固定 `code`，訊息按 `Accept-Language` 回覆；工作步驟與略過原因亦附代碼供前端翻譯。
+- **設計規範**：`frontend/packages/tokens/tokens.json` 為唯一來源，產生 CSS（淺色、深色、
+  跟隨系統）、JS（React Native）、WXSS（小程序，rpx）與 `docs/design-system.html`。
+- **共用 API 用戶端 `@sv/api-client`**：型別由 OpenAPI 產生；SSE 不可用時自動改為輪詢
+  （小程序適用）。
+- **Docker**：`docker-compose.yml`（web／Caddy、api、worker、PostgreSQL、Redis）、
+  開發用覆寫檔、`.env.example`、Caddy 自動 HTTPS。
+- **文件**：`INSTALL.md`、`docs/architecture.md`、`docs/versioning.md`；
+  `scripts/bump_version.py` 同步各處版本號並檢查一致性。
+
+### 變更
+- `run_ticker()` 新增 `skip_extract` 參數（預設 False，v1 行為不變）。v2 會略過舊的
+  「AI 讀取財報摘要」步驟：它只送出公司名稱與行業、結果不影響估值，卻會產生費用（改進計劃 P0）。
+- `LLMClient` 在環境變數沒有金鑰時，接受 `cfg["llm"]["api_key"]`（v2 由加密設定解出後傳入）。
+
+### 已知限制
+- 財報、新資訊分頁，相對估值、反向 DCF 與變動歸因屬下一階段；目前綜合理論價等於 DCF 基準。
+- 8 個 AI 任務中只有 T3（增長與利潤率假設，限通用規格）已接上；其餘在清單中標示「下一階段推出」，不收費。
+- 引擎產生的「資料缺口」說明只有繁體中文。
+- 觀察名單的狀態按「估值時市價」判斷；每日自動更新市價屬下一階段。
+- Docker 映像未在開發環境實際建置（無法連到 Docker Hub），compose 設定已驗證。
+
+---
+
 ## 1.1.1 — 2026-11-17
 
 修正通用規格的橋接遺漏、低 WACC 時敏感度表失效，並加強輸入檢查。**NVDA 與 1830.HK

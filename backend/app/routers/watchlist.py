@@ -1,0 +1,56 @@
+"""Watchlist with each stock's latest valuation."""
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ..db import get_db
+from ..i18n import http_error, lang_dep
+from ..models import Run, WatchlistItem
+from ..schemas import WatchlistEntry, WatchlistIn
+from .common import iso, run_out, scenario, ticker_or_400
+
+router = APIRouter(tags=["watchlist"])
+
+
+def _entry(db: Session, w: WatchlistItem) -> dict:
+    latest = db.scalars(select(Run).where(Run.ticker == w.ticker, Run.status == "done")
+                        .order_by(Run.run_at.desc()).limit(1)).first()
+    status = "never_valued"
+    if latest is not None:
+        status = "ok"
+        bear, bull = scenario(latest, "bear"), scenario(latest, "bull")
+        if latest.price is not None and bear is not None and latest.price < bear:
+            status = "below_bear"
+        elif latest.price is not None and bull is not None and latest.price > bull:
+            status = "above_bull"
+    return {"ticker": w.ticker, "company": w.company or (latest.company if latest else None),
+            "added_at": iso(w.added_at), "latest": run_out(latest) if latest else None, "status": status}
+
+
+@router.get("/watchlist", response_model=list[WatchlistEntry], summary="觀察名單")
+def list_watchlist(db: Session = Depends(get_db)) -> list[dict]:
+    items = db.scalars(select(WatchlistItem).order_by(WatchlistItem.added_at)).all()
+    return [_entry(db, w) for w in items]
+
+
+@router.post("/watchlist", response_model=WatchlistEntry, status_code=201, summary="加入觀察名單")
+def add(body: WatchlistIn, db: Session = Depends(get_db)) -> dict:
+    t = ticker_or_400(body.ticker)
+    w = db.scalar(select(WatchlistItem).where(WatchlistItem.ticker == t))
+    if w is None:
+        company = db.scalar(select(Run.company).where(Run.ticker == t, Run.company.is_not(None)).limit(1))
+        w = WatchlistItem(ticker=t, company=company)
+        db.add(w)
+        db.flush()
+    return _entry(db, w)
+
+
+@router.delete("/watchlist/{ticker}", status_code=204, summary="移出觀察名單（不刪除估值紀錄）")
+def remove(ticker: str, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> None:
+    t = ticker_or_400(ticker)
+    w = db.scalar(select(WatchlistItem).where(WatchlistItem.ticker == t))
+    if w is None:
+        raise http_error(404, "not_in_watchlist", lang, ticker=t)
+    db.delete(w)

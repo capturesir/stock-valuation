@@ -1,0 +1,14 @@
+{
+  "name": "@sv/i18n",
+  "version": "2.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "介面語言檔與數字／貨幣／日期格式；不依賴任何框架，網頁、App、小程序共用",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --experimental-strip-types --test src/check.test.ts"
+  },
+  "devDependencies": { "typescript": "5.8.3" }
+}

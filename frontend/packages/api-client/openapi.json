@@ -1,0 +1,3269 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "估值工作台 API",
+  "description": "股票估值系統 v2 後端。所有前端共用此 API。本系統產出不構成投資建議。",
+  "version": "2.0.0-alpha.1"
+ },
+ "paths": {
+  "/api/v1/health": {
+   "get": {
+    "tags": [
+     "system"
+    ],
+    "summary": "服務狀態與版本",
+    "operationId": "health_api_v1_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Health"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/lookup": {
+   "get": {
+    "tags": [
+     "stocks"
+    ],
+    "summary": "查詢公司與最新市價（不估值）",
+    "operationId": "lookup_api_v1_stocks__ticker__lookup_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Lookup Api V1 Stocks  Ticker  Lookup Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/valuations": {
+   "get": {
+    "tags": [
+     "stocks"
+    ],
+    "summary": "估值紀錄（走勢圖資料）",
+    "operationId": "valuations_api_v1_stocks__ticker__valuations_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StockValuations"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/prices": {
+   "get": {
+    "tags": [
+     "stocks"
+    ],
+    "summary": "每日收市價",
+    "operationId": "prices_api_v1_stocks__ticker__prices_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "days",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 3650,
+       "minimum": 10,
+       "default": 365,
+       "title": "Days"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PriceSeries"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/runs/{run_id}/excel": {
+   "get": {
+    "tags": [
+     "stocks"
+    ],
+    "summary": "下載該次估值的 Excel",
+    "operationId": "excel_api_v1_runs__run_id__excel_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/watchlist": {
+   "get": {
+    "tags": [
+     "watchlist"
+    ],
+    "summary": "觀察名單",
+    "operationId": "list_watchlist_api_v1_watchlist_get",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/WatchlistEntry"
+         },
+         "title": "Response List Watchlist Api V1 Watchlist Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "watchlist"
+    ],
+    "summary": "加入觀察名單",
+    "operationId": "add_api_v1_watchlist_post",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WatchlistIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WatchlistEntry"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/watchlist/{ticker}": {
+   "delete": {
+    "tags": [
+     "watchlist"
+    ],
+    "summary": "移出觀察名單（不刪除估值紀錄）",
+    "operationId": "remove_api_v1_watchlist__ticker__delete",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ai/plan": {
+   "get": {
+    "tags": [
+     "valuations"
+    ],
+    "summary": "AI 工作清單與預估費用",
+    "operationId": "plan_api_v1_ai_plan_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "mode",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "none",
+        "lite",
+        "standard",
+        "deep"
+       ],
+       "type": "string",
+       "default": "standard",
+       "title": "Mode"
+      }
+     },
+     {
+      "name": "tasks",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "逗號分隔，例如 T1,T3",
+       "title": "Tasks"
+      },
+      "description": "逗號分隔，例如 T1,T3"
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Plan"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/valuations": {
+   "post": {
+    "tags": [
+     "valuations"
+    ],
+    "summary": "開始估值（背景執行）",
+    "operationId": "start_api_v1_valuations_post",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ValuateIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Job"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/jobs": {
+   "get": {
+    "tags": [
+     "valuations"
+    ],
+    "summary": "進行中的工作",
+    "operationId": "active_jobs_api_v1_jobs_get",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/Job"
+         },
+         "title": "Response Active Jobs Api V1 Jobs Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/jobs/{job_id}": {
+   "get": {
+    "tags": [
+     "valuations"
+    ],
+    "summary": "工作狀態（輪詢用，小程序適用）",
+    "operationId": "job_api_v1_jobs__job_id__get",
+    "parameters": [
+     {
+      "name": "job_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Job Id"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Job"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/jobs/{job_id}/cancel": {
+   "post": {
+    "tags": [
+     "valuations"
+    ],
+    "summary": "停止估值（已完成的步驟保留）",
+    "operationId": "cancel_api_v1_jobs__job_id__cancel_post",
+    "parameters": [
+     {
+      "name": "job_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Job Id"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Job"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/jobs/{job_id}/events": {
+   "get": {
+    "tags": [
+     "valuations"
+    ],
+    "summary": "工作進度串流（Server-Sent Events）",
+    "operationId": "events_api_v1_jobs__job_id__events_get",
+    "parameters": [
+     {
+      "name": "job_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Job Id"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/settings/ai": {
+   "get": {
+    "tags": [
+     "settings"
+    ],
+    "summary": "AI 連線與預算（金鑰只顯示長度與末四碼）",
+    "operationId": "get_ai_api_v1_settings_ai_get",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiSettingsOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "settings"
+    ],
+    "summary": "更新 AI 連線與預算",
+    "operationId": "put_ai_api_v1_settings_ai_put",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AiSettingsIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiSettingsOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/settings/ai/test": {
+   "post": {
+    "tags": [
+     "settings"
+    ],
+    "summary": "測試 AI 連線（一次極小請求，顯示 Token 與費用）",
+    "operationId": "test_ai_api_v1_settings_ai_test_post",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Test Ai Api V1 Settings Ai Test Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/settings/prices": {
+   "get": {
+    "tags": [
+     "settings"
+    ],
+    "summary": "價格表（US$／百萬 Token）",
+    "operationId": "get_prices_api_v1_settings_prices_get",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/PriceRow"
+         },
+         "title": "Response Get Prices Api V1 Settings Prices Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "settings"
+    ],
+    "summary": "新增或修改一個模型的價格",
+    "operationId": "put_price_api_v1_settings_prices_put",
+    "parameters": [
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PriceRow"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PriceRow"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/ai/usage": {
+   "get": {
+    "tags": [
+     "settings"
+    ],
+    "summary": "AI 用量：每日、按任務、按股票",
+    "operationId": "usage_api_v1_ai_usage_get",
+    "parameters": [
+     {
+      "name": "month",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "pattern": "^\\d{4}-\\d{2}$"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Month"
+      }
+     },
+     {
+      "name": "access_token",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Access Token"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UsageOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AiSettingsIn": {
+    "properties": {
+     "provider": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Provider"
+     },
+     "base_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Base Url"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
+     },
+     "api_key": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Api Key",
+      "description": "只寫不讀；空字串＝不變更"
+     },
+     "clear_api_key": {
+      "type": "boolean",
+      "title": "Clear Api Key",
+      "default": false
+     },
+     "budget_per_run_usd": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Budget Per Run Usd"
+     },
+     "budget_monthly_usd": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Budget Monthly Usd"
+     },
+     "over_budget": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "fallback",
+         "ask"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Over Budget"
+     },
+     "notify_at_pct": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 100.0,
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notify At Pct"
+     }
+    },
+    "type": "object",
+    "title": "AiSettingsIn"
+   },
+   "AiSettingsOut": {
+    "properties": {
+     "provider": {
+      "type": "string",
+      "title": "Provider"
+     },
+     "base_url": {
+      "type": "string",
+      "title": "Base Url"
+     },
+     "model": {
+      "type": "string",
+      "title": "Model"
+     },
+     "api_key": {
+      "$ref": "#/components/schemas/KeyMask"
+     },
+     "configured": {
+      "type": "boolean",
+      "title": "Configured"
+     },
+     "local": {
+      "type": "boolean",
+      "title": "Local"
+     },
+     "budget_per_run_usd": {
+      "type": "number",
+      "title": "Budget Per Run Usd"
+     },
+     "budget_monthly_usd": {
+      "type": "number",
+      "title": "Budget Monthly Usd"
+     },
+     "over_budget": {
+      "type": "string",
+      "enum": [
+       "fallback",
+       "ask"
+      ],
+      "title": "Over Budget"
+     },
+     "notify_at_pct": {
+      "type": "integer",
+      "title": "Notify At Pct"
+     },
+     "presets": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Presets"
+     }
+    },
+    "type": "object",
+    "required": [
+     "provider",
+     "base_url",
+     "model",
+     "api_key",
+     "configured",
+     "local",
+     "budget_per_run_usd",
+     "budget_monthly_usd",
+     "over_budget",
+     "notify_at_pct",
+     "presets"
+    ],
+    "title": "AiSettingsOut"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "Health": {
+    "properties": {
+     "ok": {
+      "type": "boolean",
+      "title": "Ok"
+     },
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "api": {
+      "type": "string",
+      "title": "Api",
+      "default": "v1"
+     },
+     "database": {
+      "type": "string",
+      "title": "Database"
+     },
+     "queue": {
+      "type": "string",
+      "title": "Queue"
+     },
+     "ai_configured": {
+      "type": "boolean",
+      "title": "Ai Configured"
+     },
+     "disclaimer": {
+      "type": "string",
+      "title": "Disclaimer",
+      "default": "本系統產出不構成投資建議。"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ok",
+     "version",
+     "database",
+     "queue",
+     "ai_configured"
+    ],
+    "title": "Health"
+   },
+   "Job": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "mode": {
+      "type": "string",
+      "enum": [
+       "none",
+       "lite",
+       "standard",
+       "deep"
+      ],
+      "title": "Mode"
+     },
+     "valuation_date": {
+      "type": "string",
+      "title": "Valuation Date"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "queued",
+       "running",
+       "done",
+       "failed",
+       "cancelled"
+      ],
+      "title": "Status"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "started_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Started At"
+     },
+     "finished_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Finished At"
+     },
+     "progress": {
+      "type": "integer",
+      "title": "Progress"
+     },
+     "activity": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Activity"
+     },
+     "steps": {
+      "items": {
+       "$ref": "#/components/schemas/JobStep"
+      },
+      "type": "array",
+      "title": "Steps"
+     },
+     "estimate": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Estimate"
+     },
+     "budget_usd": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Budget Usd"
+     },
+     "cost_usd": {
+      "type": "number",
+      "title": "Cost Usd"
+     },
+     "tokens_in": {
+      "type": "integer",
+      "title": "Tokens In"
+     },
+     "tokens_out": {
+      "type": "integer",
+      "title": "Tokens Out"
+     },
+     "run_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Run Id"
+     },
+     "result": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Result"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "version": {
+      "type": "integer",
+      "title": "Version"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "ticker",
+     "mode",
+     "valuation_date",
+     "status",
+     "created_at",
+     "started_at",
+     "finished_at",
+     "progress",
+     "activity",
+     "steps",
+     "estimate",
+     "budget_usd",
+     "cost_usd",
+     "tokens_in",
+     "tokens_out",
+     "run_id",
+     "result",
+     "error",
+     "note",
+     "version"
+    ],
+    "title": "Job"
+   },
+   "JobStep": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "data",
+       "ai",
+       "engine"
+      ],
+      "title": "Kind"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "pending",
+       "active",
+       "done",
+       "cached",
+       "skipped",
+       "failed",
+       "cancelled"
+      ],
+      "title": "Status"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "note_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note Code",
+      "description": "與 PlanTask.skip_code 相同的代碼，或 ai_failed / ai_rejected / usage_unreported / cancelled"
+     },
+     "est_cost_usd": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Est Cost Usd"
+     },
+     "est_tokens_in": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Est Tokens In"
+     },
+     "est_tokens_out": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Est Tokens Out"
+     },
+     "tokens_in": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tokens In"
+     },
+     "tokens_out": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tokens Out"
+     },
+     "cost_usd": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cost Usd"
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "label",
+     "kind",
+     "status"
+    ],
+    "title": "JobStep"
+   },
+   "KeyMask": {
+    "properties": {
+     "set": {
+      "type": "boolean",
+      "title": "Set"
+     },
+     "length": {
+      "type": "integer",
+      "title": "Length"
+     },
+     "tail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "set",
+     "length",
+     "tail"
+    ],
+    "title": "KeyMask"
+   },
+   "MethodValue": {
+    "properties": {
+     "method": {
+      "type": "string",
+      "title": "Method"
+     },
+     "scenario": {
+      "type": "string",
+      "title": "Scenario"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     },
+     "weight": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Weight"
+     }
+    },
+    "type": "object",
+    "required": [
+     "method",
+     "scenario",
+     "value"
+    ],
+    "title": "MethodValue"
+   },
+   "Plan": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "mode": {
+      "type": "string",
+      "enum": [
+       "none",
+       "lite",
+       "standard",
+       "deep"
+      ],
+      "title": "Mode"
+     },
+     "mode_label": {
+      "type": "string",
+      "title": "Mode Label"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
+     },
+     "priced": {
+      "type": "boolean",
+      "title": "Priced"
+     },
+     "calibration": {
+      "type": "number",
+      "title": "Calibration"
+     },
+     "tasks": {
+      "items": {
+       "$ref": "#/components/schemas/PlanTask"
+      },
+      "type": "array",
+      "title": "Tasks"
+     },
+     "total": {
+      "$ref": "#/components/schemas/PlanTotal"
+     },
+     "budget_per_run_usd": {
+      "type": "number",
+      "title": "Budget Per Run Usd"
+     },
+     "budget_monthly_usd": {
+      "type": "number",
+      "title": "Budget Monthly Usd"
+     },
+     "month_spent_usd": {
+      "type": "number",
+      "title": "Month Spent Usd"
+     },
+     "over_budget": {
+      "type": "boolean",
+      "title": "Over Budget"
+     },
+     "over_budget_action": {
+      "type": "string",
+      "enum": [
+       "fallback",
+       "ask"
+      ],
+      "title": "Over Budget Action"
+     },
+     "has_name_spec": {
+      "type": "boolean",
+      "title": "Has Name Spec"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "mode",
+     "mode_label",
+     "model",
+     "priced",
+     "calibration",
+     "tasks",
+     "total",
+     "budget_per_run_usd",
+     "budget_monthly_usd",
+     "month_spent_usd",
+     "over_budget",
+     "over_budget_action",
+     "has_name_spec"
+    ],
+    "title": "Plan"
+   },
+   "PlanTask": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "detail": {
+      "type": "string",
+      "title": "Detail"
+     },
+     "in_mode": {
+      "type": "boolean",
+      "title": "In Mode"
+     },
+     "selected": {
+      "type": "boolean",
+      "title": "Selected"
+     },
+     "available": {
+      "type": "boolean",
+      "title": "Available"
+     },
+     "will_run": {
+      "type": "boolean",
+      "title": "Will Run"
+     },
+     "skip_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Skip Reason"
+     },
+     "skip_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Skip Code",
+      "description": "mode_none | no_ai_key | next_phase | name_spec_locked | not_selected | over_budget"
+     },
+     "est_tokens_in": {
+      "type": "integer",
+      "title": "Est Tokens In"
+     },
+     "est_tokens_out": {
+      "type": "integer",
+      "title": "Est Tokens Out"
+     },
+     "est_cost_usd": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Est Cost Usd"
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "label",
+     "detail",
+     "in_mode",
+     "selected",
+     "available",
+     "will_run",
+     "skip_reason",
+     "est_tokens_in",
+     "est_tokens_out",
+     "est_cost_usd"
+    ],
+    "title": "PlanTask"
+   },
+   "PlanTotal": {
+    "properties": {
+     "tokens_in": {
+      "type": "integer",
+      "title": "Tokens In"
+     },
+     "tokens_out": {
+      "type": "integer",
+      "title": "Tokens Out"
+     },
+     "cost_usd": {
+      "type": "number",
+      "title": "Cost Usd"
+     },
+     "cost_low_usd": {
+      "type": "number",
+      "title": "Cost Low Usd"
+     },
+     "cost_high_usd": {
+      "type": "number",
+      "title": "Cost High Usd"
+     }
+    },
+    "type": "object",
+    "required": [
+     "tokens_in",
+     "tokens_out",
+     "cost_usd",
+     "cost_low_usd",
+     "cost_high_usd"
+    ],
+    "title": "PlanTotal"
+   },
+   "PricePoint": {
+    "properties": {
+     "date": {
+      "type": "string",
+      "title": "Date"
+     },
+     "close": {
+      "type": "number",
+      "title": "Close"
+     }
+    },
+    "type": "object",
+    "required": [
+     "date",
+     "close"
+    ],
+    "title": "PricePoint"
+   },
+   "PriceRow": {
+    "properties": {
+     "model": {
+      "type": "string",
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Model"
+     },
+     "input": {
+      "type": "number",
+      "minimum": 0.0,
+      "title": "Input"
+     },
+     "cached_input": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cached Input"
+     },
+     "output": {
+      "type": "number",
+      "minimum": 0.0,
+      "title": "Output"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "checked_on": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Checked On"
+     },
+     "source_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Url"
+     },
+     "stale": {
+      "type": "boolean",
+      "title": "Stale",
+      "default": false
+     }
+    },
+    "type": "object",
+    "required": [
+     "model",
+     "input",
+     "output"
+    ],
+    "title": "PriceRow"
+   },
+   "PriceSeries": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "points": {
+      "items": {
+       "$ref": "#/components/schemas/PricePoint"
+      },
+      "type": "array",
+      "title": "Points"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source",
+      "default": "Yahoo Finance"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "currency",
+     "points"
+    ],
+    "title": "PriceSeries"
+   },
+   "RunOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "company": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Company"
+     },
+     "run_at": {
+      "type": "string",
+      "title": "Run At"
+     },
+     "valuation_date": {
+      "type": "string",
+      "title": "Valuation Date"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "trigger": {
+      "type": "string",
+      "title": "Trigger"
+     },
+     "ai_mode": {
+      "type": "string",
+      "title": "Ai Mode"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "price_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price Date"
+     },
+     "trading_ccy": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Trading Ccy"
+     },
+     "composite_value": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Composite Value"
+     },
+     "weights": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Weights"
+     },
+     "wacc": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Wacc"
+     },
+     "terminal_g": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Terminal G"
+     },
+     "verify_pass": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Verify Pass"
+     },
+     "assumption_source": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Assumption Source"
+     },
+     "ai_cost_usd": {
+      "type": "number",
+      "title": "Ai Cost Usd"
+     },
+     "ai_tokens_in": {
+      "type": "integer",
+      "title": "Ai Tokens In"
+     },
+     "ai_tokens_out": {
+      "type": "integer",
+      "title": "Ai Tokens Out"
+     },
+     "has_excel": {
+      "type": "boolean",
+      "title": "Has Excel"
+     },
+     "methods": {
+      "items": {
+       "$ref": "#/components/schemas/MethodValue"
+      },
+      "type": "array",
+      "title": "Methods"
+     },
+     "data_gaps": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Data Gaps",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "ticker",
+     "company",
+     "run_at",
+     "valuation_date",
+     "status",
+     "trigger",
+     "ai_mode",
+     "source",
+     "price",
+     "price_date",
+     "trading_ccy",
+     "composite_value",
+     "wacc",
+     "terminal_g",
+     "verify_pass",
+     "assumption_source",
+     "ai_cost_usd",
+     "ai_tokens_in",
+     "ai_tokens_out",
+     "has_excel",
+     "methods"
+    ],
+    "title": "RunOut"
+   },
+   "StockValuations": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "company": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Company"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "runs": {
+      "items": {
+       "$ref": "#/components/schemas/RunOut"
+      },
+      "type": "array",
+      "title": "Runs"
+     },
+     "latest": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RunOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "previous": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RunOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "company",
+     "currency",
+     "runs",
+     "latest",
+     "previous"
+    ],
+    "title": "StockValuations"
+   },
+   "UsageOut": {
+    "properties": {
+     "month": {
+      "type": "string",
+      "title": "Month"
+     },
+     "total_usd": {
+      "type": "number",
+      "title": "Total Usd"
+     },
+     "budget_monthly_usd": {
+      "type": "number",
+      "title": "Budget Monthly Usd"
+     },
+     "runs": {
+      "type": "integer",
+      "title": "Runs"
+     },
+     "runs_with_ai": {
+      "type": "integer",
+      "title": "Runs With Ai"
+     },
+     "tokens_in": {
+      "type": "integer",
+      "title": "Tokens In"
+     },
+     "tokens_out": {
+      "type": "integer",
+      "title": "Tokens Out"
+     },
+     "calibration": {
+      "type": "number",
+      "title": "Calibration"
+     },
+     "daily": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Daily"
+     },
+     "by_task": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "By Task"
+     },
+     "by_ticker": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "By Ticker"
+     }
+    },
+    "type": "object",
+    "required": [
+     "month",
+     "total_usd",
+     "budget_monthly_usd",
+     "runs",
+     "runs_with_ai",
+     "tokens_in",
+     "tokens_out",
+     "calibration",
+     "daily",
+     "by_task",
+     "by_ticker"
+    ],
+    "title": "UsageOut"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "ValuateIn": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "maxLength": 24,
+      "minLength": 1,
+      "title": "Ticker"
+     },
+     "mode": {
+      "type": "string",
+      "enum": [
+       "none",
+       "lite",
+       "standard",
+       "deep"
+      ],
+      "title": "Mode",
+      "default": "standard"
+     },
+     "tasks": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tasks",
+      "description": "勾選的 AI 任務（例如 [\"T3\"]）；省略＝該模式的預設"
+     },
+     "valuation_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Valuation Date"
+     },
+     "budget_usd": {
+      "anyOf": [
+       {
+        "type": "number",
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Budget Usd",
+      "description": "本次上限；省略＝設定頁的每次上限"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker"
+    ],
+    "title": "ValuateIn"
+   },
+   "WatchlistEntry": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "company": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Company"
+     },
+     "added_at": {
+      "type": "string",
+      "title": "Added At"
+     },
+     "latest": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RunOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "ok",
+       "never_valued",
+       "below_bear",
+       "above_bull"
+      ],
+      "title": "Status"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "company",
+     "added_at",
+     "latest",
+     "status"
+    ],
+    "title": "WatchlistEntry"
+   },
+   "WatchlistIn": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "maxLength": 24,
+      "minLength": 1,
+      "title": "Ticker"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker"
+    ],
+    "title": "WatchlistIn"
+   }
+  }
+ }
+}

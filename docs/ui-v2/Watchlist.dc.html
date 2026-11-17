@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>觀察名單</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+TC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;color:#111827;font-family:Inter,'Noto Sans TC',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+a{color:#1F5FBF}a:hover{color:#174A96}
+button{font:inherit}
+:focus-visible{outline:2px solid #1F5FBF;outline-offset:2px}
+th,td{padding:14px 12px;border-bottom:1px solid #EEF0F3;text-align:right;font-size:14px;white-space:nowrap;vertical-align:middle}
+th{color:#5B6270;font-weight:500;font-size:12px;background:#F8F9FB}
+th:first-child,td:first-child{text-align:left}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4F5F7; font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; color: #111827">
+
+<header style="background: #FFFFFF; border-bottom: 1px solid #E3E6EB">
+<div style="max-width: 1360px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap">
+<a href="Watchlist.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #111827">
+<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#1F5FBF"></rect><polyline points="7,19 12,14 16,17 21,9" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+<span style="font-weight: 700; font-size: 17px">估值工作台</span>
+</a>
+<nav aria-label="主要導覽" style="display: flex; gap: 4px">
+<a href="Watchlist.dc.html" aria-current="page" style="padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #1F5FBF; background: #E8F0FC; font-size: 14px; font-weight: 600">觀察名單</a>
+<a href="Main.dc.html" style="padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #374151; font-size: 14px">個股</a>
+</nav>
+<label style="flex: 1 1 260px; max-width: 460px; display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 44px; border: 1px solid #E3E6EB; border-radius: 10px; background: #F8F9FB; box-sizing: border-box">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6270" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+<input type="search" aria-label="搜尋股票代號或名稱" placeholder="搜尋代號或名稱，例如 DEMO.HK" style="border: 0; background: transparent; flex: 1; font: inherit; font-size: 14px; min-width: 0; color: #111827">
+</label>
+<div style="flex: 1 1 0"></div>
+<a href="Settings.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 0 14px; min-height: 44px; border: 1px solid #E3E6EB; border-radius: 999px; text-decoration: none; color: #111827; font-size: 13px; box-sizing: border-box">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7F4F"></span>
+<span style="font-weight: 600">DeepSeek 已連接</span>
+<span style="color: #5B6270">本月 US$0.42 / 5.00</span>
+</a>
+</div>
+</header>
+
+<main style="max-width: 1360px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; gap: 10px; align-items: center"><h1 style="margin: 0; font-size: 28px">觀察名單</h1><span style="padding: 2px 8px; border-radius: 6px; background: #EEF0F3; color: #374151; font-size: 12px">設計稿 · 示意數據</span></div>
+<span style="font-size: 14px; color: #5B6270">6 檔 · 每日收市後自動更新市價（不使用 AI，費用為 0）· 最後更新 2026-11-17 16:10</span>
+</div>
+<button type="button" style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: #1F5FBF; color: #FFFFFF; font-weight: 600; font-size: 14px; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>新增股票</button>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+<section aria-label="提醒" style="flex: 2 1 640px; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px">需要處理 · 3 項</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 10px; background: #FDF1E4">
+<span style="padding: 2px 8px; border-radius: 6px; background: #B45309; color: #FFFFFF; font-size: 12px; font-weight: 600">新公告</span>
+<span style="flex: 1 1 360px; font-size: 14px"><strong>DEMO.HK</strong> 2026-11-16 盈利預告尚未反映於估值</span>
+<a href="RunPlan.dc.html" style="font-size: 14px; font-weight: 600; padding: 10px 4px">重新估值（約 US$0.02–0.03）</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 10px; background: #FDECEA">
+<span style="padding: 2px 8px; border-radius: 6px; background: #B42318; color: #FFFFFF; font-size: 12px; font-weight: 600">價格提醒</span>
+<span style="flex: 1 1 360px; font-size: 14px"><strong>BETA.HK</strong> 收市 HK$6.05，跌破悲觀情境價 HK$6.20</span>
+<a href="Main.dc.html" style="font-size: 14px; font-weight: 600; padding: 10px 4px; color: #B42318">查看</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 10px; background: #FDF1E4">
+<span style="padding: 2px 8px; border-radius: 6px; background: #B45309; color: #FFFFFF; font-size: 12px; font-weight: 600">新財報</span>
+<span style="flex: 1 1 360px; font-size: 14px"><strong>GAMMA</strong> 第三季 10-Q 已公布（2026-11-06），上次估值 2026-08-12</span>
+<a href="RunPlan.dc.html" style="font-size: 14px; font-weight: 600; padding: 10px 4px">重新估值（約 US$0.03–0.05）</a>
+</div>
+</section>
+
+<section aria-label="本月 AI 費用" style="flex: 1 1 320px; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px">本月 AI 費用</h2>
+<div style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 32px; font-weight: 700">US$0.42</span><span style="font-size: 14px; color: #5B6270">／ 預算 US$5.00</span></div>
+<div style="height: 10px; border-radius: 5px; background: #EEF0F3"><div style="width: 8.4%; height: 10px; border-radius: 5px; background: #1F5FBF"></div></div>
+<span style="font-size: 13px; color: #374151; line-height: 1.6">11 月共 14 次估值，其中 6 次只更新市價（AI 費用 0），3 次使用快取。</span>
+<a href="Settings.dc.html" style="font-size: 13px; padding: 4px 0">查看用量與預算 →</a>
+</section>
+</div>
+
+<section aria-label="觀察名單表" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; overflow: hidden">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; padding: 16px 20px; align-items: center; justify-content: space-between">
+<h2 style="margin: 0; font-size: 17px">全部股票</h2>
+<div role="group" aria-label="篩選" style="display: flex; gap: 6px; flex-wrap: wrap">
+<button type="button" aria-pressed="true" style="padding: 8px 12px; border-radius: 999px; border: 1px solid #1F5FBF; background: #E8F0FC; color: #1F5FBF; font-size: 13px; font-weight: 600; cursor: pointer">全部 6</button>
+<button type="button" aria-pressed="false" style="padding: 8px 12px; border-radius: 999px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 13px; cursor: pointer">需要處理 3</button>
+<button type="button" aria-pressed="false" style="padding: 8px 12px; border-radius: 999px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 13px; cursor: pointer">低於理論價</button>
+</div>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; min-width: 1100px">
+<thead><tr><th scope="col">股票</th><th scope="col">市價</th><th scope="col">綜合理論價</th><th scope="col">差距</th><th scope="col" style="text-align: center">悲觀–樂觀區間與現價</th><th scope="col">主方法</th><th scope="col">信心</th><th scope="col">上次估值</th><th scope="col">狀態</th></tr></thead>
+<tbody>
+<tr>
+<td><a href="Main.dc.html" style="text-decoration: none; color: #111827; display: flex; flex-direction: column; gap: 2px; padding: 4px 0"><strong>示例能源控股</strong><span style="font-size: 12px; color: #5B6270">DEMO.HK</span></a></td>
+<td>HK$22.72</td><td style="font-weight: 600">35.52</td><td style="color: #1F5FBF; font-weight: 600">+56.3%</td>
+<td style="width: 220px"><div style="position: relative; height: 18px; width: 200px; margin: 0 auto"><div style="position: absolute; left: 15%; width: 70%; top: 6px; height: 6px; border-radius: 3px; background: #D6E4F8"></div><div style="position: absolute; left: 36.7%; top: 2px; width: 2px; height: 14px; background: #1F5FBF"></div><div style="position: absolute; left: 2%; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: #111827"></div></div></td>
+<td>DCF</td><td>中</td><td>2026-11-10</td>
+<td><span style="padding: 3px 8px; border-radius: 6px; background: #FDF1E4; color: #8A4108; font-size: 12px; font-weight: 600">新公告未反映</span></td>
+</tr>
+<tr>
+<td><a href="Main.dc.html" style="text-decoration: none; color: #111827; display: flex; flex-direction: column; gap: 2px; padding: 4px 0"><strong>阿爾法科技</strong><span style="font-size: 12px; color: #5B6270">ALPHA</span></a></td>
+<td>US$142.30</td><td style="font-weight: 600">128.60</td><td style="color: #B45309; font-weight: 600">−9.6%</td>
+<td><div style="position: relative; height: 18px; width: 200px; margin: 0 auto"><div style="position: absolute; left: 15%; width: 70%; top: 6px; height: 6px; border-radius: 3px; background: #D6E4F8"></div><div style="position: absolute; left: 46.4%; top: 2px; width: 2px; height: 14px; background: #1F5FBF"></div><div style="position: absolute; left: 60.2%; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: #111827"></div></div></td>
+<td>DCF</td><td>中</td><td>2026-11-05</td>
+<td><span style="font-size: 12px; color: #5B6270">正常</span></td>
+</tr>
+<tr>
+<td><a href="Main.dc.html" style="text-decoration: none; color: #111827; display: flex; flex-direction: column; gap: 2px; padding: 4px 0"><strong>貝塔地產</strong><span style="font-size: 12px; color: #5B6270">BETA.HK</span></a></td>
+<td>HK$6.05</td><td style="font-weight: 600">9.80</td><td style="color: #1F5FBF; font-weight: 600">+62.0%</td>
+<td><div style="position: relative; height: 18px; width: 200px; margin: 0 auto"><div style="position: absolute; left: 15%; width: 70%; top: 6px; height: 6px; border-radius: 3px; background: #D6E4F8"></div><div style="position: absolute; left: 55.6%; top: 2px; width: 2px; height: 14px; background: #1F5FBF"></div><div style="position: absolute; left: 11.3%; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: #B42318"></div></div></td>
+<td>NAV</td><td>低</td><td>2026-10-28</td>
+<td><span style="padding: 3px 8px; border-radius: 6px; background: #FDECEA; color: #B42318; font-size: 12px; font-weight: 600">跌破悲觀價</span></td>
+</tr>
+<tr>
+<td><a href="Main.dc.html" style="text-decoration: none; color: #111827; display: flex; flex-direction: column; gap: 2px; padding: 4px 0"><strong>伽瑪醫療</strong><span style="font-size: 12px; color: #5B6270">GAMMA</span></a></td>
+<td>US$58.90</td><td style="font-weight: 600">61.20</td><td style="color: #1F5FBF; font-weight: 600">+3.9%</td>
+<td><div style="position: relative; height: 18px; width: 200px; margin: 0 auto"><div style="position: absolute; left: 15%; width: 70%; top: 6px; height: 6px; border-radius: 3px; background: #D6E4F8"></div><div style="position: absolute; left: 48.6%; top: 2px; width: 2px; height: 14px; background: #1F5FBF"></div><div style="position: absolute; left: 41%; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: #111827"></div></div></td>
+<td>DCF</td><td>高</td><td>2026-08-12</td>
+<td><span style="padding: 3px 8px; border-radius: 6px; background: #FDF1E4; color: #8A4108; font-size: 12px; font-weight: 600">新財報</span></td>
+</tr>
+<tr>
+<td><a href="Main.dc.html" style="text-decoration: none; color: #111827; display: flex; flex-direction: column; gap: 2px; padding: 4px 0"><strong>德爾塔電子</strong><span style="font-size: 12px; color: #5B6270">DELTA.T</span></a></td>
+<td>¥3,410</td><td style="font-weight: 600">3,880</td><td style="color: #1F5FBF; font-weight: 600">+13.8%</td>
+<td><div style="position: relative; height: 18px; width: 200px; margin: 0 auto"><div style="position: absolute; left: 15%; width: 70%; top: 6px; height: 6px; border-radius: 3px; background: #D6E4F8"></div><div style="position: absolute; left: 52%; top: 2px; width: 2px; height: 14px; background: #1F5FBF"></div><div style="position: absolute; left: 29%; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: #111827"></div></div></td>
+<td>DCF</td><td>中</td><td>2026-11-01</td>
+<td><span style="font-size: 12px; color: #5B6270">正常</span></td>
+</tr>
+<tr>
+<td><a href="Main.dc.html" style="text-decoration: none; color: #111827; display: flex; flex-direction: column; gap: 2px; padding: 4px 0"><strong>奧米加銀行</strong><span style="font-size: 12px; color: #5B6270">OMEGA.HK</span></a></td>
+<td>HK$41.20</td><td style="font-weight: 600">47.60</td><td style="color: #1F5FBF; font-weight: 600">+15.5%</td>
+<td><div style="position: relative; height: 18px; width: 200px; margin: 0 auto"><div style="position: absolute; left: 15%; width: 70%; top: 6px; height: 6px; border-radius: 3px; background: #D6E4F8"></div><div style="position: absolute; left: 50.7%; top: 2px; width: 2px; height: 14px; background: #1F5FBF"></div><div style="position: absolute; left: 19.4%; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: #111827"></div></div></td>
+<td><span title="金融業不適用 FCFF">DDM</span></td><td>中</td><td>2026-10-30</td>
+<td><span style="font-size: 12px; color: #5B6270">正常</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 14px 20px; font-size: 12px; color: #5B6270; border-top: 1px solid #EEF0F3">
+<span style="display: flex; gap: 6px; align-items: center"><span style="width: 18px; height: 6px; border-radius: 3px; background: #D6E4F8"></span>悲觀–樂觀區間</span>
+<span style="display: flex; gap: 6px; align-items: center"><span style="width: 2px; height: 12px; background: #1F5FBF"></span>綜合理論價</span>
+<span style="display: flex; gap: 6px; align-items: center"><span style="width: 10px; height: 10px; border-radius: 50%; background: #111827"></span>現價</span>
+<span>金融股自動使用 DDM；地產股使用 NAV</span>
+</div>
+</section>
+
+<footer style="font-size: 12px; color: #5B6270; padding: 8px 0 24px">本系統產出不構成投資建議。</footer>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1150}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

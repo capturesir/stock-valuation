@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>估值工作台設計規範</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+TC:wght@400;500;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+/* VOICE: a precise, calm reference manual for people who build the product.
+   IDEA: a bank's style ledger — every rule shown working, every value with its use.
+   PICTURE: the live valuation-trend chart drawn with the chart tokens, then the component sheet.
+   COLOUR and TYPE: the system's own tokens (inlined below); Inter + Noto Sans TC, tabular numbers.
+   LAYOUT: one 1240px column, sticky section links, specimens left, rules right, stacking under 900px. */
+/*TOKENS*/
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--sv-page);color:var(--sv-ink-900);font:15px/1.6 var(--sv-font-sans);font-variant-numeric:tabular-nums;overflow-x:clip}
+a{color:var(--sv-primary)}a:hover{color:var(--sv-primary-strong)}
+:focus-visible{outline:2px solid var(--sv-primary);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 max(4vw,16px)}
+header.top{background:var(--sv-card);border-bottom:1px solid var(--sv-line-soft)}
+header.top .wrap{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end;justify-content:space-between;padding-block:36px 28px}
+h1{margin:0;font-size:clamp(28px,4vw,40px);line-height:1.1;text-wrap:balance}
+.lede{margin:10px 0 0;color:var(--sv-ink-700);max-width:62ch}
+.meta{display:flex;gap:8px;flex-wrap:wrap;font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--sv-line-soft);background:var(--sv-card);color:var(--sv-ink-700);white-space:nowrap}
+nav.sec{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--sv-page) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--sv-line-soft)}
+nav.sec .wrap{display:flex;gap:4px;overflow-x:auto}
+nav.sec a{flex:none;padding:12px 12px;text-decoration:none;color:var(--sv-ink-700);font-size:14px;white-space:nowrap}
+nav.sec a:hover{color:var(--sv-primary)}
+@media(max-width:900px){nav.sec{position:static}}
+section.s{padding:44px 0 8px}
+h2{margin:0 0 6px;font-size:24px;line-height:1.25}
+.s>.wrap>p.intro{margin:0 0 20px;color:var(--sv-ink-700);max-width:70ch}
+h3{margin:0 0 10px;font-size:16px}
+.card{background:var(--sv-card);border:1px solid var(--sv-line-soft);border-radius:var(--sv-radius-xl);padding:20px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr))}
+.two{display:grid;gap:20px;grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+@media(max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.rules{margin:0;padding-left:20px;display:grid;gap:8px;color:var(--sv-ink-700)}
+.rules strong{color:var(--sv-ink-900)}
+.sw{display:flex;gap:12px;align-items:center;padding:10px;border-radius:var(--sv-radius-lg);background:var(--sv-sunken)}
+.sw i{flex:none;width:44px;height:44px;border-radius:var(--sv-radius-md);border:1px solid var(--sv-line-soft)}
+.sw b{display:block;font-size:14px}.sw small{display:block;color:var(--sv-ink-500);font-size:12px;line-height:1.45}
+.sw code{font:12px var(--sv-font-mono);color:var(--sv-ink-700)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 12px;border-bottom:1px solid var(--sv-line-faint);text-align:left;font-size:14px;vertical-align:top}
+th{color:var(--sv-ink-500);font-weight:500;font-size:12px;background:var(--sv-sunken)}
+td.n,th.n{text-align:right;white-space:nowrap}
+.scroll{overflow-x:auto}
+code,pre{font-family:var(--sv-font-mono)}
+code{font-size:13px;overflow-wrap:anywhere}
+pre{margin:0;padding:14px;border-radius:var(--sv-radius-lg);background:var(--sv-sunken);font-size:12.5px;line-height:1.6;overflow-x:auto}
+/* component specimens */
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:var(--sv-radius-lg);font:600 14px var(--sv-font-sans);border:1px solid transparent;cursor:pointer;text-decoration:none}
+.btn.p{background:var(--sv-primary);color:var(--sv-on-primary)}
+.btn.s{background:var(--sv-card);border-color:var(--sv-line);color:var(--sv-ink-900);font-weight:500}
+.btn.d{background:var(--sv-card);border-color:var(--sv-danger);color:var(--sv-danger)}
+.btn.k{background:var(--sv-ink-900);color:var(--sv-card)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--sv-radius-sm);font-size:12px;font-weight:600;white-space:nowrap}
+.tag.ai{border:1px solid var(--sv-ink-400);color:var(--sv-ink-700);font-weight:500}
+.tag.rule{background:var(--sv-track);color:var(--sv-ink-700);font-weight:500}
+.tag.edit{background:var(--sv-primary-weak);color:var(--sv-primary-strong)}
+.tag.warn{background:var(--sv-secondary-weak);color:var(--sv-secondary-strong)}
+.tag.ok{background:var(--sv-success-weak);color:var(--sv-success)}
+.tag.bad{background:var(--sv-danger-weak);color:var(--sv-danger)}
+.src{font-size:12px}
+.seg{display:inline-flex;background:var(--sv-track);border-radius:var(--sv-radius-lg);padding:3px}
+.seg button{border:0;background:transparent;padding:9px 14px;border-radius:var(--sv-radius-md);font:14px var(--sv-font-sans);color:var(--sv-ink-700);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--sv-card);color:var(--sv-ink-900);font-weight:600;box-shadow:var(--sv-shadow-raised)}
+.field{display:grid;gap:6px;font-size:14px;font-weight:600}
+.field input{min-height:44px;padding:0 12px;border:1px solid var(--sv-line);border-radius:var(--sv-radius-lg);font:16px var(--sv-font-sans);background:var(--sv-card);color:var(--sv-ink-900)}
+.field small{font-weight:400;color:var(--sv-ink-500);font-size:12px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--sv-line-soft);overflow-x:auto}
+.tabs a{flex:none;padding:12px 16px;text-decoration:none;color:var(--sv-ink-700);font-size:15px}
+.tabs a[aria-current]{color:var(--sv-primary);font-weight:600;border-bottom:2px solid var(--sv-primary);margin-bottom:-1px}
+.banner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:var(--sv-radius-xl);background:var(--sv-secondary-weak);color:var(--sv-on-secondary-weak);font-size:14px}
+.check{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.check li{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:var(--sv-radius-lg);font-size:14px}
+.check li.cur{background:var(--sv-primary-weak);outline:1px solid var(--sv-primary-band)}
+.check svg{flex:none}
+.check em{font-style:normal;margin-left:auto;color:var(--sv-ink-500);font-size:13px;white-space:nowrap}
+.bar{height:10px;border-radius:5px;background:var(--sv-track)}.bar>i{display:block;height:100%;border-radius:5px;background:var(--sv-primary)}
+.fig{position:relative;min-height:300px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.ff{display:grid;gap:10px}
+.ff .r{display:grid;grid-template-columns:150px minmax(0,1fr) 120px;gap:12px;align-items:center;font-size:13px}
+.ff .t{position:relative;height:26px;background:var(--sv-sunken);border-radius:6px}
+.ff .t>*{position:absolute}
+.heat{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.heat span{padding:8px 0;text-align:center;border-radius:6px;color:var(--sv-heat-text);font-size:13px}
+.scale{display:grid;gap:6px}
+.scale div{display:flex;gap:16px;align-items:baseline;border-bottom:1px solid var(--sv-line-faint);padding-bottom:6px}
+.scale code{width:120px;flex:none;color:var(--sv-ink-500);font-size:12px}
+footer{padding:40px 0 48px;color:var(--sv-ink-500);font-size:13px}
+@media(max-width:600px){
+  table{font-size:13px}
+  .ff .r{grid-template-columns:96px minmax(0,1fr)}.ff .r>:last-child{grid-column:2;font-size:12px}
+  .stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--sv-ink-500)}.stack td:empty{display:none}
+}
+@media(prefers-reduced-motion:no-preference){.bar>i{transition:width var(--sv-motion-base) var(--sv-motion-easing)}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+<div>
+<h1>估值工作台設計規範</h1>
+<p class="lede">網頁、PWA、手機 App 與微信小程序共用的一套顏色、字體、元件與圖表規則。所有數值來自 <code>tokens.json</code>，本頁由它自動產生。</p>
+</div>
+<div class="meta"><span class="pill">版本 1.0.0</span><span class="pill">2026-11-17</span><span class="pill">對應介面設計稿 v2.0</span><span class="pill">繁／简／English</span></div>
+</div></header>
+
+<nav class="sec" aria-label="章節"><div class="wrap">
+<a href="#principles">原則</a><a href="#colour">色彩</a><a href="#type">字體</a><a href="#space">間距與尺寸</a><a href="#layout">版面</a><a href="#components">元件</a><a href="#charts">圖表</a><a href="#writing">文案</a><a href="#i18n">多語言</a><a href="#a11y">無障礙</a><a href="#platforms">跨平台</a><a href="#code">程式碼</a>
+</div></nav>
+
+<main>
+<section class="s" id="principles"><div class="wrap">
+<h2>原則</h2>
+<p class="intro">四條原則決定所有取捨；遇到本頁沒有寫到的情況，按它們判斷。</p>
+<div class="grid">
+<div class="card"><h3>數字先行</h3><p style="margin:0;color:var(--sv-ink-700)">每個畫面第一眼看到結論：理論價、與市價的差距、信心。說明放在數字旁邊，不放在數字前面。</p></div>
+<div class="card"><h3>AI 一定標示</h3><p style="margin:0;color:var(--sv-ink-700)">AI 產生的文字和數字一律加 <span class="tag ai">AI</span> 標籤，並附來源 <a class="src" href="#components">[S3]</a>。理論價永遠由引擎計算。</p></div>
+<div class="card"><h3>費用看得見</h3><p style="margin:0;color:var(--sv-ink-700)">任何會花錢的動作，按下前顯示預估，進行中顯示累計，完成後顯示實際。</p></div>
+<div class="card"><h3>一套規則，多個平台</h3><p style="margin:0;color:var(--sv-ink-700)">平台只改排版與互動方式，不改顏色含義、元件狀態和數字格式。</p></div>
+</div>
+</div></section>
+
+<section class="s" id="colour"><div class="wrap">
+<h2>色彩</h2>
+<p class="intro">中性灰承載內容，藍色代表估值與主要動作，橙色代表提醒與第二估值方法。每個顏色都有淺色與深色主題的值，文字對比度全部 ≥ 4.5:1。</p>
+<div class="grid" id="swatches"></div>
+<div class="two" style="margin-top:20px">
+<div class="card"><h3>含義（不可挪用）</h3>
+<ul class="rules">
+<li><strong>藍 primary：</strong>理論價、DCF、主要按鈕、選取狀態、連結。</li>
+<li><strong>橙 secondary：</strong>未反映的新資訊、需要處理的提醒、相對估值、負向變動。</li>
+<li><strong>紅 danger：</strong>市價跌破悲觀價、停止、錯誤。只用於真正的負面狀態。</li>
+<li><strong>綠 success：</strong>完成、已反映、驗證通過。不用來表示「升」。</li>
+<li><strong>升跌不用紅綠：</strong>正變動用藍、負變動用橙，並一律帶正負號，照顧色覺差異與港美股不同的紅綠習慣。</li>
+</ul></div>
+<div class="card"><h3>對比度（淺色主題，實測）</h3>
+<div class="scroll"><table class="stack"><thead><tr><th>前景／背景</th><th class="n">比例</th></tr></thead><tbody id="contrast"></tbody></table></div>
+</div>
+</div>
+</div></section>
+
+<section class="s" id="type"><div class="wrap">
+<h2>字體</h2>
+<p class="intro">Inter 負責拉丁字母與數字，Noto Sans TC 負責中文；數字一律等寬（tabular），表格與圖表才對得齊。十個級距，正文 14–15px，最小 11px 只用於圖表軸標。</p>
+<div class="two">
+<div class="card scale" id="typescale"></div>
+<div class="card"><h3>規則</h3>
+<ul class="rules">
+<li>標題用 600–700，正文 400，標籤 500。</li>
+<li>行高：標題 1.3、正文 1.6、長段說明 1.7。</li>
+<li>中文用全形標點（，。：；「」），中英數字之間不加空格。</li>
+<li>金額與百分比用粗體只在「結論數字」上，一個區塊最多一個。</li>
+<li>程式碼與執行紀錄用 JetBrains Mono。</li>
+</ul></div>
+</div>
+</div></section>
+
+<section class="s" id="space"><div class="wrap">
+<h2>間距、圓角與尺寸</h2>
+<p class="intro">以 4px 為基本單位。卡片內距 20px、卡片之間 20px、元件之間 8–12px。</p>
+<div class="grid">
+<div class="card"><h3>間距</h3><div class="scale" id="spacescale"></div></div>
+<div class="card"><h3>圓角</h3><div class="scale" id="radiusscale"></div></div>
+<div class="card"><h3>尺寸</h3>
+<ul class="rules">
+<li><strong>觸控目標 44px：</strong>所有按鈕、連結、核取方塊的可點範圍。</li>
+<li><strong>輸入框高 44px</strong>，手機上字級 16px（避免 iOS 自動放大）。</li>
+<li><strong>頁首 64px</strong>，手機底部分頁列 64px。</li>
+<li><strong>內容最寬 1360px</strong>，側欄抽屜 540px。</li>
+</ul></div>
+</div>
+</div></section>
+
+<section class="s" id="layout"><div class="wrap">
+<h2>版面與斷點</h2>
+<p class="intro">桌面以「主欄＋側欄」排列（2:1），平板兩欄自動換行，手機單欄並改用底部分頁列。</p>
+<div class="card scroll"><table class="stack"><thead><tr><th>斷點</th><th>寬度</th><th>導覽</th><th>版面</th><th>估值執行</th></tr></thead><tbody>
+<tr><td>手機</td><td>&lt; 768px</td><td>底部 5 個分頁</td><td>單欄；表格橫向捲動或改為卡片</td><td>全螢幕抽屜，「重新估值」固定在底部</td></tr>
+<tr><td>平板</td><td>768–1199px</td><td>頁首＋分頁列</td><td>卡片按最小寬度自動換行</td><td>右側抽屜，最寬 540px</td></tr>
+<tr><td>桌面</td><td>≥ 1200px</td><td>頁首＋分頁列</td><td>主欄 2：側欄 1</td><td>右側抽屜，背景變暗</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="s" id="components"><div class="wrap">
+<h2>元件</h2>
+<p class="intro">以下是實際樣式。每個元件在各平台都有同名實作（見「跨平台」）。</p>
+<div class="grid">
+<div class="card"><h3>按鈕</h3><div class="row"><button class="btn p" type="button">重新估值</button><button class="btn s" type="button">下載 Excel</button><button class="btn k" type="button">以新假設重算</button><button class="btn d" type="button">停止</button><button class="btn p" type="button" disabled>停用</button></div>
+<p style="margin:12px 0 0;font-size:13px;color:var(--sv-ink-700)">一個畫面只有一個主要（藍）按鈕。會花錢的按鈕要寫出預估：「開始估值 · 約 US$0.02」。</p></div>
+<div class="card"><h3>標籤</h3><div class="row"><span class="tag ai">AI</span><span class="tag rule">規則</span><span class="tag edit">已改</span><span class="tag warn">尚未反映</span><span class="tag ok">已反映</span><span class="tag bad">跌破悲觀價</span><a class="src" href="#components">[S3]</a></div>
+<p style="margin:12px 0 0;font-size:13px;color:var(--sv-ink-700)">來源標籤 [S#] 是連結，點擊後開啟該來源（公告原文、財報附註）。</p></div>
+<div class="card"><h3>分段控制與分頁</h3><div class="seg" role="group" aria-label="期間"><button type="button" aria-pressed="false">近五次</button><button type="button" aria-pressed="true">近一年</button><button type="button" aria-pressed="false">全部</button></div>
+<div class="tabs" style="margin-top:14px"><a href="#components" aria-current="page">總覽</a><a href="#components">估值</a><a href="#components">財報</a><a href="#components">新資訊</a></div></div>
+<div class="card"><h3>輸入</h3><label class="field">API 金鑰<input type="password" placeholder="已設定 · 末四碼 8f2c · 留空＝不變更"><small>金鑰只存在伺服器，永遠不會回傳瀏覽器。</small></label></div>
+<div class="card"><h3>提醒列</h3><div class="banner" role="status"><span style="flex:1 1 220px">有新資訊尚未反映：<strong>11-16 盈利預告</strong>。</span><a href="#components" style="color:var(--sv-secondary-strong);font-weight:600">重新估值</a></div>
+<p style="margin:12px 0 0;font-size:13px;color:var(--sv-ink-700)">一頁最多一條；內容寫明發生了甚麼和建議動作。</p></div>
+<div class="card"><h3>進度與費用</h3><div style="display:grid;gap:8px;font-size:13px"><div style="display:flex;justify-content:space-between"><span>本月 AI 費用</span><strong>US$0.42 / 5.00</strong></div><div class="bar" role="progressbar" aria-valuenow="8" aria-valuemin="0" aria-valuemax="100" aria-label="本月預算用量"><i style="width:8.4%"></i></div></div></div>
+</div>
+<div class="two" style="margin-top:16px">
+<div class="card"><h3>工作清單狀態（AI 任務、估值步驟）</h3>
+<ol class="check">
+<li><svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="完成"><circle cx="12" cy="12" r="11" fill="var(--sv-success)"/><polyline points="7 12.5 10.5 16 17 9" fill="none" stroke="var(--sv-card)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>完成<em>US$0.009</em></li>
+<li><svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="使用快取"><circle cx="12" cy="12" r="11" fill="var(--sv-success-weak)"/><path d="M16.5 9.5a5 5 0 1 0 .5 4" fill="none" stroke="var(--sv-success)" stroke-width="2" stroke-linecap="round"/><polyline points="17 6.5 17 10 13.5 10" fill="none" stroke="var(--sv-success)" stroke-width="2" stroke-linecap="round"/></svg>使用快取<em>US$0.000</em></li>
+<li class="cur"><svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="執行中"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--sv-primary-band)" stroke-width="3"/><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="var(--sv-primary)" stroke-width="3" stroke-linecap="round"/></svg>執行中<em>—</em></li>
+<li><svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="待執行"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--sv-ink-300)" stroke-width="2"/></svg>待執行<em>預估 US$0.005</em></li>
+<li><svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="略過"><circle cx="12" cy="12" r="9" fill="none" stroke="var(--sv-ink-300)" stroke-width="2" stroke-dasharray="3 3"/><line x1="8" y1="12" x2="16" y2="12" stroke="var(--sv-ink-400)" stroke-width="2" stroke-linecap="round"/></svg>略過（寫明原因）<em>—</em></li>
+<li><svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="失敗"><circle cx="12" cy="12" r="11" fill="var(--sv-danger-weak)"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5" stroke="var(--sv-danger)" stroke-width="2.2" stroke-linecap="round"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5" stroke="var(--sv-danger)" stroke-width="2.2" stroke-linecap="round"/></svg>失敗，已改用規則後備<em>—</em></li>
+</ol></div>
+<div class="card"><h3>表格</h3>
+<ul class="rules">
+<li>數字靠右、文字靠左；表頭 12px 灰色，背景 sunken。</li>
+<li>負數用括號（財報）或「−」（變動），不用紅色字。</li>
+<li>較早快照的數字用 ink500 灰色；已調整的格用 primaryWeak 底色並顯示刪除線原值。</li>
+<li>手機上欄位多的表格放在橫向捲動容器內，首欄固定。</li>
+</ul></div>
+</div>
+</div></section>
+
+<section class="s" id="charts"><div class="wrap">
+<h2>圖表</h2>
+<p class="intro">圖表顏色只來自 chart token。藍與橙的明度接近，所以兩者同時出現時，一律再用線型區分：DCF 實線、相對估值虛線。</p>
+<div class="card">
+<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:baseline"><h3 style="margin:0">估值走勢圖</h3><span style="font-size:12px;color:var(--sv-ink-500)">示意數據</span></div>
+<div class="fig" id="trend" role="img" aria-label="示意估值走勢圖：市價線、DCF 基準階梯線、悲觀至樂觀區間帶、相對估值虛線與事件標記"><svg></svg></div>
+</div>
+<div class="grid" style="margin-top:16px">
+<div class="card"><h3>走勢圖規則</h3><ul class="rules">
+<li><strong>市價</strong>：ink900 實線 1.8px，每日收市價。</li>
+<li><strong>理論價</strong>：階梯線，一次估值有效至下一次；DCF 3px 實線，相對估值 2px 虛線。</li>
+<li><strong>區間帶</strong>：悲觀至樂觀，primaryBand 75% 不透明度。</li>
+<li><strong>事件</strong>：▲ 業績、◆ 公告；空心橙色 △ 表示尚未反映。</li>
+<li>幣別一律為交易貨幣；軸不從 0 開始時要在軸旁寫明。</li>
+</ul></div>
+<div class="card"><h3>足球場圖（各方法範圍）</h3><div class="ff">
+<div class="r"><span>DCF（主）</span><div class="t"><i style="left:35%;width:52%;top:6px;height:14px;border-radius:4px;background:var(--sv-chart-band)"></i><i style="left:58%;top:2px;width:3px;height:22px;background:var(--sv-chart-dcf)"></i><i style="left:19%;top:0;width:2px;height:26px;background:var(--sv-chart-price)"></i></div><span>29.1–38.4–49.8</span></div>
+<div class="r"><span>相對 P/E</span><div class="t"><i style="left:29%;width:23%;top:6px;height:14px;border-radius:4px;background:var(--sv-chart-relative-band)"></i><i style="left:40%;top:2px;width:3px;height:22px;background:var(--sv-chart-relative)"></i><i style="left:19%;top:0;width:2px;height:26px;background:var(--sv-chart-price)"></i></div><span>26.5–31.2–35.9</span></div>
+</div><p style="margin:10px 0 0;font-size:12px;color:var(--sv-ink-500)">黑豎線＝現價；粗豎線＝該方法基準值。</p></div>
+<div class="card"><h3>敏感度熱圖</h3><div class="heat" id="heat"></div><p style="margin:10px 0 0;font-size:12px;color:var(--sv-ink-500)">5 級單一色相，由淺至深＝由低至高；基準格加 2px 外框。文字一律 heat-text 色。</p></div>
+<div class="card"><h3>瀑布圖（變動歸因）</h3><div style="display:grid;gap:8px;font-size:13px" id="wf"></div><p style="margin:10px 0 0;font-size:12px;color:var(--sv-ink-500)">正貢獻藍、負貢獻橙，數值帶正負號；各項加總等於總變動。</p></div>
+</div>
+</div></section>
+
+<section class="s" id="writing"><div class="wrap">
+<h2>文案與數字格式</h2>
+<div class="card scroll"><table class="stack"><thead><tr><th>項目</th><th>寫法</th><th>不要</th></tr></thead><tbody>
+<tr><td>股價、理論價</td><td>HK$22.72、US$142.30、¥3,410</td><td>22.72 HKD、$22.7</td></tr>
+<tr><td>差距、變動</td><td>+56.3%、−9.6%、+0.90（+2.4%）</td><td>56.3%（沒有正負號）</td></tr>
+<tr><td>AI 費用</td><td>US$0.021；範圍 US$0.02–0.03</td><td>2.1 美仙、$0.02</td></tr>
+<tr><td>財報金額</td><td>百萬港元，千分位：101,320；負數 (47,210)</td><td>101320、-47210</td></tr>
+<tr><td>日期時間</td><td>2026-11-17、2026-11-17 14:30（澳門時間）</td><td>17/11/2026</td></tr>
+<tr><td>AI 產出</td><td>「AI · deepseek-flash · 引用 5 個來源」</td><td>不標示來源的 AI 文字</td></tr>
+<tr><td>示意數據</td><td>畫面或圖表角落小字「示意數據」</td><td>把示意數字放進真實估值</td></tr>
+<tr><td>免責聲明</td><td>「本系統產出不構成投資建議。」每頁頁尾</td><td>省略</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="s" id="i18n"><div class="wrap">
+<h2>多語言</h2>
+<p class="intro">介面支援繁體中文（預設）、简体中文與 English。文字一律放在語言檔，不寫死在元件裡。</p>
+<div class="two">
+<div class="card scroll"><table class="stack"><thead><tr><th>項目</th><th>繁體中文</th><th>简体中文</th><th>English</th></tr></thead><tbody>
+<tr><td>主要按鈕</td><td>重新估值</td><td>重新估值</td><td>Revalue</td></tr>
+<tr><td>結論數字</td><td>綜合理論價</td><td>综合理论价</td><td>Blended fair value</td></tr>
+<tr><td>升跌</td><td>潛在升幅 +56.3%</td><td>潜在升幅 +56.3%</td><td>Upside +56.3%</td></tr>
+<tr><td>費用按鈕</td><td>開始估值 · 約 US$0.02</td><td>开始估值 · 约 US$0.02</td><td>Start valuation · about US$0.02</td></tr>
+<tr><td>字體</td><td>Noto Sans TC</td><td>Noto Sans SC</td><td>Inter</td></tr>
+</tbody></table></div>
+<div class="card"><h3>規則</h3><ul class="rules">
+<li><strong>長度：</strong>英文通常比中文長 1.5–2 倍；按鈕與分頁不可固定寬度，表頭允許換行。</li>
+<li><strong>數字格式不翻譯：</strong>貨幣符號、正負號、日期 YYYY-MM-DD 在三種語言相同。</li>
+<li><strong>詞彙一致：</strong>同一概念只用一個詞（例如「理論價」不混用「目標價」；英文 fair value 不寫 target price）。</li>
+<li><strong>語言選擇：</strong>首次跟隨裝置語言，之後以用戶選擇為準；切換後立即生效，不重新載入。</li>
+<li><strong>AI 文字：</strong>按用戶語言產生，仍須標示 <span class="tag ai">AI</span> 與來源。</li>
+</ul></div>
+</div>
+</div></section>
+
+<section class="s" id="a11y"><div class="wrap">
+<h2>無障礙</h2>
+<div class="grid">
+<div class="card"><ul class="rules"><li>文字對比 ≥ 4.5:1，大字（24px 以上）≥ 3:1。</li><li>顏色不單獨承載意思：升跌有正負號，狀態有文字，線條有線型。</li></ul></div>
+<div class="card"><ul class="rules"><li>所有可操作元素用真正的 <code>&lt;button&gt;</code>、<code>&lt;a&gt;</code>、<code>&lt;input&gt;</code>；只有圖示的按鈕加 <code>aria-label</code>。</li><li>鍵盤焦點一律顯示 2px 藍色外框。</li></ul></div>
+<div class="card"><ul class="rules"><li>圖表加 <code>role="img"</code> 與一句文字摘要；重要數值同時以表格提供。</li><li>動畫只有一種（進度條），並尊重「減少動態效果」設定。</li></ul></div>
+</div>
+</div></section>
+
+<section class="s" id="platforms"><div class="wrap">
+<h2>跨平台</h2>
+<p class="intro"><code>tokens.json</code> 經 <code>pnpm --filter @sv/tokens build</code> 產生各平台檔案；元件按同名在各平台實作。</p>
+<div class="card scroll"><table class="stack"><thead><tr><th>平台</th><th>Token 檔</th><th>單位</th><th>技術</th><th>差異</th></tr></thead><tbody>
+<tr><td>電腦網站／手機網站（PWA）</td><td><code>dist/tokens.css</code></td><td>px</td><td>React + Vite</td><td>同一套程式，按斷點換排版；可安裝到主畫面</td></tr>
+<tr><td>手機 App</td><td><code>dist/tokens.js</code></td><td>dp（= px）</td><td>先以 Capacitor 包裝 PWA；需要原生體驗時改 React Native</td><td>底部分頁、系統返回手勢、原生推播</td></tr>
+<tr><td>微信小程序</td><td><code>dist/tokens.wxss</code></td><td>rpx（px × 2）</td><td>Taro（React 語法）</td><td>無側欄抽屜，改為新頁；圖表用 ECharts 小程序版</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="s" id="code"><div class="wrap">
+<h2>程式碼</h2>
+<div class="two">
+<div class="card"><h3>網頁使用方式</h3><pre>import "@sv/tokens/tokens.css";
+
+.card {
+  background: var(--sv-card);
+  border: 1px solid var(--sv-line-soft);
+  border-radius: var(--sv-radius-xl);
+  padding: var(--sv-space-5);
+}</pre></div>
+<div class="card"><h3>檔案位置</h3><ul class="rules">
+<li><code>frontend/packages/tokens/tokens.json</code> — 唯一來源</li>
+<li><code>frontend/packages/tokens/build.mjs</code> — 產生各平台檔與本頁</li>
+<li><code>docs/ui-v2/</code> — 介面設計稿原始檔（10 個畫面）</li>
+<li><code>docs/design-system.html</code> — 本頁</li>
+</ul></div>
+</div>
+</div></section>
+</main>
+
+<footer><div class="wrap">估值工作台設計規範 1.0.0 · 本系統產出不構成投資建議。</div></footer>
+
+<script>
+{
+const T = /*TOKENJSON*/;
+const L = T.color.light, Dk = T.color.dark;
+const sw = [
+  ["page","頁面底色"],["card","卡片"],["sunken","嵌入區、表頭"],["track","軌道、分段控制底"],
+  ["ink900","主要文字、市價線"],["ink700","次要文字"],["ink500","說明、軸標"],["lineSoft","卡片邊框"],
+  ["primary","理論價、主要按鈕"],["primaryStrong","選取文字"],["primaryWeak","選取底色"],["primaryBand","區間帶"],
+  ["secondary","提醒、相對估值"],["secondaryWeak","提醒列底色"],["success","完成、已反映"],["danger","跌破悲觀價、錯誤"]
+];
+document.getElementById("swatches").innerHTML = sw.map(([k,u]) =>
+  `<div class="sw"><i style="background:var(--sv-${k.replace(/([a-z])([A-Z0-9])/g,"$1-$2").replace(/([0-9])([A-Za-z])/g,"$1-$2").toLowerCase()})"></i><span><b>${k}</b><small>${u}</small><code>${L[k]} · 深 ${Dk[k]}</code></span></div>`).join("");
+
+const lum = h => { const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4); return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]; };
+const cr = (a,b) => { const x=lum(a),y=lum(b); return ((Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)).toFixed(2); };
+const pairs = [["ink900","card"],["ink700","card"],["ink500","page"],["primary","card"],["primaryStrong","primaryWeak"],["secondary","card"],["onSecondaryWeak","secondaryWeak"],["success","successWeak"],["danger","dangerWeak"],["onPrimary","primary"]];
+document.getElementById("contrast").innerHTML = pairs.map(([f,b]) => `<tr><td><span style="display:inline-block;padding:2px 8px;border-radius:4px;background:${L[b]};color:${L[f]}">${f} ／ ${b}</span></td><td class="n">${cr(L[f],L[b])}:1</td></tr>`).join("");
+
+const fs = T.font.size, names = {xs:"圖表軸標",sm:"標籤、說明",md:"次要內容",base:"正文、表格",lg:"分頁",xl:"卡片標題","2xl":"抽屜標題","3xl":"子頁標題","4xl":"頁面標題",display:"結論數字"};
+document.getElementById("typescale").innerHTML = Object.entries(fs).reverse().map(([k,v]) => `<div><code>${k} · ${v}px</code><span style="font-size:${v}px;font-weight:${v>=17?700:400};line-height:1.3">${names[k]} HK$35.52</span></div>`).join("");
+document.getElementById("spacescale").innerHTML = Object.entries(T.space).map(([k,v]) => `<div><code>space-${k} · ${v}px</code><i style="display:block;height:10px;width:${v*2}px;background:var(--sv-primary-band);border-radius:2px"></i></div>`).join("");
+document.getElementById("radiusscale").innerHTML = Object.entries(T.radius).map(([k,v]) => `<div><code>radius-${k} · ${v}px</code><i style="display:block;width:44px;height:28px;border:1px solid var(--sv-line);border-radius:${Math.min(v,14)}px;background:var(--sv-sunken)"></i></div>`).join("");
+
+const H = [[47.9,50.6,54.0,58.4,64.3],[40.6,42.3,44.4,46.9,50.1],[35.3,36.7,38.4,40.2,42.4],[31.4,32.4,33.6,34.9,36.4],[28.3,29.1,30.0,31.0,32.1]];
+const lvl = v => v<32?0:v<37?1:v<42?2:v<50?3:4;
+document.getElementById("heat").innerHTML = H.flat().map((v,i) => `<span style="background:var(--sv-heat-${lvl(v)});${i===12?"box-shadow:inset 0 0 0 2px var(--sv-ink-900);font-weight:700":""}">${v.toFixed(1)}</span>`).join("");
+
+const W = [["EBIT 利潤率",0.82],["營收增長",0.36],["無風險利率",-0.15],["淨現金",-0.08],["匯率",-0.05]];
+document.getElementById("wf").innerHTML = W.map(([n,v]) => `<div style="display:grid;grid-template-columns:90px minmax(0,1fr) 48px;gap:8px;align-items:center"><span>${n}</span><div style="display:flex;${v<0?"justify-content:flex-end":""}">${v<0?`<i style="width:${Math.abs(v)*50}%;height:12px;border-radius:3px;background:var(--sv-chart-down)"></i><i style="width:50%"></i>`:`<i style="width:50%"></i><i style="width:${v*50}%;height:12px;border-radius:3px;background:var(--sv-chart-up)"></i>`}</div><span style="text-align:right">${v>0?"+":"−"}${Math.abs(v).toFixed(2)}</span></div>`).join("");
+
+// trend chart, drawn at real pixel size
+const s = document.querySelector("#trend svg");
+const price = [[0,19.8],[14,20.3],[28,19.6],[42,20.9],[56,21.4],[70,20.8],[86,21.5],[100,21],[114,20.6],[134,20.4],[148,21.2],[162,21.9],[176,21.3],[190,22.4],[204,22.9],[218,22.2],[239,23.9],[253,23.4],[267,22.6],[282,22.1],[296,22.9],[310,23.3],[320,22.72]];
+const runs = [[86,33.6,25.4,43.5,28.8],[134,34.2,26,44.3,29.4],[239,36.9,27.8,47.6,30.5],[282,37.5,28.3,48.4,30.9],[313,38.4,29.1,49.8,31.2]];
+const ev = [[86,"t"],[134,"t"],[239,"t"],[282,"d"],[313,"t"],[319,"p"]];
+const draw = () => {
+  const Wd = s.clientWidth, Ht = s.clientHeight, narrow = Wd < 520;
+  const l = narrow ? 8 : 44, r = narrow ? 30 : 16, top = 14, bot = 42;
+  const x = d => l + d / 333 * (Wd - l - r), y = v => top + (55 - v) / 40 * (Ht - top - bot);
+  const step = (i) => { let p = ""; runs.forEach((q, k) => { const x0 = x(q[0]), x1 = k < runs.length - 1 ? x(runs[k + 1][0]) : x(333); p += (k ? `V${y(q[i])}` : `M${x0},${y(q[i])}`) + `H${x1}`; }); return p; };
+  let band = `M${x(runs[0][0])},${y(runs[0][3])}`; runs.forEach((q, k) => { const x1 = k < runs.length - 1 ? x(runs[k + 1][0]) : x(333); band += `${k ? `V${y(q[3])}` : ""}H${x1}`; });
+  [...runs].reverse().forEach((q, k) => { const x0 = x(q[0]); band += `V${y(q[2])}H${x0}`; }); band += "Z";
+  const grid = [20, 30, 40, 50].map(v => `<line x1="${l}" x2="${Wd - r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--sv-line-faint)"/>${narrow ? `<text x="${Wd - 2}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="var(--sv-ink-500)">${v}</text>` : `<text x="${l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--sv-ink-500)">${v}</text>`}`).join("");
+  const months = narrow ? [[0, "1月"], [181, "7月"], [304, "11月"]] : [[0, "1月"], [59, "3月"], [120, "5月"], [181, "7月"], [243, "9月"], [304, "11月"]];
+  const base = Ht - bot;
+  const evs = ev.map(([d, k]) => { const cx = x(d); if (k === "d") return `<polygon points="${cx},${base + 3} ${cx + 5},${base + 8.5} ${cx},${base + 14} ${cx - 5},${base + 8.5}" fill="var(--sv-chart-event)"/>`; return `<polygon points="${cx},${base + 3} ${cx + 5},${base + 13} ${cx - 5},${base + 13}" fill="${k === "p" ? "var(--sv-card)" : "var(--sv-chart-event)"}" ${k === "p" ? 'stroke="var(--sv-chart-event-pending)" stroke-width="2"' : ""}/>`; }).join("");
+  s.innerHTML = `${grid}<line x1="${l}" x2="${Wd - r}" y1="${base}" y2="${base}" stroke="var(--sv-line)"/>
+  <path d="${band}" fill="var(--sv-chart-band)" opacity="0.75"/>
+  <path d="${step(4)}" fill="none" stroke="var(--sv-chart-relative)" stroke-width="2" stroke-dasharray="6 4"/>
+  <path d="${step(1)}" fill="none" stroke="var(--sv-chart-dcf)" stroke-width="3"/>
+  <polyline points="${price.map(([d, v]) => `${x(d)},${y(v)}`).join(" ")}" fill="none" stroke="var(--sv-chart-price)" stroke-width="1.8" stroke-linejoin="round"/>
+  ${runs.map(q => `<circle cx="${x(q[0])}" cy="${y(q[1])}" r="4.5" fill="var(--sv-chart-dcf)" stroke="var(--sv-card)" stroke-width="2"/>`).join("")}
+  ${evs}${months.map(([d, t]) => `<text x="${x(d)}" y="${Ht - 8}" text-anchor="middle" font-size="11" fill="var(--sv-ink-500)">${t}</text>`).join("")}`;
+};
+new ResizeObserver(draw).observe(s);
+}
+</script>
+</body>
+</html>

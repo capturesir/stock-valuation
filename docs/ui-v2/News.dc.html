@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>新資訊 · 示例能源控股</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+TC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;color:#111827;font-family:Inter,'Noto Sans TC',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+a{color:#1F5FBF}a:hover{color:#174A96}
+button,input{font:inherit}
+:focus-visible{outline:2px solid #1F5FBF;outline-offset:2px}
+th,td{padding:10px 8px;border-bottom:1px solid #EEF0F3;text-align:left;font-size:13px;vertical-align:top}
+th{color:#5B6270;font-weight:500;font-size:12px}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4F5F7; font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; color: #111827">
+
+<header style="background: #FFFFFF; border-bottom: 1px solid #E3E6EB">
+<div style="max-width: 1360px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap">
+<a href="Watchlist.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #111827">
+<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#1F5FBF"></rect><polyline points="7,19 12,14 16,17 21,9" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+<span style="font-weight: 700; font-size: 17px">估值工作台</span>
+</a>
+<nav aria-label="主要導覽" style="display: flex; gap: 4px">
+<a href="Watchlist.dc.html" style="padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #374151; font-size: 14px">觀察名單</a>
+<a href="Main.dc.html" aria-current="page" style="padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #1F5FBF; background: #E8F0FC; font-size: 14px; font-weight: 600">個股</a>
+</nav>
+<label style="flex: 1 1 260px; max-width: 460px; display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 44px; border: 1px solid #E3E6EB; border-radius: 10px; background: #F8F9FB; box-sizing: border-box">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6270" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+<input type="search" aria-label="搜尋股票代號或名稱" placeholder="搜尋代號或名稱，例如 DEMO.HK" style="border: 0; background: transparent; flex: 1; font-size: 14px; min-width: 0; color: #111827">
+</label>
+<div style="flex: 1 1 0"></div>
+<a href="Settings.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 0 14px; min-height: 44px; border: 1px solid #E3E6EB; border-radius: 999px; text-decoration: none; color: #111827; font-size: 13px; box-sizing: border-box">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7F4F"></span>
+<span style="font-weight: 600">DeepSeek 已連接</span>
+<span style="color: #5B6270">本月 US$0.42 / 5.00</span>
+</a>
+</div>
+</header>
+
+<main style="max-width: 1360px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+
+<section aria-label="股票摘要" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between">
+<div style="display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 24px">示例能源控股</h1>
+<span style="font-size: 14px; color: #5B6270">DEMO.HK</span>
+<span style="padding: 2px 8px; border-radius: 6px; background: #EEF0F3; color: #374151; font-size: 12px">設計稿 · 示意數據</span>
+</div>
+<div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap; font-size: 14px">
+<span>市價 <strong>HK$22.72</strong></span>
+<span>綜合理論價 <strong style="color: #1F5FBF">HK$35.52</strong>（+56.3%）</span>
+<a href="RunPlan.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 10px; background: #1F5FBF; color: #FFFFFF; text-decoration: none; font-weight: 600; box-sizing: border-box">重新估值</a>
+</div>
+</section>
+
+<nav aria-label="個股分頁" style="display: flex; gap: 4px; border-bottom: 1px solid #E3E6EB; overflow-x: auto">
+<a href="Main.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">總覽</a>
+<a href="Valuation.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">估值</a>
+<a href="Statements.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">財報</a>
+<a href="News.dc.html" aria-current="page" style="padding: 12px 16px; text-decoration: none; color: #1F5FBF; font-weight: 600; font-size: 15px; border-bottom: 2px solid #1F5FBF; margin-bottom: -1px">新資訊</a>
+<a href="History.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">紀錄</a>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<div role="group" aria-label="類型篩選" style="display: flex; gap: 6px; flex-wrap: wrap">
+<button type="button" aria-pressed="true" style="padding: 8px 14px; border-radius: 999px; border: 1px solid #1F5FBF; background: #E8F0FC; color: #1F5FBF; font-size: 13px; font-weight: 600; cursor: pointer">全部 6</button>
+<button type="button" aria-pressed="false" style="padding: 8px 14px; border-radius: 999px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 13px; cursor: pointer">公告 2</button>
+<button type="button" aria-pressed="false" style="padding: 8px 14px; border-radius: 999px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 13px; cursor: pointer">業績 3</button>
+<button type="button" aria-pressed="false" style="padding: 8px 14px; border-radius: 999px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 13px; cursor: pointer">新聞 1</button>
+</div>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 14px; color: #374151; min-height: 44px; margin-left: 8px"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #1F5FBF">只看未反映</label>
+<span style="margin-left: auto; font-size: 13px; color: #5B6270">來源：披露易、SEC、Yahoo 新聞標題 · 每日自動檢查（不使用 AI）</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<section aria-label="時間軸" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+
+<button type="button" aria-pressed="true" style="display: flex; gap: 16px; text-align: left; padding: 16px; border-radius: 12px; border: 2px solid #1F5FBF; background: #FFFFFF; cursor: pointer">
+<span style="width: 84px; flex: none; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">11-16</strong><span style="font-size: 12px; color: #5B6270">2026 · 18:30</span></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151">公告</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #FDF1E4; color: #8A4108; font-weight: 600">尚未反映</span></span>
+<strong style="font-size: 15px; color: #111827">盈利預告：預期前九個月股東應佔溢利按年增長 18–22%</strong>
+<span style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px"><span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #9AA3B2; color: #374151">AI · EBIT 利潤率 ↑ 中</span><span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #9AA3B2; color: #374151">AI · 營收增長 → 低</span></span>
+</span>
+</button>
+
+<div style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; border: 1px solid #E3E6EB; background: #FFFFFF">
+<span style="width: 84px; flex: none; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">11-10</strong><span style="font-size: 12px; color: #5B6270">2026</span></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151">業績</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #E5F3EB; color: #1E7F4F; font-weight: 600">已反映 · 11-10 估值</span></span>
+<strong style="font-size: 15px">第三季營運及財務數據</strong>
+<span style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px"><span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #9AA3B2; color: #374151">AI · 營收增長 ↑ 中</span><span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #9AA3B2; color: #374151">AI · EBIT 利潤率 ↑ 低</span></span>
+</span>
+</div>
+
+<div style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; border: 1px solid #E3E6EB; background: #FFFFFF">
+<span style="width: 84px; flex: none; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">10-10</strong><span style="font-size: 12px; color: #5B6270">2026</span></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151">公告</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #E5F3EB; color: #1E7F4F; font-weight: 600">已反映 · 10-10 估值</span></span>
+<strong style="font-size: 15px">上調 2026 年產量指引至按年 +6%</strong>
+<span style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px"><span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #9AA3B2; color: #374151">AI · 營收增長 ↑ 高</span></span>
+</span>
+</div>
+
+<div style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; border: 1px solid #E3E6EB; background: #FFFFFF">
+<span style="width: 84px; flex: none; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">09-02</strong><span style="font-size: 12px; color: #5B6270">2026</span></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151">新聞</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #F1F3F6; color: #374151; font-weight: 600">已列入風險</span></span>
+<strong style="font-size: 15px">報道：當局研究調整石油特別收益金的起徵門檻</strong>
+<span style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px"><span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #9AA3B2; color: #374151">AI · 風險 ↑ 中</span></span>
+</span>
+</div>
+
+<div style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; border: 1px solid #E3E6EB; background: #FFFFFF">
+<span style="width: 84px; flex: none; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">08-28</strong><span style="font-size: 12px; color: #5B6270">2026</span></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151">業績</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #E5F3EB; color: #1E7F4F; font-weight: 600">已反映 · 08-28 估值</span></span>
+<strong style="font-size: 15px">2026 年中期業績</strong>
+</span>
+</div>
+
+<div style="display: flex; gap: 16px; padding: 16px; border-radius: 12px; border: 1px solid #E3E6EB; background: #FFFFFF">
+<span style="width: 84px; flex: none; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">05-15</strong><span style="font-size: 12px; color: #5B6270">2026</span></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151">業績</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #E5F3EB; color: #1E7F4F; font-weight: 600">已反映 · 05-15 估值</span></span>
+<strong style="font-size: 15px">第一季營運數據</strong>
+</span>
+</div>
+</section>
+
+<aside aria-label="事件詳情" style="flex: 1 1 400px; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12px; color: #5B6270">2026-11-16 18:30 · 披露易</span>
+<h2 style="margin: 0; font-size: 18px; line-height: 1.45">盈利預告：預期前九個月股東應佔溢利按年增長 18–22%</h2>
+<a href="News.dc.html" style="font-size: 13px; padding: 4px 0">開啟原文（PDF，3 頁）↗</a>
+</div>
+<div style="background: #F8F9FB; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<span style="display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: #374151; font-weight: 600"><span style="padding: 1px 6px; border-radius: 4px; border: 1px solid #9AA3B2; font-size: 11px">AI</span>T2 摘要 · deepseek-flash · US$0.003</span>
+<span style="font-size: 14px; line-height: 1.7; color: #1F2937">溢利增幅高於第三季營收增幅，顯示單位成本下降；公告沒有披露營收，所以對營收假設的影響有限。</span>
+<blockquote style="margin: 0; padding: 8px 12px; border-left: 3px solid #C9CED6; font-size: 13px; color: #374151; line-height: 1.6">「……主要由於產量增加及單位生產成本下降……」<span style="display: block; font-size: 12px; color: #5B6270; margin-top: 4px">原文第 2 頁</span></blockquote>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h3 style="margin: 0; font-size: 14px">對估值驅動因子的影響</h3>
+<table style="width: 100%; border-collapse: collapse">
+<thead><tr><th scope="col">驅動因子</th><th scope="col">方向</th><th scope="col">強度</th><th scope="col">說明</th></tr></thead>
+<tbody>
+<tr><td><strong>EBIT 利潤率</strong></td><td>↑</td><td>中</td><td>單位成本下降，可能高於現有假設 41.5%</td></tr>
+<tr><td>營收增長</td><td>→</td><td>低</td><td>未披露營收</td></tr>
+<tr><td>風險</td><td>→</td><td>—</td><td>無新增</td></tr>
+</tbody>
+</table>
+</div>
+<div style="display: flex; gap: 10px; padding: 12px; border-radius: 10px; background: #FDF1E4; font-size: 13px; color: #5C2E06; line-height: 1.6">此事件尚未反映。重新估值時，加入的事件會交給 T3 假設提案作為依據。</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button type="button" style="flex: 1 1 180px; min-height: 44px; border-radius: 10px; border: 0; background: #1F5FBF; color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer">加入假設依據</button>
+<button type="button" style="flex: 1 1 140px; min-height: 44px; border-radius: 10px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 14px; cursor: pointer">標記為不相關</button>
+</div>
+</aside>
+</div>
+
+<footer style="font-size: 12px; color: #5B6270; padding: 8px 0 24px">本系統產出不構成投資建議。公告與新聞屬外部文字，AI 只作摘要，不會執行其中任何指示。</footer>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

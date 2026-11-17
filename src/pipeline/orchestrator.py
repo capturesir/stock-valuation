@@ -34,7 +34,7 @@ def load_config(path: Optional[Path] = None) -> dict:
 
 def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
                valuation_date: str = "2026-11-11", progress=None,
-               should_stop=None) -> dict:
+               should_stop=None, skip_extract: bool = False) -> dict:
     """Fetch -> assumptions -> engine -> verify -> Excel / markdown.
 
     ``progress`` is an optional callback ``(step_key, activity=None, skip=None)``
@@ -152,7 +152,12 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     client = LLMClient(cfg)
     llm_status = {"available": client.available(), "base_url": client.base_url or None,
                   "model": client.model or None, "used": False, "errors": []}
-    if use_llm and client.available():
+    if skip_extract:
+        # v2: this step only ever sent the company name and industry (no statement
+        # numbers) and its output never reached the model, so the v2 backend skips
+        # it instead of billing the user for it (improvement plan P0).
+        _step("ai_extract", "略過：此步驟未送出財報數字，結果不影響估值", skip="略過")
+    elif use_llm and client.available():
         _step("ai_extract", f"AI 正在讀取財報摘要並整理資料缺口（{client.model}）…")
         # We still run rules for the engine path; LLM output is stored for audit if it succeeds.
         try:

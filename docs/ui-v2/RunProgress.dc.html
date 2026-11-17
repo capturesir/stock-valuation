@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>估值進行中</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+TC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;color:#111827;font-family:Inter,'Noto Sans TC',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+a{color:#1F5FBF}a:hover{color:#174A96}
+button{font:inherit}
+:focus-visible{outline:2px solid #1F5FBF;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; background: #F4F5F7; font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; color: #111827">
+
+<div aria-hidden="true" style="flex: 1 1 0; min-width: 0; position: relative; overflow: hidden">
+<div style="height: 64px; background: #FFFFFF; border-bottom: 1px solid #E3E6EB"></div>
+<div style="padding: 24px; display: flex; flex-direction: column; gap: 20px">
+<div style="height: 72px; border-radius: 12px; background: #E9ECF1; width: 60%"></div>
+<div style="height: 48px; border-radius: 12px; background: #FDF1E4"></div>
+<div style="display: flex; gap: 20px"><div style="flex: 2; height: 420px; border-radius: 12px; background: #FFFFFF"></div><div style="flex: 1; height: 420px; border-radius: 12px; background: #FFFFFF"></div></div>
+<div style="display: flex; gap: 20px"><div style="flex: 2; height: 240px; border-radius: 12px; background: #FFFFFF"></div><div style="flex: 1; height: 240px; border-radius: 12px; background: #FFFFFF"></div></div>
+</div>
+<div style="position: absolute; inset: 0; background: rgba(17,24,39,0.45)"></div>
+</div>
+
+<aside role="dialog" aria-modal="true" aria-labelledby="run-progress-title" style="flex: 0 1 540px; min-width: 0; background: #FFFFFF; display: flex; flex-direction: column; box-shadow: -8px 0 24px rgba(17,24,39,0.12)">
+<div style="padding: 20px 24px; border-bottom: 1px solid #E3E6EB; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="run-progress-title" style="margin: 0; font-size: 20px">估值進行中</h2>
+<span style="font-size: 13px; color: #5B6270">示例能源控股 · 標準模式 · 設計稿示意數據</span>
+</div>
+<span style="font-size: 13px; color: #374151; text-align: right; line-height: 1.5">已用 00:48<br>預計尚餘約 00:35</span>
+</div>
+<div role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-label="整體進度" style="height: 10px; border-radius: 5px; background: #EEF0F3"><div style="width: 50%; height: 10px; border-radius: 5px; background: #1F5FBF"></div></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div style="background: #F8F9FB; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #5B6270">累計費用</span><strong style="font-size: 18px">US$0.009</strong></div>
+<div style="background: #F8F9FB; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #5B6270">預估總額</span><strong style="font-size: 18px">US$0.02–0.03</strong></div>
+<div style="background: #F8F9FB; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #5B6270">本次上限</span><strong style="font-size: 18px">US$0.50</strong></div>
+</div>
+</div>
+
+<div style="flex: 1; overflow-y: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 16px">
+<ol aria-label="工作清單" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px">
+
+<li style="display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px">
+<svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="完成" style="flex: none"><circle cx="12" cy="12" r="11" fill="#1E7F4F"></circle><polyline points="7 12.5 10.5 16 17 9" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">取得市價、財報、無風險利率</strong><span style="font-size: 12px; color: #5B6270">3.2 秒 · 不使用 AI</span></span>
+<span style="font-size: 13px; color: #5B6270">—</span>
+</li>
+
+<li style="display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px">
+<svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="使用快取" style="flex: none"><circle cx="12" cy="12" r="11" fill="#E5F3EB"></circle><path d="M16.5 9.5a5 5 0 1 0 .5 4" fill="none" stroke="#1E7F4F" stroke-width="2" stroke-linecap="round"></path><polyline points="17 6.5 17 10 13.5 10" fill="none" stroke="#1E7F4F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">T1 財報異常偵測</strong><span style="font-size: 12px; color: #1E7F4F">使用快取 · 財報沒有變動</span></span>
+<span style="font-size: 13px">US$0.000</span>
+</li>
+
+<li style="display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px">
+<svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="完成" style="flex: none"><circle cx="12" cy="12" r="11" fill="#1E7F4F"></circle><polyline points="7 12.5 10.5 16 17 9" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px">T2 新資訊摘要與影響評估</strong><span style="font-size: 12px; color: #5B6270">找到 1 個中影響事件 · 19.2k 入 / 2.7k 出 · 預估 US$0.010</span></span>
+<span style="font-size: 13px; font-weight: 600">US$0.009</span>
+</li>
+
+<li aria-current="step" style="display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px; background: #F5F8FE; border: 1px solid #B3CCF0">
+<svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="執行中" style="flex: none"><circle cx="12" cy="12" r="9" fill="none" stroke="#D6E4F8" stroke-width="3"></circle><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="#1F5FBF" stroke-width="3" stroke-linecap="round"></path></svg>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px; color: #174A96">T3 增長與利潤率假設</strong><span style="font-size: 12px; color: #374151">等待模型回覆… 已送出 10.1k Token · 預估 US$0.007</span></span>
+<span style="font-size: 13px; color: #5B6270">—</span>
+</li>
+
+<li style="display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px">
+<svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="待執行" style="flex: none"><circle cx="12" cy="12" r="9" fill="none" stroke="#C9CED6" stroke-width="2"></circle></svg>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px; color: #374151">引擎計算與獨立驗證</strong><span style="font-size: 12px; color: #5B6270">DCF 五情境、相對估值、反向 DCF、verify_fcff · 不使用 AI</span></span>
+<span style="font-size: 13px; color: #5B6270">—</span>
+</li>
+
+<li style="display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px">
+<svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="待執行" style="flex: none"><circle cx="12" cy="12" r="9" fill="none" stroke="#C9CED6" stroke-width="2"></circle></svg>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px; color: #374151">T7 估值報告與變動解釋</strong><span style="font-size: 12px; color: #5B6270">預估 US$0.005</span></span>
+<span style="font-size: 13px; color: #5B6270">—</span>
+</li>
+
+<li style="display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 10px">
+<svg width="22" height="22" viewBox="0 0 24 24" role="img" aria-label="略過" style="flex: none"><circle cx="12" cy="12" r="9" fill="none" stroke="#C9CED6" stroke-width="2" stroke-dasharray="3 3"></circle><line x1="8" y1="12" x2="16" y2="12" stroke="#9AA3B2" stroke-width="2" stroke-linecap="round"></line></svg>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 14px; color: #5B6270">T4 情境敘事、T6 反方審查</strong><span style="font-size: 12px; color: #5B6270">略過：未勾選（深度模式項目）</span></span>
+<span style="font-size: 13px; color: #5B6270">—</span>
+</li>
+</ol>
+
+<details style="border: 1px solid #E3E6EB; border-radius: 10px; padding: 0 14px">
+<summary style="min-height: 44px; display: flex; align-items: center; font-size: 13px; font-weight: 600; cursor: pointer">執行紀錄（服務商回報）</summary>
+<div style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; color: #374151; line-height: 1.8; padding-bottom: 12px">
+16:41:20 開始 · 標準模式 · deepseek-flash<br>
+16:41:23 資料抓取完成（Yahoo、披露易、港債 10 年）<br>
+16:41:23 T1 輸入雜湊相同 → 使用 11-10 結果<br>
+16:42:05 T2 完成：19,214 入 / 2,688 出 → US$0.0090<br>
+16:42:06 T3 送出：10,126 入（輸出上限 4,000）
+</div>
+</details>
+</div>
+
+<div style="padding: 16px 24px; border-top: 1px solid #E3E6EB; display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; align-items: center">
+<span style="font-size: 12px; color: #5B6270; flex: 1 1 200px">停止後，已完成的項目會保留並寫入快取</span>
+<div style="display: flex; gap: 10px">
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #E5B5B0; background: #FFFFFF; color: #B42318; font-size: 14px; font-weight: 600; cursor: pointer">停止</button>
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 10px; background: #111827; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 600; box-sizing: border-box">在背景繼續</a>
+</div>
+</div>
+</aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

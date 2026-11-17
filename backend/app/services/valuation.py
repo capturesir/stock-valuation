@@ -1,0 +1,218 @@
+"""Run one valuation through the v1 engine and record it: progress, AI cost, results."""
+from __future__ import annotations
+
+import datetime as dt
+import traceback
+from typing import Optional
+
+from sqlalchemy.orm import Session
+
+from .. import pricing
+from ..db import session
+from ..jobs import now_iso, store
+from ..models import AiTask, MethodResult, Run
+from . import settings_store
+
+# v1 orchestrator step keys → checklist labels (ai_extract is skipped in v2, see orchestrator)
+DATA_STEPS = [("quote", "取得市價"), ("fundamentals", "讀取財報與分析師預測"),
+              ("rf", "取得無風險利率"), ("filings", "讀取最新公告")]
+LATE_STEPS = [("spec", "建立模型規格（行業 β、折現率、橋接）"), ("engine", "引擎計算五情境並獨立驗證"),
+              ("export", "產出 Excel 與說明"), ("state", "寫入估值紀錄")]
+# where each AI task runs inside the v1 pipeline
+AI_HOOKS = {"ai_assume": "T3"}
+SCENARIOS = {"悲觀": "bear", "基準": "base", "樂觀": "bull", "靜態": "static", "9%靜態": "floor9"}
+
+
+def build_steps(plan_tasks: list[dict]) -> list[dict]:
+    steps = [{"key": k, "label": l, "kind": "data", "status": "pending", "note": None} for k, l in DATA_STEPS]
+    for t in plan_tasks:
+        if not (t["in_mode"] or t["selected"]):
+            continue
+        steps.append({
+            "key": t["key"], "label": f"{t['key']} {t['label']}", "kind": "ai",
+            "status": "pending" if t["will_run"] else "skipped",
+            "note": None if t["will_run"] else t["skip_reason"],
+            "note_code": None if t["will_run"] else t.get("skip_code"),
+            "est_cost_usd": t["est_cost_usd"] if t["will_run"] else None,
+            "est_tokens_in": t["est_tokens_in"], "est_tokens_out": t["est_tokens_out"],
+            "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0,
+        })
+    steps += [{"key": k, "label": l, "kind": "engine", "status": "pending", "note": None} for k, l in LATE_STEPS]
+    return steps
+
+
+def _progress(steps: list[dict]) -> int:
+    live = [s for s in steps if s["status"] != "skipped"]
+    done = sum(1 for s in live if s["status"] in ("done", "cached", "failed"))
+    return int(round(100 * done / max(1, len(live))))
+
+
+def trading_ccy(calc: dict) -> Optional[str]:
+    pair = ((calc.get("fx_if_any") or {}).get("pair") or "")
+    return pair.split("/")[1] if "/" in pair else calc.get("currency")
+
+
+def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str = "none", trigger: str = "manual",
+                source: str = "v2", verify_pass: Optional[bool] = None, calc_path: Optional[str] = None,
+                xlsx_path: Optional[str] = None, run_at: Optional[dt.datetime] = None,
+                ai_cost: float = 0.0, tokens_in: int = 0, tokens_out: int = 0) -> Run:
+    base = calc.get("fair_value_per_share")
+    run = Run(
+        ticker=calc["ticker"], company=calc.get("asset"), valuation_date=str(calc.get("valuation_date"))[:10],
+        status=status, trigger=trigger, ai_mode=ai_mode, source=source,
+        price=calc.get("price"), price_date=calc.get("price_date"),
+        trading_ccy=trading_ccy(calc), model_ccy=calc.get("currency"),
+        composite_value=base, weights={"dcf": 1.0},   # relative / DDM join in phase 3
+        wacc=((calc.get("discount") or {}).get("wacc") or {}).get("value"),
+        terminal_g=(calc.get("terminal") or {}).get("g"),
+        verify_pass=verify_pass, assumption_source=calc.get("assumption_source"),
+        ai_cost_usd=ai_cost, ai_tokens_in=tokens_in, ai_tokens_out=tokens_out,
+        calc_json_path=calc_path, xlsx_path=xlsx_path, data_gaps=calc.get("data_gaps") or [],
+    )
+    if run_at is not None:
+        run.run_at = run_at
+    for s in calc.get("scenarios") or []:
+        key = SCENARIOS.get(s.get("name"))
+        if key and s.get("fair_value") is not None:
+            run.methods.append(MethodResult(method="dcf", scenario=key, value=float(s["fair_value"]),
+                                            weight=1.0 if key == "base" else None))
+    if not any(m.scenario == "base" for m in run.methods) and base is not None:
+        run.methods.append(MethodResult(method="dcf", scenario="base", value=float(base), weight=1.0))
+    db.add(run)
+    db.flush()
+    return run
+
+
+def _usage_by_task(usage: dict) -> dict[str, dict]:
+    """Provider-reported usage grouped by AI task (via the LLMClient tag)."""
+    tag_to_task = {t.llm_tag: t.key for t in pricing.TASKS if t.llm_tag}
+    out: dict[str, dict] = {}
+    for ev in (usage or {}).get("events") or []:
+        key = tag_to_task.get(ev.get("tag"))
+        if not key:
+            continue
+        agg = out.setdefault(key, {"tokens_in": 0, "tokens_out": 0, "requests": 0, "reported": True})
+        agg["requests"] += 1
+        if ev.get("reported"):
+            agg["tokens_in"] += int(ev.get("prompt_tokens") or 0)
+            agg["tokens_out"] += int(ev.get("completion_tokens") or 0)
+        else:
+            agg["reported"] = False
+    return out
+
+
+def execute(job_id: str, payload: dict) -> None:
+    """Worker entry (arq or inline thread). Never raises: the outcome is in the job and the DB."""
+    from src.pipeline.orchestrator import ValuationCancelled, run_ticker
+
+    st = store()
+    job = st.get(job_id)
+    if job is None:
+        return
+    steps = job["steps"]
+    if st.is_cancelled(job_id):
+        st.update(job_id, status="cancelled", finished_at=now_iso(), activity="已在開始前取消")
+        return
+    st.update(job_id, status="running", started_at=now_iso(), activity="開始估值…")
+
+    def find(key: str) -> Optional[dict]:
+        return next((s for s in steps if s["key"] == key), None)
+
+    def progress(key: str, activity: Optional[str] = None, skip: Optional[str] = None) -> None:
+        if key == "ai_extract":
+            return
+        target = find(AI_HOOKS.get(key, key))
+        for s in steps:                       # whatever was running has finished …
+            # … except T3: the v1 pipeline makes the AI call inside the "spec" step
+            if s["status"] == "active" and not (key == "spec" and s["key"] == "T3"):
+                s["status"] = "done"
+        if target is not None:
+            if skip and target["status"] != "skipped":
+                target.update(status="skipped", note=skip)
+            elif target["status"] == "pending":
+                target["status"] = "active"
+        st.update(job_id, steps=steps, progress=_progress(steps), activity=activity or (target or {}).get("label"))
+
+    with session() as db:
+        cfg = settings_store.llm_cfg(db)
+        prices = settings_store.price_table(db)
+    model = cfg["llm"]["model"]
+    local = pricing.is_local(cfg["llm"]["base_url"])
+    price = {"model": model, "input": 0.0, "cached_input": 0.0, "output": 0.0} if local else pricing.find_price(model, prices)
+    use_llm = bool(payload.get("use_llm"))
+    status, error, result = "done", None, None
+
+    try:
+        result = run_ticker(
+            job["ticker"], cfg=cfg, use_llm=use_llm, valuation_date=job["valuation_date"],
+            progress=progress, should_stop=lambda: st.is_cancelled(job_id), skip_extract=True,
+        )
+    except ValuationCancelled:
+        status, error = "cancelled", "用戶已停止估值（已完成的步驟保留）"
+    except Exception as exc:  # report, never crash the worker
+        status, error = "failed", f"{type(exc).__name__}: {exc}"
+        traceback.print_exc()
+
+    calc = (result or {}).get("json") or {}
+    usage = _usage_by_task(calc.get("llm_usage") or {})
+    gaps = " ".join(calc.get("data_gaps") or [])
+    total_cost, total_in, total_out = 0.0, 0, 0
+    for s in steps:
+        if s["status"] == "active":
+            s["status"] = "done" if status == "done" else ("cancelled" if status == "cancelled" else "failed")
+        if s["kind"] != "ai" or s["status"] == "skipped":
+            continue
+        u = usage.get(s["key"])
+        if u:
+            c = pricing.cost(u["tokens_in"], u["tokens_out"], price) or 0.0
+            s.update(tokens_in=u["tokens_in"], tokens_out=u["tokens_out"], cost_usd=round(c, 6),
+                     usage_reported=u["reported"])
+            total_cost, total_in, total_out = total_cost + c, total_in + u["tokens_in"], total_out + u["tokens_out"]
+            if "AI 提案失敗" in gaps:
+                s.update(status="failed", note="AI 請求失敗，已改用規則後備", note_code="ai_failed")
+            elif "AI 提案未採用" in gaps:
+                s.update(note="AI 提案超出資料推算範圍，已退回規則值（費用已產生）", note_code="ai_rejected")
+            elif not u["reported"]:
+                s.update(note="服務商未回報用量，費用按 0 計", note_code="usage_unreported")
+        elif s["status"] == "done" and status == "done":
+            s.update(status="failed", note="AI 未回覆可用結果，已改用規則後備", note_code="ai_failed")
+        elif s["status"] == "pending":
+            s["status"] = "cancelled" if status == "cancelled" else "skipped"
+            s["note"] = s.get("note") or ("已停止" if status == "cancelled" else "未執行")
+            s["note_code"] = s.get("note_code") or ("cancelled" if status == "cancelled" else "not_run")
+    for s in steps:
+        if s["kind"] != "ai" and s["status"] == "pending" and status == "done":
+            s["status"] = "done"
+
+    with session() as db:
+        run = None
+        if status == "done" and calc:
+            run = persist_run(db, calc, status="done", ai_mode=job["mode"], trigger=payload.get("trigger") or "manual",
+                              verify_pass=result.get("verify_pass"), calc_path=result.get("path"),
+                              xlsx_path=result.get("xlsx"), ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out)
+        else:
+            run = Run(ticker=job["ticker"], valuation_date=job["valuation_date"], status=status,
+                      ai_mode=job["mode"], trigger=payload.get("trigger") or "manual", error=error,
+                      ai_cost_usd=total_cost, ai_tokens_in=total_in, ai_tokens_out=total_out)
+            db.add(run)
+            db.flush()
+        for s in steps:
+            if s["kind"] == "ai":
+                db.add(AiTask(job_id=job_id, run_id=run.id, ticker=job["ticker"], task=s["key"],
+                              status=s["status"], model=model or None,
+                              est_tokens_in=s.get("est_tokens_in") or 0, est_tokens_out=s.get("est_tokens_out") or 0,
+                              est_cost_usd=s.get("est_cost_usd") or 0.0, tokens_in=s.get("tokens_in") or 0,
+                              tokens_out=s.get("tokens_out") or 0, cost_usd=s.get("cost_usd") or 0.0,
+                              usage_reported=bool(s.get("usage_reported")), note=s.get("note")))
+        run_id = run.id
+
+    summary = None
+    if status == "done":
+        summary = {"fair_value": calc.get("fair_value_per_share"), "price": calc.get("price"),
+                   "currency": trading_ccy(calc), "verify_pass": result.get("verify_pass"),
+                   "warning": calc.get("result_warning")}
+    st.update(job_id, status=status, finished_at=now_iso(), steps=steps,
+              progress=100 if status == "done" else _progress(steps),
+              activity={"done": "估值完成", "cancelled": "已停止", "failed": "估值失敗"}[status],
+              cost_usd=round(total_cost, 6), tokens_in=total_in, tokens_out=total_out,
+              run_id=run_id, result=summary, error=error)

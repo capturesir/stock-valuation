@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>紀錄與比較 · 示例能源控股</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+TC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;color:#111827;font-family:Inter,'Noto Sans TC',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+a{color:#1F5FBF}a:hover{color:#174A96}
+button,input{font:inherit}
+:focus-visible{outline:2px solid #1F5FBF;outline-offset:2px}
+th,td{padding:12px 10px;border-bottom:1px solid #EEF0F3;text-align:right;font-size:14px;white-space:nowrap;vertical-align:middle}
+th{color:#5B6270;font-weight:500;font-size:12px;background:#F8F9FB}
+th:first-child,td:first-child{text-align:center}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4F5F7; font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; color: #111827">
+
+<header style="background: #FFFFFF; border-bottom: 1px solid #E3E6EB">
+<div style="max-width: 1360px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap">
+<a href="Watchlist.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #111827">
+<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#1F5FBF"></rect><polyline points="7,19 12,14 16,17 21,9" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+<span style="font-weight: 700; font-size: 17px">估值工作台</span>
+</a>
+<nav aria-label="主要導覽" style="display: flex; gap: 4px">
+<a href="Watchlist.dc.html" style="padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #374151; font-size: 14px">觀察名單</a>
+<a href="Main.dc.html" aria-current="page" style="padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #1F5FBF; background: #E8F0FC; font-size: 14px; font-weight: 600">個股</a>
+</nav>
+<label style="flex: 1 1 260px; max-width: 460px; display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 44px; border: 1px solid #E3E6EB; border-radius: 10px; background: #F8F9FB; box-sizing: border-box">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6270" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+<input type="search" aria-label="搜尋股票代號或名稱" placeholder="搜尋代號或名稱，例如 DEMO.HK" style="border: 0; background: transparent; flex: 1; font-size: 14px; min-width: 0; color: #111827">
+</label>
+<div style="flex: 1 1 0"></div>
+<a href="Settings.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 0 14px; min-height: 44px; border: 1px solid #E3E6EB; border-radius: 999px; text-decoration: none; color: #111827; font-size: 13px; box-sizing: border-box">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7F4F"></span>
+<span style="font-weight: 600">DeepSeek 已連接</span>
+<span style="color: #5B6270">本月 US$0.42 / 5.00</span>
+</a>
+</div>
+</header>
+
+<main style="max-width: 1360px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+
+<section aria-label="股票摘要" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between">
+<div style="display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 24px">示例能源控股</h1>
+<span style="font-size: 14px; color: #5B6270">DEMO.HK</span>
+<span style="padding: 2px 8px; border-radius: 6px; background: #EEF0F3; color: #374151; font-size: 12px">設計稿 · 示意數據</span>
+</div>
+<div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap; font-size: 14px">
+<span>市價 <strong>HK$22.72</strong></span>
+<span>綜合理論價 <strong style="color: #1F5FBF">HK$35.52</strong>（+56.3%）</span>
+<a href="RunPlan.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 10px; background: #1F5FBF; color: #FFFFFF; text-decoration: none; font-weight: 600; box-sizing: border-box">重新估值</a>
+</div>
+</section>
+
+<nav aria-label="個股分頁" style="display: flex; gap: 4px; border-bottom: 1px solid #E3E6EB; overflow-x: auto">
+<a href="Main.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">總覽</a>
+<a href="Valuation.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">估值</a>
+<a href="Statements.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">財報</a>
+<a href="News.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">新資訊</a>
+<a href="History.dc.html" aria-current="page" style="padding: 12px 16px; text-decoration: none; color: #1F5FBF; font-weight: 600; font-size: 15px; border-bottom: 2px solid #1F5FBF; margin-bottom: -1px">紀錄</a>
+</nav>
+
+<section aria-label="估值紀錄" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; overflow: hidden">
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 16px 20px; align-items: baseline">
+<h2 style="margin: 0; font-size: 17px">全部估值 · 6 次</h2>
+<span style="font-size: 13px; color: #5B6270">勾選兩次進行比較 · 每日市價更新不會新增一行，只更新走勢圖的市價線</span>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; min-width: 1180px">
+<thead><tr><th scope="col">比較</th><th scope="col" style="text-align: left">時間</th><th scope="col" style="text-align: left">觸發原因</th><th scope="col" style="text-align: left">AI 模式</th><th scope="col">DCF 基準</th><th scope="col">相對估值</th><th scope="col">綜合理論價</th><th scope="col">當時市價</th><th scope="col">AI 費用</th><th scope="col">驗證</th><th scope="col">檔案</th></tr></thead>
+<tbody>
+<tr style="background: #F5F8FE"><td><input type="checkbox" checked aria-label="選取 2026-11-10 估值作比較" style="width: 18px; height: 18px; accent-color: #1F5FBF"></td><td style="text-align: left"><strong>2026-11-10 14:30</strong></td><td style="text-align: left">新財報（第三季）</td><td style="text-align: left">標準</td><td><strong>38.40</strong></td><td>31.20</td><td style="color: #1F5FBF; font-weight: 700">35.52</td><td>23.10</td><td>US$0.031</td><td style="color: #1E7F4F">✓ 通過</td><td><a href="History.dc.html" style="padding: 8px 4px">Excel</a> · <a href="History.dc.html" style="padding: 8px 4px">JSON</a></td></tr>
+<tr style="background: #F5F8FE"><td><input type="checkbox" checked aria-label="選取 2026-10-10 估值作比較" style="width: 18px; height: 18px; accent-color: #1F5FBF"></td><td style="text-align: left"><strong>2026-10-10 16:02</strong></td><td style="text-align: left">新公告（產量指引）</td><td style="text-align: left">精簡</td><td>37.50</td><td>30.90</td><td style="font-weight: 600">34.86</td><td>22.10</td><td>US$0.012</td><td style="color: #1E7F4F">✓ 通過</td><td><a href="History.dc.html" style="padding: 8px 4px">Excel</a> · <a href="History.dc.html" style="padding: 8px 4px">JSON</a></td></tr>
+<tr><td><input type="checkbox" disabled aria-label="中止的執行不可比較" style="width: 18px; height: 18px"></td><td style="text-align: left; color: #5B6270">2026-10-10 15:41</td><td style="text-align: left; color: #5B6270">手動</td><td style="text-align: left; color: #5B6270">標準</td><td colspan="4" style="text-align: left; color: #8A4108">已中止：用戶在 T2 執行中停止（已完成的 T1 結果已快取）</td><td style="color: #5B6270">US$0.004</td><td style="color: #5B6270">—</td><td style="color: #5B6270">—</td></tr>
+<tr><td><input type="checkbox" aria-label="選取 2026-08-28 估值作比較" style="width: 18px; height: 18px; accent-color: #1F5FBF"></td><td style="text-align: left">2026-08-28 17:15</td><td style="text-align: left">新財報（中期）</td><td style="text-align: left">標準</td><td>36.90</td><td>30.50</td><td style="font-weight: 600">34.34</td><td>23.90</td><td>US$0.029</td><td style="color: #1E7F4F">✓ 通過</td><td><a href="History.dc.html" style="padding: 8px 4px">Excel</a> · <a href="History.dc.html" style="padding: 8px 4px">JSON</a></td></tr>
+<tr><td><input type="checkbox" aria-label="選取 2026-05-15 估值作比較" style="width: 18px; height: 18px; accent-color: #1F5FBF"></td><td style="text-align: left">2026-05-15 18:40</td><td style="text-align: left">新財報（第一季）</td><td style="text-align: left">精簡</td><td>34.20</td><td>29.40</td><td style="font-weight: 600">32.28</td><td>20.40</td><td>US$0.010</td><td style="color: #1E7F4F">✓ 通過</td><td><a href="History.dc.html" style="padding: 8px 4px">Excel</a> · <a href="History.dc.html" style="padding: 8px 4px">JSON</a></td></tr>
+<tr><td><input type="checkbox" aria-label="選取 2026-03-28 估值作比較" style="width: 18px; height: 18px; accent-color: #1F5FBF"></td><td style="text-align: left">2026-03-28 20:05</td><td style="text-align: left">首次估值</td><td style="text-align: left">深度</td><td>33.60</td><td>28.80</td><td style="font-weight: 600">31.68</td><td>21.50</td><td>US$0.052</td><td style="color: #1E7F4F">✓ 通過</td><td><a href="History.dc.html" style="padding: 8px 4px">Excel</a> · <a href="History.dc.html" style="padding: 8px 4px">JSON</a></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section aria-label="兩次估值比較" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; align-items: baseline">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 17px">比較：2026-10-10 → 2026-11-10</h2>
+<span style="font-size: 13px; color: #5B6270">引擎逐項替換輸入計算貢獻；各項加總等於總變動</span>
+</div>
+<span style="font-size: 20px; font-weight: 700">DCF 基準 37.50 → 38.40 <span style="font-size: 14px; color: #1F5FBF">+0.90（+2.4%）</span></span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="flex: 3 1 560px; min-width: 0">
+<svg viewBox="0 0 700 300" width="100%" role="img" aria-label="瀑布圖：DCF 基準由 37.50 起，EBIT 利潤率加 0.82，營收增長加 0.36，無風險利率減 0.15，淨現金減 0.08，匯率減 0.05，結果為 38.40" style="display: block">
+<line x1="40" y1="250" x2="680" y2="250" stroke="#D5D9E0"></line>
+<rect x="60" y="188.9" width="60" height="61.1" rx="3" fill="#9AA3B2"></rect>
+<rect x="150" y="88.7" width="60" height="100.2" rx="3" fill="#1F5FBF"></rect>
+<rect x="240" y="44.7" width="60" height="44" rx="3" fill="#1F5FBF"></rect>
+<rect x="330" y="44.7" width="60" height="18.3" rx="3" fill="#B45309"></rect>
+<rect x="420" y="63" width="60" height="9.8" rx="3" fill="#B45309"></rect>
+<rect x="510" y="72.8" width="60" height="6.1" rx="3" fill="#B45309"></rect>
+<rect x="600" y="78.9" width="60" height="171.1" rx="3" fill="#174A96"></rect>
+<g stroke="#9AA3B2" stroke-dasharray="3 3">
+<line x1="120" y1="188.9" x2="150" y2="188.9"></line><line x1="210" y1="88.7" x2="240" y2="88.7"></line><line x1="300" y1="44.7" x2="330" y2="44.7"></line><line x1="390" y1="63" x2="420" y2="63"></line><line x1="480" y1="72.8" x2="510" y2="72.8"></line><line x1="570" y1="78.9" x2="600" y2="78.9"></line>
+</g>
+<g font-family="Inter, 'Noto Sans TC', sans-serif" font-size="13" text-anchor="middle" fill="#111827" font-weight="600">
+<text x="90" y="180">37.50</text><text x="180" y="80">+0.82</text><text x="270" y="36">+0.36</text><text x="360" y="36">−0.15</text><text x="450" y="56">−0.08</text><text x="540" y="66">−0.05</text><text x="630" y="70">38.40</text>
+</g>
+<g font-family="Inter, 'Noto Sans TC', sans-serif" font-size="12" text-anchor="middle" fill="#374151">
+<text x="90" y="272">10-10</text><text x="180" y="272">EBIT 利潤率</text><text x="270" y="272">營收增長</text><text x="360" y="272">無風險利率</text><text x="450" y="272">淨現金</text><text x="540" y="272">匯率</text><text x="630" y="272">11-10</text>
+</g>
+<text x="40" y="292" font-family="Inter, 'Noto Sans TC', sans-serif" font-size="11" fill="#5B6270">縱軸由 37.0 起</text>
+</svg>
+</div>
+<div style="flex: 2 1 360px; display: flex; flex-direction: column; gap: 12px">
+<table style="width: 100%; border-collapse: collapse">
+<thead><tr><th scope="col" style="text-align: left">輸入</th><th scope="col">10-10</th><th scope="col">11-10</th></tr></thead>
+<tbody>
+<tr><td style="text-align: left">FY2027E EBIT 利潤率</td><td>41.0%</td><td><strong>42.2%</strong></td></tr>
+<tr><td style="text-align: left">FY2027E 營收增長</td><td>4.0%</td><td><strong>4.2%</strong></td></tr>
+<tr><td style="text-align: left">無風險利率</td><td>3.59%</td><td><strong>3.68%</strong></td></tr>
+<tr><td style="text-align: left">WACC</td><td>8.38%</td><td><strong>8.47%</strong></td></tr>
+<tr><td style="text-align: left">淨現金（十億港元）</td><td>38.9</td><td><strong>38.6</strong></td></tr>
+</tbody>
+</table>
+<div style="background: #F8F9FB; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<span style="display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: #374151; font-weight: 600"><span style="padding: 1px 6px; border-radius: 4px; border: 1px solid #9AA3B2; font-size: 11px">AI</span>T7 解釋</span>
+<span style="font-size: 13px; line-height: 1.65; color: #1F2937">第三季利潤率高於預期，2027–2028 年 EBIT 利潤率上調 1.2 個百分點 <a href="News.dc.html" style="font-size: 12px">[S3]</a>；10 年期港債孳息上升 9 個基點，抵銷部分升幅。</span>
+</div>
+</div>
+</div>
+</section>
+
+<footer style="font-size: 12px; color: #5B6270; padding: 8px 0 24px">本系統產出不構成投資建議。每次估值的輸入、提示詞版本與模型都有紀錄，可以重現。</footer>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

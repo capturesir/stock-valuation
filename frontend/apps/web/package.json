@@ -1,0 +1,33 @@
+{
+  "name": "@sv/web",
+  "version": "2.0.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "description": "電腦網站＋手機網站（PWA）",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@sv/api-client": "workspace:*",
+    "@sv/i18n": "workspace:*",
+    "@sv/tokens": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
+    "echarts": "^5.5.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "workbox-window": "^7.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "5.8.3",
+    "vite": "^6.0.3",
+    "vite-plugin-pwa": "^0.21.1"
+  }
+}

@@ -1,0 +1,91 @@
+# 估值工作台 v2 — `docker compose up -d --build`, then open http://localhost:8080
+# Settings come from .env (copy .env.example). Data lives in named volumes.
+name: stock-valuation
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  image: stock-valuation-api:${APP_VERSION:-2.0.0-alpha.1}
+  restart: unless-stopped
+  environment:
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-valuation}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-valuation}
+    REDIS_URL: redis://redis:6379/0
+    APP_SECRET_KEY: ${APP_SECRET_KEY:?set APP_SECRET_KEY in .env}
+    APP_API_TOKEN: ${APP_API_TOKEN:-}
+    CORS_ORIGINS: ${CORS_ORIGINS:-}
+    APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Macau}
+    APP_IMPORT_LEGACY: ${APP_IMPORT_LEGACY:-1}
+  volumes:
+    - appdata:/app/var
+    - outputs:/app/out
+    - cases:/app/cases
+  extra_hosts:
+    - "host.docker.internal:host-gateway"   # reach Ollama / LM Studio on the host
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-valuation}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DB:-valuation}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *backend
+
+  worker:
+    <<: *backend
+    command: ["arq", "backend.app.worker.WorkerSettings"]
+    healthcheck:
+      disable: true
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    image: stock-valuation-web:${APP_VERSION:-2.0.0-alpha.1}
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:80"
+      - "${WEB_BIND:-127.0.0.1}:${WEB_HTTPS_PORT:-8443}:443"
+    volumes:
+      - caddydata:/data
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
+  appdata:
+  outputs:
+  cases:
+  caddydata:

@@ -34,6 +34,8 @@ TOKEN_RE = re.compile(r"[A-Za-z0-9._%+-]+")
 # must not be scanned here.
 SKIP_PARTS = {
     ".git", "__pycache__", ".pytest_cache", ".venv", "venv", "data/damodaran",
+    # v2: installed npm packages and runtime state are git-ignored, never shipped
+    "node_modules", "var",
 }
 # Local-only files listed in .gitignore; a deployer's own mailbox legitimately
 # lives here and is never committed.

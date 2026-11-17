@@ -37,3 +37,14 @@ cases/*/adjustments.json
 
 # append-only per-run valuation log (R17–R20); rebuilt by running valuations
 out/history/
+
+# v2: runtime state (SQLite database, generated secret key) and frontend builds
+var/
+frontend/node_modules/
+frontend/**/node_modules/
+frontend/apps/*/dist/
+frontend/packages/tokens/dist/
+.env
+
+# the template is safe to share (no secrets); keep it in the repo and the release zip
+!.env.example

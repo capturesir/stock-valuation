@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>財報 · 示例能源控股</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+TC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;color:#111827;font-family:Inter,'Noto Sans TC',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+a{color:#1F5FBF}a:hover{color:#174A96}
+button,input,select{font:inherit}
+:focus-visible{outline:2px solid #1F5FBF;outline-offset:2px}
+th,td{padding:10px 12px;border-bottom:1px solid #EEF0F3;text-align:right;font-size:14px;white-space:nowrap;vertical-align:middle}
+th{color:#5B6270;font-weight:500;font-size:12px;background:#F8F9FB}
+th:first-child,td:first-child{text-align:left}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F4F5F7; font-family: Inter, 'Noto Sans TC', system-ui, sans-serif; color: #111827">
+
+<header style="background: #FFFFFF; border-bottom: 1px solid #E3E6EB">
+<div style="max-width: 1360px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap">
+<a href="Watchlist.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #111827">
+<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#1F5FBF"></rect><polyline points="7,19 12,14 16,17 21,9" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+<span style="font-weight: 700; font-size: 17px">估值工作台</span>
+</a>
+<nav aria-label="主要導覽" style="display: flex; gap: 4px">
+<a href="Watchlist.dc.html" style="padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #374151; font-size: 14px">觀察名單</a>
+<a href="Main.dc.html" aria-current="page" style="padding: 10px 12px; border-radius: 8px; text-decoration: none; color: #1F5FBF; background: #E8F0FC; font-size: 14px; font-weight: 600">個股</a>
+</nav>
+<label style="flex: 1 1 260px; max-width: 460px; display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 44px; border: 1px solid #E3E6EB; border-radius: 10px; background: #F8F9FB; box-sizing: border-box">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6270" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+<input type="search" aria-label="搜尋股票代號或名稱" placeholder="搜尋代號或名稱，例如 DEMO.HK" style="border: 0; background: transparent; flex: 1; font-size: 14px; min-width: 0; color: #111827">
+</label>
+<div style="flex: 1 1 0"></div>
+<a href="Settings.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 0 14px; min-height: 44px; border: 1px solid #E3E6EB; border-radius: 999px; text-decoration: none; color: #111827; font-size: 13px; box-sizing: border-box">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #1E7F4F"></span>
+<span style="font-weight: 600">DeepSeek 已連接</span>
+<span style="color: #5B6270">本月 US$0.42 / 5.00</span>
+</a>
+</div>
+</header>
+
+<main style="max-width: 1360px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+
+<section aria-label="股票摘要" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between">
+<div style="display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 24px">示例能源控股</h1>
+<span style="font-size: 14px; color: #5B6270">DEMO.HK</span>
+<span style="padding: 2px 8px; border-radius: 6px; background: #EEF0F3; color: #374151; font-size: 12px">設計稿 · 示意數據</span>
+</div>
+<div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap; font-size: 14px">
+<span>市價 <strong>HK$22.72</strong></span>
+<span>綜合理論價 <strong style="color: #1F5FBF">HK$35.52</strong>（+56.3%）</span>
+<a href="RunPlan.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 10px; background: #1F5FBF; color: #FFFFFF; text-decoration: none; font-weight: 600; box-sizing: border-box">重新估值</a>
+</div>
+</section>
+
+<nav aria-label="個股分頁" style="display: flex; gap: 4px; border-bottom: 1px solid #E3E6EB; overflow-x: auto">
+<a href="Main.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">總覽</a>
+<a href="Valuation.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">估值</a>
+<a href="Statements.dc.html" aria-current="page" style="padding: 12px 16px; text-decoration: none; color: #1F5FBF; font-weight: 600; font-size: 15px; border-bottom: 2px solid #1F5FBF; margin-bottom: -1px">財報</a>
+<a href="News.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">新資訊</a>
+<a href="History.dc.html" style="padding: 12px 16px; text-decoration: none; color: #374151; font-size: 15px">紀錄</a>
+</nav>
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+<div role="group" aria-label="報表" style="display: flex; background: #E9ECF1; border-radius: 10px; padding: 3px">
+<button type="button" aria-pressed="true" style="border: 0; background: #FFFFFF; padding: 9px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; box-shadow: 0 1px 2px rgba(17,24,39,0.12); cursor: pointer">損益表</button>
+<button type="button" style="border: 0; background: transparent; padding: 9px 14px; border-radius: 8px; font-size: 14px; color: #374151; cursor: pointer">資產負債表</button>
+<button type="button" style="border: 0; background: transparent; padding: 9px 14px; border-radius: 8px; font-size: 14px; color: #374151; cursor: pointer">現金流量表</button>
+</div>
+<div role="group" aria-label="期間" style="display: flex; background: #E9ECF1; border-radius: 10px; padding: 3px">
+<button type="button" aria-pressed="true" style="border: 0; background: #FFFFFF; padding: 9px 14px; border-radius: 8px; font-size: 14px; font-weight: 600; box-shadow: 0 1px 2px rgba(17,24,39,0.12); cursor: pointer">年度</button>
+<button type="button" style="border: 0; background: transparent; padding: 9px 14px; border-radius: 8px; font-size: 14px; color: #374151; cursor: pointer">季度</button>
+</div>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #374151">快照
+<select style="min-height: 40px; padding: 0 10px; border-radius: 8px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 14px">
+<option>2026-11-10 抓取（最新）</option>
+<option>2026-08-28 抓取</option>
+<option>2026-03-28 抓取</option>
+</select></label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #374151; min-height: 44px"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #1F5FBF">顯示重編前數字</label>
+<span style="margin-left: auto; font-size: 13px; color: #5B6270">單位：百萬港元 · 共 9 批快照，最早 2024-03-02</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<section aria-label="損益表" style="flex: 999 1 640px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; overflow: hidden">
+<div style="overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; min-width: 820px">
+<thead><tr><th scope="col">科目</th><th scope="col">FY2019</th><th scope="col">FY2020</th><th scope="col">FY2021</th><th scope="col">FY2022</th><th scope="col">FY2023</th><th scope="col">FY2024</th><th scope="col">FY2025</th></tr></thead>
+<tbody>
+<tr><td><strong>營業收入</strong></td><td style="color: #5B6270">71,240</td><td style="color: #5B6270">58,310</td><td style="color: #5B6270">76,880</td><td>104,560</td><td>96,140</td><td><span style="display: inline-flex; align-items: center; gap: 6px"><span title="2026-03-28 重編：原 98,420" style="width: 8px; height: 8px; border-radius: 50%; background: #B45309"></span>97,860</span></td><td><strong>101,320</strong></td></tr>
+<tr><td>營業成本</td><td style="color: #5B6270">(35,900)</td><td style="color: #5B6270">(36,050)</td><td style="color: #5B6270">(39,410)</td><td>(47,980)</td><td>(46,130)</td><td>(47,050)</td><td>(47,210)</td></tr>
+<tr><td><strong>毛利</strong></td><td style="color: #5B6270">35,340</td><td style="color: #5B6270">22,260</td><td style="color: #5B6270">37,470</td><td>56,580</td><td>50,010</td><td>50,810</td><td><strong>54,110</strong></td></tr>
+<tr><td>銷售及行政費用</td><td style="color: #5B6270">(8,120)</td><td style="color: #5B6270">(7,940)</td><td style="color: #5B6270">(8,350)</td><td>(9,020)</td><td>(9,410)</td><td>(9,720)</td><td>(10,050)</td></tr>
+<tr><td>其他收益淨額</td><td style="color: #5B6270">150</td><td style="color: #5B6270">(1,240)</td><td style="color: #5B6270">310</td><td>880</td><td>420</td><td>560</td><td style="background: #E8F0FC"><span style="display: inline-flex; flex-direction: column; align-items: flex-end; gap: 1px"><span style="text-decoration: line-through; color: #5B6270; font-size: 12px">4,690</span><strong style="color: #174A96">570</strong></span></td></tr>
+<tr><td><strong>經營溢利（EBIT）</strong></td><td style="color: #5B6270">27,370</td><td style="color: #5B6270">13,080</td><td style="color: #5B6270">29,430</td><td>48,440</td><td>41,020</td><td>41,650</td><td style="background: #E8F0FC"><span style="display: inline-flex; flex-direction: column; align-items: flex-end; gap: 1px"><span style="text-decoration: line-through; color: #5B6270; font-size: 12px">48,750</span><strong style="color: #174A96">44,630</strong></span></td></tr>
+<tr><td style="color: #374151">EBIT 利潤率</td><td style="color: #5B6270">38.4%</td><td style="color: #5B6270">22.4%</td><td style="color: #5B6270">38.3%</td><td>46.3%</td><td>42.7%</td><td>42.6%</td><td style="background: #E8F0FC; color: #174A96; font-weight: 600">44.0%</td></tr>
+<tr><td>折舊及攤銷</td><td style="color: #5B6270">12,400</td><td style="color: #5B6270">13,100</td><td style="color: #5B6270">13,650</td><td>14,020</td><td>14,880</td><td>15,310</td><td>15,920</td></tr>
+<tr><td>財務費用</td><td style="color: #5B6270">(1,020)</td><td style="color: #5B6270">(1,110)</td><td style="color: #5B6270">(980)</td><td>(870)</td><td>(840)</td><td>(820)</td><td><span style="display: inline-flex; align-items: center; gap: 6px"><span title="AI 標示：待決定" style="width: 8px; height: 8px; border-radius: 2px; background: #1F5FBF"></span>(790)</span></td></tr>
+<tr><td>所得稅</td><td style="color: #5B6270">(6,590)</td><td style="color: #5B6270">(3,110)</td><td style="color: #5B6270">(7,110)</td><td>(11,890)</td><td>(10,050)</td><td>(10,210)</td><td>(11,990)</td></tr>
+<tr><td><strong>股東應佔溢利</strong></td><td style="color: #5B6270">19,760</td><td style="color: #5B6270">8,860</td><td style="color: #5B6270">21,340</td><td>35,680</td><td>30,130</td><td>30,620</td><td><strong>35,970</strong></td></tr>
+</tbody>
+</table>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 16px; font-size: 12px; color: #5B6270; border-top: 1px solid #EEF0F3">
+<span>灰色＝來自較早快照（資料源現已不提供，系統仍保留）</span>
+<span style="display: flex; gap: 6px; align-items: center"><span style="width: 8px; height: 8px; border-radius: 50%; background: #B45309"></span>公司重編過</span>
+<span style="display: flex; gap: 6px; align-items: center"><span style="width: 12px; height: 12px; border-radius: 3px; background: #E8F0FC; border: 1px solid #B3CCF0"></span>已採用調整（刪除線為原值）</span>
+<span style="display: flex; gap: 6px; align-items: center"><span style="width: 8px; height: 8px; border-radius: 2px; background: #1F5FBF"></span>AI 標示，待你決定</span>
+</div>
+</section>
+
+<aside aria-label="AI 財報異常偵測" style="flex: 1 1 360px; background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; gap: 8px; align-items: center"><span style="padding: 1px 6px; border-radius: 4px; border: 1px solid #9AA3B2; font-size: 11px; color: #374151">AI</span><h2 style="margin: 0; font-size: 17px">財報異常偵測</h2></div>
+<span style="font-size: 12px; color: #5B6270">T1 · 2026-11-10 · deepseek-flash · 4 項建議，已採用 2 項</span>
+</div>
+
+<div style="border: 1px solid #E3E6EB; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; gap: 8px; align-items: center"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #FDF1E4; color: #8A4108; font-weight: 600">影響高</span><span style="font-size: 12px; color: #1E7F4F; font-weight: 600">✓ 已採用</span></div>
+<strong style="font-size: 14px">FY2025 其他收益含一次性出售資產收益 4,120</strong>
+<span style="font-size: 13px; color: #374151; line-height: 1.6">建議從 EBIT 剔除，利潤率 48.1% → 44.0%。<a href="News.dc.html" style="font-size: 12px">[S2 年報附註 8]</a></span>
+</div>
+
+<div style="border: 1px solid #E3E6EB; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; gap: 8px; align-items: center"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151; font-weight: 600">影響中</span><span style="font-size: 12px; color: #1E7F4F; font-weight: 600">✓ 已採用</span></div>
+<strong style="font-size: 14px">股數按年增 6.2%（2025-09 配股）</strong>
+<span style="font-size: 13px; color: #374151; line-height: 1.6">建議以攤薄後 47,120 百萬股計算每股價值。<a href="News.dc.html" style="font-size: 12px">[S6 配股公告]</a></span>
+</div>
+
+<div style="border: 2px solid #1F5FBF; border-radius: 10px; padding: 13px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; gap: 8px; align-items: center"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #EEF0F3; color: #374151; font-weight: 600">影響中</span><span style="font-size: 12px; color: #174A96; font-weight: 600">待決定</span></div>
+<strong style="font-size: 14px">FY2025 財務費用可能未含租賃利息約 610</strong>
+<span style="font-size: 13px; color: #374151; line-height: 1.6">建議把租賃負債計入債務，並核對附註 22。影響：WACC −0.05 個百分點，淨債務 +8,900。<a href="News.dc.html" style="font-size: 12px">[S2 年報附註 22]</a></span>
+<div style="display: flex; gap: 8px">
+<button type="button" style="flex: 1; min-height: 40px; border-radius: 8px; border: 0; background: #1F5FBF; color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer">採用</button>
+<button type="button" style="flex: 1; min-height: 40px; border-radius: 8px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 14px; cursor: pointer">忽略</button>
+</div>
+</div>
+
+<div style="border: 1px solid #E3E6EB; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: #F8F9FB">
+<div style="display: flex; justify-content: space-between; gap: 8px; align-items: center"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #FFFFFF; color: #374151; font-weight: 600">只作標示</span><span style="font-size: 12px; color: #5B6270">已知悉</span></div>
+<strong style="font-size: 14px">FY2024 營業收入重編 −0.6%</strong>
+<span style="font-size: 13px; color: #374151; line-height: 1.6">原公布 98,420，2026-03-28 年報重編為 97,860；不影響預測起點。</span>
+</div>
+</aside>
+</div>
+
+<section aria-label="調整紀錄" style="background: #FFFFFF; border: 1px solid #E3E6EB; border-radius: 12px; overflow: hidden">
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 16px 20px; align-items: baseline">
+<h2 style="margin: 0; font-size: 17px">調整紀錄</h2>
+<span style="font-size: 13px; color: #5B6270">每一筆都會寫入 Excel「金額調整紀錄」及估值 JSON；回復後於下次估值生效</span>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; border-collapse: collapse; min-width: 900px">
+<thead><tr><th scope="col">時間</th><th scope="col" style="text-align: left">科目</th><th scope="col">原值</th><th scope="col">調整後</th><th scope="col" style="text-align: left">原因</th><th scope="col" style="text-align: left">來源</th><th scope="col">操作</th></tr></thead>
+<tbody>
+<tr><td>2026-11-10 14:05</td><td style="text-align: left">FY2025 其他收益淨額</td><td>4,690</td><td><strong>570</strong></td><td style="text-align: left; white-space: normal">出售資產一次性收益不屬經常性經營</td><td style="text-align: left">AI 建議 · 用戶採用</td><td><button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 13px; cursor: pointer">回復</button></td></tr>
+<tr><td>2026-11-10 14:06</td><td style="text-align: left">FY2025 股數（百萬）</td><td>44,370</td><td><strong>47,120</strong></td><td style="text-align: left; white-space: normal">配股後攤薄股數</td><td style="text-align: left">AI 建議 · 用戶採用</td><td><button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5D9E0; background: #FFFFFF; font-size: 13px; cursor: pointer">回復</button></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<footer style="font-size: 12px; color: #5B6270; padding: 8px 0 24px">本系統產出不構成投資建議。財報來源：Yahoo Finance、披露易；美股另以 SEC XBRL 交叉核對。</footer>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
