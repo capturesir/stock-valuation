@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useIsAdmin } from "../lib/session";
+import { THEMES, useTheme, type Theme } from "../lib/theme";
 
 type Preset = { id: string; label: string; base_url: string; model: string };
 
@@ -18,6 +19,7 @@ export function SettingsPage() {
   const [key, setKey] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const isAdmin = useIsAdmin();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     // first visit: nothing saved yet, so start from the selected provider's preset
@@ -153,6 +155,11 @@ export function SettingsPage() {
                 <select value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>
                   {LOCALES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
                 </select></label>
+              <label className="field">{t("theme.label")}
+                <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
+                  {THEMES.map((x) => <option key={x} value={x}>{t(`theme.${x}`)}</option>)}
+                </select>
+                <small>{t("theme.help")}</small></label>
             </div>
           </section>
 

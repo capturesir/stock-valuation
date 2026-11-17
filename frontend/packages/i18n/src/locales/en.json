@@ -297,5 +297,10 @@
   "admin.market.updated": "Updated",
   "admin.market.ok": "Matches",
   "admin.market.warn": "Off by {pct}",
-  "admin.market.error": "Error"
+  "admin.market.error": "Error",
+  "theme.label": "Theme",
+  "theme.light": "Light",
+  "theme.dark": "Dark",
+  "theme.system": "System",
+  "theme.help": "Saved to your account and used on your other devices."
 }

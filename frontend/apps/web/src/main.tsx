@@ -7,6 +7,7 @@ import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { I18nProvider, useI18n } from "./lib/i18n";
 import { AuthGate } from "./lib/session";
+import { ThemeProvider } from "./lib/theme";
 import { AccountPage } from "./pages/AccountPage";
 import { AdminPage } from "./pages/AdminPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -26,6 +27,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={qc}>
       <I18nProvider>
+        <ThemeProvider>
         <BrowserRouter>
           <AuthGate>
           <Routes>
@@ -41,6 +43,7 @@ createRoot(document.getElementById("root")!).render(
           </Routes>
           </AuthGate>
         </BrowserRouter>
+        </ThemeProvider>
       </I18nProvider>
     </QueryClientProvider>
   </StrictMode>,

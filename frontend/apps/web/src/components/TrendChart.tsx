@@ -5,6 +5,7 @@ import * as echarts from "echarts/core";
 import { SVGRenderer } from "echarts/renderers";
 import { useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../lib/i18n";
+import { useTheme } from "../lib/theme";
 
 echarts.use([LineChart, ScatterChart, GridComponent, TooltipComponent, SVGRenderer]);
 
@@ -19,6 +20,7 @@ const dcf = (r: RunOut, s: string) => r.methods.find((m) => m.method === "dcf" &
 export function TrendChart({ runs, prices, range, currency }: { runs: RunOut[]; prices?: PriceSeries; range: Range; currency?: string | null }) {
   const { t, f } = useI18n();
   const el = useRef<HTMLDivElement>(null);
+  const themeVersion = useTheme().version;   // colours are read from CSS variables: recompute on theme change
   const done = useMemo(() => runs.filter((r) => r.status === "done" && dcf(r, "base") != null), [runs]);
 
   const option = useMemo(() => {
@@ -62,7 +64,8 @@ export function TrendChart({ runs, prices, range, currency }: { runs: RunOut[]; 
           itemStyle: { color: blue, borderColor: card, borderWidth: 2 }, z: 5, tooltip: { show: false } },
       ],
     };
-  }, [done, prices, range, currency, t, f]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done, prices, range, currency, t, f, themeVersion]);
 
   useEffect(() => {
     if (!el.current) return;
@@ -70,10 +73,7 @@ export function TrendChart({ runs, prices, range, currency }: { runs: RunOut[]; 
     chart.setOption(option);
     const ro = new ResizeObserver(() => chart.resize());
     ro.observe(el.current);
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const retheme = () => chart.setOption(option, true);
-    mq.addEventListener("change", retheme);
-    return () => { ro.disconnect(); mq.removeEventListener("change", retheme); chart.dispose(); };
+    return () => { ro.disconnect(); chart.dispose(); };
   }, [option]);
 
   const latest = done[done.length - 1];

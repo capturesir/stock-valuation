@@ -297,5 +297,10 @@
   "admin.market.updated": "更新于",
   "admin.market.ok": "相符",
   "admin.market.warn": "差 {pct}",
-  "admin.market.error": "错误"
+  "admin.market.error": "错误",
+  "theme.label": "界面主题",
+  "theme.light": "浅色",
+  "theme.dark": "深色",
+  "theme.system": "跟随系统",
+  "theme.help": "选择会保存到你的账号，在其他设备登录时沿用。"
 }

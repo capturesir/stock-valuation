@@ -297,5 +297,10 @@
   "admin.market.updated": "更新於",
   "admin.market.ok": "相符",
   "admin.market.warn": "差 {pct}",
-  "admin.market.error": "錯誤"
+  "admin.market.error": "錯誤",
+  "theme.label": "介面主題",
+  "theme.light": "淺色",
+  "theme.dark": "深色",
+  "theme.system": "跟隨系統",
+  "theme.help": "選擇會保存到你的帳號，在其他裝置登入時沿用。"
 }

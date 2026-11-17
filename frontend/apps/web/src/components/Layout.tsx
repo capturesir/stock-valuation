@@ -7,6 +7,7 @@ import { api } from "../lib/api";
 import { BrandMark, useBranding } from "../lib/branding";
 import { useI18n } from "../lib/i18n";
 import { useMe } from "../lib/session";
+import { THEMES, useTheme, type Theme } from "../lib/theme";
 import { Gear, List, Person, Search, Trend } from "./Icons";
 import { PwaPrompt } from "./PwaPrompt";
 
@@ -18,6 +19,7 @@ export function Layout() {
   const usage = useQuery({ queryKey: ["usage"], queryFn: () => api.usage() });
   const last = sessionLast();
   const { name } = useBranding();
+  const { theme, setTheme } = useTheme();
   const me = useMe().data;
   const qc = useQueryClient();
   const signOut = async () => {
@@ -50,6 +52,10 @@ export function Layout() {
           <label className="sr-only" htmlFor="lang">{t("nav.language")}</label>
           <select id="lang" className="lang" value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>
             {LOCALES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+          </select>
+          <label className="sr-only" htmlFor="theme">{t("theme.label")}</label>
+          <select id="theme" className="lang" value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
+            {THEMES.map((x) => <option key={x} value={x}>{t(`theme.${x}`)}</option>)}
           </select>
           <NavLink to="/settings" className="chip-link">
             <span className={`dot ${ai.data?.configured ? "ok" : ""}`} />
