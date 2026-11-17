@@ -13,6 +13,61 @@ from . import rules
 
 SCEN_NAMES = ["悲觀", "基準", "樂觀", "靜態", "9%靜態"]
 
+# Every sensitivity cell keeps WACC at least this far above g; closer than that
+# the Gordon terminal value explodes (and at WACC <= g it is undefined).
+MIN_SPREAD = 0.005
+# Below this WACC − g gap the base case itself is flagged as fragile.
+TIGHT_SPREAD = 0.01
+
+
+def sensitivity_axes(wacc: float, terminal_g: float, rf: float, *, waccs=None, gs=None,
+                     span: float = 0.04, n: int = 5, min_step: float = 0.0025):
+    """WACC rows and g columns for the sensitivity matrix.
+
+    Default: five WACC points 2pp apart centred on the base WACC, and g ±1pp
+    capped at Rf. When the base WACC is close to g that grid would reach WACC <= g
+    (division by zero, or negative "fair values" in the report), so the step is
+    narrowed until every cell keeps WACC − g >= MIN_SPREAD; if even the narrowest
+    centred grid does not fit, the grid only goes upward from the base WACC and g
+    columns above the base g are dropped. Returns (waccs, gs, note_or_None).
+    """
+    if gs is None:
+        gs = sorted(set([max(0, terminal_g + d) for d in (-0.01, -0.005, 0, 0.005, 0.01)
+                         if terminal_g + d <= rf + 1e-12]))
+        if len(gs) < 3:
+            gs = [0.0, min(terminal_g, rf), rf]
+    gs = list(gs)
+    if waccs is not None:
+        waccs = list(waccs)
+        bad = [(w, g) for w in waccs for g in gs if not w - g > 0]
+        if bad:
+            raise ValueError(f"規格指定的敏感度格含 WACC ≤ g：{bad[:3]}")
+        return waccs, gs, None
+
+    half = n // 2
+    default_step = span / half
+
+    def centred(step):
+        return [round(wacc + step * (i - half), 5) for i in range(n)]
+
+    headroom = wacc - max(gs) - MIN_SPREAD
+    if headroom / half >= default_step:
+        return centred(default_step), gs, None
+    if headroom / half >= min_step:
+        step = headroom / half
+        return centred(step), gs, (
+            f"敏感度表：WACC 與 g 距離較近，WACC 間距由 {default_step:.1%} 收窄為 {step:.2%}，"
+            f"確保每格 WACC 至少高於 g {MIN_SPREAD:.1%}。")
+    # Too tight for a centred grid: keep g columns at or below the base g that
+    # stay clear of the base WACC (the base g itself is always valid here because
+    # the engine has already required WACC > g), and step WACC upward only.
+    kept = sorted({g for g in gs if g <= terminal_g + 1e-12 and (wacc - g >= MIN_SPREAD or abs(g - terminal_g) < 1e-12)})
+    up = [round(wacc + default_step / 2 * i, 5) for i in range(n)]
+    up[0] = wacc  # keep the exact base WACC so the base cell matches the headline value
+    return up, kept, (
+        f"敏感度表：WACC {wacc:.2%} 與終值 g {terminal_g:.2%} 太接近，無法以基準 WACC 為中心向下取值；"
+        "改為由基準 WACC 向上取值，並略去高於基準 g 的欄。")
+
 
 def _make_rows(spec: dict, growths, margins, zero_dnwc=False, capex_pcts=None) -> list[dict]:
     capex_pcts = capex_pcts or spec["capex_pcts"]
@@ -191,6 +246,8 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     m_bull = rules.scenario_margins(spec["margins"], spec.get("bull_m_delta", 0.02), 4, skip_stub=spec.get("first_is_stub", False))
     g_term_bear = spec.get("bear_terminal_g") or max(min(spec["terminal_g"] - 0.01, spec["rf"]["value"]), 0.0)
     g_term_bull = spec.get("bull_terminal_g") or min(spec["terminal_g"] + 0.005, spec["rf"]["value"])
+    # never push the bull terminal g up to the WACC (the formula breaks there)
+    g_term_bull = max(min(g_term_bull, disc["wacc"]["value"] - MIN_SPREAD), spec["terminal_g"])
 
     fv_bear, _ = fair_custom(g_bear, m_bear, g_term_bear)
     fv_bull, _ = fair_custom(g_bull, m_bull, g_term_bull)
@@ -216,14 +273,15 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
         )
 
     wacc_v = disc["wacc"]["value"]
-    # sensitivity grid around wacc and g
-    def _grid(center, span, n=5):
-        step = span / (n // 2)
-        return [round(center + step * (i - n // 2), 5) for i in range(n)]
-    sens_w = spec.get("sens_waccs") or _grid(wacc_v, 0.04, 5)
-    sens_g = spec.get("sens_gs") or sorted(set([max(0, spec["terminal_g"] + d) for d in (-0.01, -0.005, 0, 0.005, 0.01) if spec["terminal_g"] + d <= spec["rf"]["value"] + 1e-12]))
-    if len(sens_g) < 3:
-        sens_g = [0.0, min(spec["terminal_g"], spec["rf"]["value"]), spec["rf"]["value"]]
+    # sensitivity grid around wacc and g (kept strictly above g in every cell)
+    sens_w, sens_g, sens_note = sensitivity_axes(
+        wacc_v, spec["terminal_g"], spec["rf"]["value"],
+        waccs=spec.get("sens_waccs"), gs=spec.get("sens_gs"))
+    spread_note = None
+    if wacc_v - spec["terminal_g"] < TIGHT_SPREAD:
+        spread_note = (
+            f"WACC {wacc_v:.2%} 與終值 g {spec['terminal_g']:.2%} 只相差 {wacc_v - spec['terminal_g']:.2%}，"
+            "終值佔企業價值的比重與對假設的敏感度都會極高；理論價只宜作方向參考。")
 
     revisions = spec.get("revisions") or [{
         "date": spec["valuation_date"], "item": "理論價（首次估值）", "old": None, "new": None,
@@ -267,8 +325,9 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     ]
 
     out = build_json(cfg, sens_w, sens_g, scenarios=scenarios, revisions=revisions, extra=extra)
-    if floor_note:
-        out.setdefault("data_gaps", []).append(floor_note)
+    for note in (floor_note, spread_note, sens_note):
+        if note:
+            out.setdefault("data_gaps", []).append(note)
     # A negative or non-finite theoretical value means the model does not fit the
     # company (loss-making, over-levered, or a bad base year). verify_fcff only
     # checks arithmetic, so flag it explicitly instead of shipping it silently.

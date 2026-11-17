@@ -35,6 +35,7 @@ from . import research
 from . import services
 from . import settings as settingsmod
 from ..pipeline import adjustments as adjmod
+from ..pipeline.tickers import InvalidTicker
 from .sheets import EXPECTED_SHEETS, render_workbook
 
 WEB_DIR = Path(__file__).resolve().parent
@@ -64,6 +65,12 @@ class NoCacheStatic(StaticFiles):
 
 
 app.mount("/static", NoCacheStatic(directory=str(STATIC_DIR)), name="static")
+
+
+@app.exception_handler(InvalidTicker)
+async def _invalid_ticker(request, exc: InvalidTicker):
+    """A malformed ticker is the caller's mistake (400), never a server error."""
+    return JSONResponse(status_code=400, content={"detail": {"error": str(exc)}})
 
 
 @app.exception_handler(Exception)
@@ -167,6 +174,8 @@ def health():
 def api_lookup(ticker: str = Query(..., min_length=1)):
     try:
         result = services.lookup_ticker(ticker)
+    except InvalidTicker:
+        raise
     except Exception as exc:
         # Never leak an unhandled exception as a bare 500: the UI can only show
         # "Internal Server Error", which tells the user nothing actionable.

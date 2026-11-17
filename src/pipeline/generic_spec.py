@@ -231,6 +231,8 @@ def _val(block: dict, date: Optional[str], *names) -> Optional[float]:
 
 
 def _first(block: dict, date: Optional[str], names) -> tuple[Optional[float], Optional[str]]:
+    if isinstance(names, str):  # a bare string would be iterated character by character
+        names = [names]
     for n in names:
         v = _val(block, date, n)
         if v is not None:
@@ -330,8 +332,11 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         parts = [_val(bs_a, bs0, "Long Term Debt"), _val(bs_a, bs0, "Current Debt"),
                  _val(bs_a, bs0, "Capital Lease Obligations")]
         debt = sum(p for p in parts if p) or None
-    dtl, _ = _first(bs_a, bs0, "Non Current Deferred Taxes Liabilities")
-    nci, _ = _first(bs_a, bs0, "Minority Interest")
+    # _first() takes a list of row names. Passing a bare string iterated over its
+    # characters, so neither row was ever found and the bridge silently skipped
+    # 非控股權益 and 遞延稅項負債 (CNOOC: 16.0bn CNY never deducted).
+    dtl, _ = _first(bs_a, bs0, ["Non Current Deferred Taxes Liabilities"])
+    nci, _ = _first(bs_a, bs0, ["Minority Interest"])
 
     for label, v in (("D&A", da), ("資本開支", capex), ("無風險利率", snap.get("rf", {}).get("value"))):
         if v is None:
@@ -719,8 +724,18 @@ def _validate_paths(res: dict, rules_growths: list, rules_margins: list, termina
     if abs(m[0] - rules_margins[0]) > 0.10:
         return False, f"首年利潤率 {m[0]:.1%} 與最近年度 {rules_margins[0]:.1%} 相差超過 10 個百分點"
     tg = res.get("terminal_g")
-    if tg is not None and float(tg) > terminal_g + 1e-9:
-        return False, f"終值 g {float(tg):.2%} 高於規則上限 {terminal_g:.2%}"
+    if tg is not None:
+        # A non-numeric value here used to raise outside the AI try-block and
+        # fail the whole valuation; reject it like any other malformed proposal.
+        try:
+            tg = float(tg)
+        except (TypeError, ValueError):
+            return False, f"終值 g 不是數字（{tg!r}）"
+        if math.isnan(tg) or tg < -0.02:
+            return False, f"終值 g {tg} 超出合理範圍（不低於 −2%）"
+        if tg > terminal_g + 1e-9:
+            return False, f"終值 g {tg:.2%} 高於規則上限 {terminal_g:.2%}"
+        res["terminal_g"] = tg
     res["revenue_growth"] = g
     res["ebit_margins"] = m
     return True, "ok"

@@ -19,6 +19,7 @@ from pathlib import Path
 if __name__ == "__main__" and __package__ is None:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from src.pipeline.orchestrator import run_ticker, check_filings, load_config, _norm
+    from src.pipeline.tickers import InvalidTicker
     from src.export.email_report import (
         EmailConfigError,
         EmailSendError,
@@ -37,6 +38,7 @@ if __name__ == "__main__" and __package__ is None:
     )
 else:
     from .orchestrator import run_ticker, check_filings, load_config, _norm
+    from .tickers import InvalidTicker
     from ..export.email_report import (
         EmailConfigError,
         EmailSendError,
@@ -144,6 +146,14 @@ def _email_and_print(ticker: str, date: str, res=None, extra_paths=None) -> int:
 
 
 def main(argv=None) -> int:
+    try:
+        return _main(argv)
+    except InvalidTicker as exc:  # a typo or a path in --ticker: message, not traceback
+        print(f"[錯誤] {exc}")
+        return 2
+
+
+def _main(argv=None) -> int:
     p = argparse.ArgumentParser(description="可攜、可換模型的 FCFF 估值系統")
     sub = p.add_subparsers(dest="cmd", required=True)
     p_run = sub.add_parser("run", help="為一隻股票做（或重做）估值")

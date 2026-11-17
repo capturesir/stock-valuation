@@ -183,6 +183,9 @@ def test_validate_paths_accepts_the_rules_path():
     (lambda r: r.update(revenue_growth=[0.9] * 10), "首年增長"),
     (lambda r: r.update(ebit_margins=[0.9] * 10), "首年利潤率"),
     (lambda r: r.update(terminal_g=0.05), "終值"),
+    (lambda r: r.update(terminal_g="about 2%"), "不是數字"),
+    (lambda r: r.update(terminal_g=float("nan")), "終值"),
+    (lambda r: r.update(terminal_g=-0.5), "終值"),
 ])
 def test_validate_paths_rejects_drift(mutate, expect):
     g = [0.05] * 10
@@ -209,3 +212,24 @@ def test_market_code_from_suffix():
     assert G.market_code("005930.KS") == "KR"
     assert G.market_code("2330.TW") == "TW"
     assert G.market_code("600519.SS") == "CN"
+
+
+def test_bridge_deducts_minority_interest_and_deferred_tax():
+    """Non-controlling interest and DTL must reach the EV -> equity bridge.
+
+    _first() was called with a bare string, iterated it character by character,
+    never found either row, and CNOOC's 2.4bn NCI and 13.6bn DTL (CNY) were
+    silently left out, overstating the per-share value.
+    """
+    spec = G.build_generic_spec(_snap(), _fund(), {}, use_llm=False)
+    bridge = {b["item"]: b for b in spec["bridge"]}
+
+    assert bridge["非控股權益"]["sign"] == "-"
+    assert bridge["非控股權益"]["value"] == pytest.approx(2434.0)
+    assert bridge["遞延稅項負債"]["sign"] == "-"
+    assert bridge["遞延稅項負債"]["value"] == pytest.approx(13589.0)
+
+
+def test_first_accepts_a_single_row_name():
+    block = {"2025-12-31": {"Minority Interest": 5.0}}
+    assert G._first(block, "2025-12-31", "Minority Interest") == (5.0, "Minority Interest")

@@ -12,7 +12,7 @@ from ..llm.client import LLMClient
 from ..llm import steps as llm_steps
 from ..fetch import yahoo, rf as rfmod, sec, hkex
 from ..filings import detect
-from . import name_specs, generic_spec
+from . import name_specs, generic_spec, tickers
 from .model_builder import build_and_run
 from ..export.workbook import build_workbook
 from ..export.report_md import write_report
@@ -335,12 +335,7 @@ def check_filings(ticker: str, cfg: Optional[dict] = None) -> dict:
 
 
 def _norm(ticker: str) -> str:
-    t = ticker.strip().upper()
-    if t.endswith(".HK") and t[:-3].isdigit():
-        t = t[:-3].zfill(4) + ".HK"
-    elif t.isdigit() and len(t) <= 4:
-        t = t.zfill(4) + ".HK"
-    return t
+    return tickers.normalize(ticker)
 
 
 def _safe(spec: dict) -> dict:

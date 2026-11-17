@@ -119,12 +119,8 @@ def case_dir(ticker: str) -> Path:
 
 
 def norm_ticker(ticker: str) -> str:
-    t = (ticker or "").strip().upper()
-    if t.endswith(".HK") and t[:-3].isdigit():
-        t = t[:-3].zfill(4) + ".HK"
-    elif t.isdigit() and len(t) <= 4:
-        t = t.zfill(4) + ".HK"
-    return t
+    from .tickers import normalize
+    return normalize(ticker)
 
 
 def read_json(path: Path) -> Optional[dict]:

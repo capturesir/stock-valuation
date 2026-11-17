@@ -18,6 +18,10 @@ Conventions (apply to every asset):
 """
 import copy, json, os
 
+class EngineInputError(RuntimeError):
+    """Inputs for which the DCF formula has no meaning (e.g. WACC <= g)."""
+
+
 def D(value, basis, source_name="", url="", data_date=""):
     return {"value": value, "basis": basis, "source_name": source_name, "url": url, "data_date": data_date}
 
@@ -42,6 +46,14 @@ def run(cfg, wacc=None, g=None):
     (+ rationale text). Returns (projections, terminal, sum_pv, ev, equity, fair)."""
     wacc = cfg["discount"]["wacc"]["value"] if wacc is None else wacc
     g = cfg["terminal_in"]["g"] if g is None else g
+    # Gordon growth needs WACC > g: at WACC == g it divides by zero, below it the
+    # terminal value turns negative and the "fair value" is meaningless.
+    if not wacc - g > 0:
+        raise EngineInputError(
+            f"WACC {wacc:.4%} 不高於終值增長 g {g:.4%}，永續增長公式 TV = FCFF ÷ (WACC − g) 無意義；"
+            "請檢查折現率輸入（Rf、β、債務權重）或調低 g。")
+    if cfg["terminal_in"]["method"] == "value_driver" and not (cfg["terminal_in"].get("ronic") or 0) > 0:
+        raise EngineInputError(f"價值驅動終值的 RONIC 必須為正數（目前 {cfg['terminal_in'].get('ronic')}）。")
     proj = []
     for r in cfg["rows"]:
         ebit = r["revenue"] * r["ebit_margin"]
