@@ -174,7 +174,8 @@ function Market() {
             <th scope="col" className="l">{t("admin.market.check")}</th><th scope="col">{t("admin.market.updated")}</th></tr></thead>
           <tbody>
             {(secs.data ?? []).map((s) => {
-              const c = (s.checks as { total_return?: { status: string; max_deviation?: number; note?: string } } | null)?.total_return;
+              const c = (s.checks as { total_return?: { status: string; max_deviation?: number; note_code?: string; note?: string } } | null)?.total_return;
+              const note = c?.note_code ? t(`market.note.${c.note_code}`) : c?.note;
               return (
                 <tr key={s.ticker}>
                   <td><strong>{s.ticker}</strong></td>
@@ -184,7 +185,7 @@ function Market() {
                   <td className="l">
                     {s.last_error ? <span className="tag bad" title={s.last_error}>{t("admin.market.error")}</span>
                       : c?.status === "ok" ? <span className="tag ok">{t("admin.market.ok")}</span>
-                      : c?.status === "warn" ? <span className="tag warn" title={c.note}>{t("admin.market.warn", { pct: f.pct(c.max_deviation ?? 0, 1, false) })}</span>
+                      : c?.status === "warn" ? <span className="tag warn" title={note}>{t("admin.market.warn", { pct: f.pct(c.max_deviation ?? 0, 1, false) })}</span>
                       : <span className="muted">—</span>}
                   </td>
                   <td>{s.updated_at ? f.datetime(s.updated_at) : "—"}</td>

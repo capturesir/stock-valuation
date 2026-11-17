@@ -131,3 +131,16 @@ def test_first_admin_takes_over_watchlist_rows_from_before_accounts(client):
         db.flush()
         boss = create_user(db, email="boss@example.com", display_name="", password="boss-pass-123", role="admin")
         assert db.scalar(select(WatchlistItem.user_id).where(WatchlistItem.ticker == "NVDA")) == boss.id
+
+
+def test_validation_errors_answer_in_the_callers_language(client):
+    body = {"email": "x@y.co", "password": "short"}
+    en = client.post("/api/v1/admin/users", json=body, headers={"Accept-Language": "en"}).json()["detail"]
+    hans = client.post("/api/v1/admin/users", json=body, headers={"Accept-Language": "zh-CN"}).json()["detail"]
+    hant = client.post("/api/v1/admin/users", json=body).json()["detail"]
+    assert en["code"] == hans["code"] == hant["code"] == "password_short"
+    assert en["error"] == "The password needs at least 8 characters."
+    assert hans["error"] == "密码至少要 8 个字符。" and hant["error"] == "密碼至少要 8 個字元。"
+    bad = client.post("/api/v1/admin/branding/logo/light", files={"file": ("x", b"GIF89a", "image/gif")},
+                      headers={"Accept-Language": "en"}).json()["detail"]
+    assert bad == {"code": "not_svg", "error": "This is not an SVG file."}

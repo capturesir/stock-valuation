@@ -1,12 +1,12 @@
 import { LOCALES, type Locale } from "@sv/i18n";
 import { useQuery } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { BrandMark, useBranding } from "../lib/branding";
 import { useI18n } from "../lib/i18n";
-import { useMe } from "../lib/session";
+import { savePrefs, useMe } from "../lib/session";
 import { THEMES, useTheme, type Theme } from "../lib/theme";
 import { Gear, List, Person, Search, Trend } from "./Icons";
 import { PwaPrompt } from "./PwaPrompt";
@@ -22,6 +22,17 @@ export function Layout() {
   const { theme, setTheme } = useTheme();
   const me = useMe().data;
   const qc = useQueryClient();
+  // the account's language wins on sign-in; a change made here is saved to the account
+  const synced = useRef<string | null>(null);
+  useEffect(() => {
+    if (!me || synced.current === me.id) return;
+    synced.current = me.id;
+    const saved = me.prefs?.locale as Locale | null | undefined;
+    if (saved && saved !== locale) setLocale(saved);
+    else if (!saved) void savePrefs(qc, { locale }).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.id]);
+  const changeLocale = (l: Locale) => { setLocale(l); void savePrefs(qc, { locale: l }).catch(() => undefined); };
   const signOut = async () => {
     try { await api.logout(); } finally { qc.clear(); qc.setQueryData(["me"], null); nav("/"); }
   };
@@ -50,7 +61,7 @@ export function Layout() {
           </form>
           <div className="spacer" />
           <label className="sr-only" htmlFor="lang">{t("nav.language")}</label>
-          <select id="lang" className="lang" value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>
+          <select id="lang" className="lang" value={locale} onChange={(e) => changeLocale(e.target.value as Locale)}>
             {LOCALES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
           </select>
           <label className="sr-only" htmlFor="theme">{t("theme.label")}</label>

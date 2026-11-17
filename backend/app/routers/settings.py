@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from .. import pricing
 from ..auth import Principal, require_admin
 from ..db import get_db
-from ..i18n import http_error, lang_dep
+from ..i18n import bad_request, http_error, lang_dep
 from ..models import AiTask, Run
 from ..schemas import AiSettingsIn, AiSettingsOut, PriceRow, UsageOut
 from ..services import settings_store
@@ -30,7 +30,7 @@ def put_ai(body: AiSettingsIn, _: Principal = Depends(require_admin), db: Sessio
     try:
         return settings_store.update_ai_settings(db, body.model_dump())
     except ValueError as exc:
-        raise http_error(400, "bad_request", lang, detail=exc)
+        raise bad_request(exc, lang)
 
 
 @router.post("/settings/ai/test", summary="測試 AI 連線（一次極小請求，顯示 Token 與費用）")

@@ -1,6 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api } from "./api";
-import { useMe } from "./session";
+import { savePrefs, useMe } from "./session";
 import { store } from "./storage";
 
 /** light (default, as in the design), dark, or follow the operating system. */
@@ -27,6 +27,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [dark, setDark] = useState(() => isDark(theme));
   const [version, setVersion] = useState(0);
   const me = useMe().data;
+  const qc = useQueryClient();
 
   // the account's choice wins when signing in on another device
   useEffect(() => {
@@ -49,8 +50,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback((t: Theme) => {
     set(t);
-    if (me) void api.updateMe({ prefs: { ...me.prefs, theme: t } }).catch(() => { /* kept locally anyway */ });
-  }, [me]);
+    void savePrefs(qc, { theme: t }).catch(() => { /* kept locally anyway */ });
+  }, [qc]);
 
   const value = useMemo(() => ({ theme, setTheme, dark, version }), [theme, setTheme, dark, version]);
   return <ThemeCtx.Provider value={value}>{children}</ThemeCtx.Provider>;

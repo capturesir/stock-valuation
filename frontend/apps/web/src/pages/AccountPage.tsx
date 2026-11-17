@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
-import { useMe } from "../lib/session";
+import { savePrefs, useMe } from "../lib/session";
 
 const CURRENCIES = ["USD", "HKD", "CNY", "EUR", "GBP", "JPY", "SGD", "TWD", "AUD", "CAD"];
 const REBALANCE = ["none", "monthly", "quarterly", "annual"] as const;
@@ -69,7 +69,8 @@ export function AccountPage() {
           ))}
           <small className="muted small">{t("account.rebalanceHelp")}</small>
         </fieldset>
-        <div><button className="btn primary" type="button" onClick={() => save.mutate({ prefs, k: "prefs" })}>{t("common.save")}</button></div>
+        <div><button className="btn primary" type="button" onClick={() => savePrefs(qc, { display_currency: prefs.display_currency, rebalance: prefs.rebalance })
+          .then(() => setMsg((m) => ({ ...m, prefs: { kind: "ok", text: t("common.saved") } }))).catch(fail("prefs"))}>{t("common.save")}</button></div>
         <Note k="prefs" />
       </section>
 

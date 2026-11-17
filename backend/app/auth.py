@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .db import get_db
-from .i18n import http_error, lang_dep
+from .i18n import AppError, http_error, lang_dep
 from .models import AuthSession, User, WatchlistItem
 
 COOKIE = "sv_session"
@@ -58,15 +58,15 @@ def _token_hash(token: str) -> str:
 def normalize_email(email: str) -> str:
     e = (email or "").strip().lower()
     if not EMAIL_RE.match(e) or len(e) > 254:
-        raise ValueError("電郵地址格式不正確。")
+        raise AppError("email_invalid")
     return e
 
 
 def check_password_rules(password: str) -> None:
     if len(password or "") < MIN_PASSWORD:
-        raise ValueError(f"密碼至少要 {MIN_PASSWORD} 個字元。")
+        raise AppError("password_short", n=MIN_PASSWORD)
     if len(set(password)) < 3:
-        raise ValueError("密碼太簡單，請混合不同字元。")
+        raise AppError("password_weak")
 
 
 def hash_password(password: str) -> str:
@@ -88,10 +88,10 @@ def active_admins(db: Session) -> int:
 
 def create_user(db: Session, *, email: str, display_name: str, password: str, role: str = "member") -> User:
     if role not in ROLES:
-        raise ValueError(f"角色只能是 {' 或 '.join(ROLES)}。")
+        raise AppError("role_invalid")
     e = normalize_email(email)
     if db.scalar(select(User).where(User.email == e)) is not None:
-        raise ValueError(f"{e} 已經有帳號。")
+        raise AppError("email_taken", email=e)
     name = (display_name or "").strip() or e.split("@")[0]
     first_admin = role == "admin" and active_admins(db) == 0
     user = User(email=e, display_name=name[:80], password_hash=hash_password(password), role=role,

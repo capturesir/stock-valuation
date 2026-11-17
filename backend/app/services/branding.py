@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..models import Setting
+from ..i18n import AppError
 
 KEY = "branding"
 DEFAULT_NAME = "估值工作台"
@@ -68,7 +69,7 @@ def public(db: Session) -> dict:
 def set_name(db: Session, name: str) -> dict:
     name = (name or "").strip()
     if not name or len(name) > 40:
-        raise ValueError("系統名稱要有 1–40 個字元。")
+        raise AppError("brand_name_length")
     s = _state(db)
     s["name"] = name
     _save(db, s)
@@ -83,18 +84,18 @@ def _check_png(data: bytes):
         img.verify()
         img = Image.open(io.BytesIO(data))
     except Exception:
-        raise ValueError("無法讀取這個 PNG 檔。")
+        raise AppError("png_unreadable")
     if max(img.size) > MAX_PIXELS:
-        raise ValueError(f"圖片太大：長邊最多 {MAX_PIXELS} 像素。")
+        raise AppError("image_too_large", px=MAX_PIXELS)
     return img
 
 
 def _check_svg(data: bytes) -> None:
     head = data[:2048].lstrip().lower()
     if not (head.startswith(b"<svg") or (head.startswith(b"<?xml") and b"<svg" in data[:4096].lower())):
-        raise ValueError("這不是 SVG 檔。")
+        raise AppError("not_svg")
     if SVG_FORBIDDEN.search(data):
-        raise ValueError("SVG 含有程式碼或外部連結，基於安全理由不能使用。")
+        raise AppError("svg_unsafe")
 
 
 def _icons(img, stem: str) -> list[int]:
@@ -118,11 +119,11 @@ def _icons(img, stem: str) -> list[int]:
 
 def save_logo(db: Session, variant: str, data: bytes, content_type: str = "") -> dict:
     if variant not in VARIANTS:
-        raise ValueError("Logo 只有 light（淺色主題）和 dark（深色主題）兩種。")
+        raise AppError("logo_variant")
     if not data:
-        raise ValueError("檔案是空的。")
+        raise AppError("file_empty")
     if len(data) > MAX_BYTES:
-        raise ValueError(f"檔案太大：上限 {MAX_BYTES // 1024} KB。")
+        raise AppError("file_too_large", kb=MAX_BYTES // 1024)
     if data[:8] == b"\x89PNG\r\n\x1a\n":
         ext, img = "png", _check_png(data)
     else:

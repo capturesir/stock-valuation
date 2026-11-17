@@ -14,7 +14,7 @@ from src.pipeline.tickers import InvalidTicker
 from . import __version__
 from .config import get_settings
 from .db import init_db, session
-from .i18n import msg, pick
+from .i18n import AppError, msg, pick
 from .auth import current_principal
 from .routers import auth as auth_router
 from .routers import branding as branding_router
@@ -80,6 +80,11 @@ def create_app() -> FastAPI:
         raw = str(exc).split("「")[-1].split("」")[0] if "「" in str(exc) else ""
         return JSONResponse(status_code=400, content={"detail": {"code": "invalid_ticker",
                                                                  "error": msg("invalid_ticker", lang, ticker=raw)}})
+
+    @app.exception_handler(AppError)
+    async def _app_error(request: Request, exc: AppError):
+        lang = pick(request.headers.get("accept-language"))
+        return JSONResponse(status_code=400, content={"detail": {"code": exc.code, "error": msg(exc.code, lang, **exc.params)}})
 
     @app.exception_handler(ValueError)
     async def _bad_value(request: Request, exc: ValueError):

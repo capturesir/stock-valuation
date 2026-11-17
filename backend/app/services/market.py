@@ -296,7 +296,7 @@ def _check_total_return(source_bars: list[SourceBar], bars: list[Bar], actions) 
     """Our total-return series vs the source's adjusted close, both scaled to the latest day."""
     pairs = [(sb, b) for sb, b in zip(sorted(source_bars, key=lambda x: x.date), bars) if sb.adj_close]
     if len(pairs) < 2:
-        return {"status": "skipped", "reason": "來源沒有調整後價格"}
+        return {"status": "skipped", "reason_code": "no_source_adjusted", "reason": "來源沒有調整後價格"}
     ours = total_return([(b.date, b.close) for b in bars], actions)
     ours_by_date = {b.date: v for b, v in zip(bars, ours)}
     last_src = pairs[-1][0].adj_close
@@ -313,6 +313,7 @@ def _check_total_return(source_bars: list[SourceBar], bars: list[Bar], actions) 
            "at": _iso(worst_date), "tolerance": ADJ_CHECK_TOL, "checked_at": _now().isoformat(timespec="seconds")}
     if out["status"] == "warn":
         # seen with HSBC (0005.HK): Yahoo's dividends are in HKD but its Adj Close applies the USD amount
+        out["note_code"] = "adjusted_mismatch"
         out["note"] = ("系統計算的總回報與來源的調整後價格不一致，需要人工覆核。常見原因：來源以錯誤貨幣計算派息"
                        "（例如以美元宣派、港元交易的股票）、或漏計供股等公司行動。系統的總回報由未調整價格與派息自行計算。")
     return out

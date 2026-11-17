@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from .. import auth
 from ..auth import Principal, current_principal, require_admin, require_user
 from ..db import get_db
-from ..i18n import http_error, lang_dep
+from ..i18n import bad_request, http_error, lang_dep
 from ..models import User
 from ..schemas import (AdminUserIn, AdminUserUpdate, AuthStatus, LoginIn, LoginOut, MeIn, PasswordIn, Prefs,
                        UserOut)
@@ -81,7 +81,7 @@ def change_password(body: PasswordIn, p: Principal = Depends(current_principal),
     try:
         p.user.password_hash = auth.hash_password(body.new_password)
     except ValueError as exc:
-        raise http_error(400, "bad_request", lang, detail=exc)
+        raise bad_request(exc, lang)
     auth.revoke_sessions(db, p.user.id, keep=p.session_hash)
 
 
@@ -99,7 +99,7 @@ def add_user(body: AdminUserIn, _: Principal = Depends(require_admin), db: Sessi
         u = auth.create_user(db, email=body.email, display_name=body.display_name, password=body.password,
                              role=body.role)
     except ValueError as exc:
-        raise http_error(400, "bad_request", lang, detail=exc)
+        raise bad_request(exc, lang)
     return user_out(u)
 
 
@@ -125,7 +125,7 @@ def update_user(user_id: str, body: AdminUserUpdate, p: Principal = Depends(requ
         try:
             u.password_hash = auth.hash_password(body.password)
         except ValueError as exc:
-            raise http_error(400, "bad_request", lang, detail=exc)
+            raise bad_request(exc, lang)
         u.failed_logins, u.locked_until = 0, None
         auth.revoke_sessions(db, u.id, keep=p.session_hash if p.user and p.user.id == u.id else None)
     return user_out(u)

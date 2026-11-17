@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import Principal, require_admin
 from ..db import get_db
-from ..i18n import http_error, lang_dep
+from ..i18n import bad_request, http_error, lang_dep
 from ..schemas import BrandingIn, BrandingOut
 from ..services import branding
 
@@ -54,7 +54,7 @@ def put_branding(body: BrandingIn, _: Principal = Depends(require_admin), db: Se
     try:
         return branding.set_name(db, body.name)
     except ValueError as exc:
-        raise http_error(400, "bad_request", lang, detail=exc)
+        raise bad_request(exc, lang)
 
 
 @admin.post("/admin/branding/logo/{variant}", response_model=BrandingOut,
@@ -65,7 +65,7 @@ async def upload_logo(variant: str, file: UploadFile = File(...), _: Principal =
     try:
         return branding.save_logo(db, variant, data, file.content_type or "")
     except ValueError as exc:
-        raise http_error(400, "bad_request", lang, detail=exc)
+        raise bad_request(exc, lang)
 
 
 @admin.delete("/admin/branding/logo/{variant}", response_model=BrandingOut, summary="移除 Logo（管理員）")

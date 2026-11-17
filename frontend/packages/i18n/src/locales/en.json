@@ -302,5 +302,7 @@
   "theme.light": "Light",
   "theme.dark": "Dark",
   "theme.system": "System",
-  "theme.help": "Saved to your account and used on your other devices."
+  "theme.help": "Saved to your account and used on your other devices.",
+  "market.note.adjusted_mismatch": "The total return computed here differs from the source's adjusted close and needs review. Common causes: the source applies a dividend in the wrong currency (e.g. declared in USD, traded in HKD) or misses a rights issue. The system computes total return itself from unadjusted prices and dividends.",
+  "market.note.no_source_adjusted": "The source has no adjusted prices to check against."
 }

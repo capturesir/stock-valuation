@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable, Optional
+from .i18n import AppError
 
 RETRY_BUFFER = 0.15       # upper end of the range covers one retry in ~7 requests
 TOKENS_PER_MILLION = 1_000_000.0
@@ -109,7 +110,7 @@ def plan(*, mode: str, model: str, prices: Iterable[dict], llm_configured: bool,
          has_name_spec: bool, selected: Optional[Iterable[str]] = None, calibration: float = 1.0) -> dict:
     """Task list for one run: what will run, why the rest won't, and what it should cost."""
     if mode not in MODES:
-        raise ValueError(f"未知模式：{mode}")
+        raise AppError("unknown_mode", mode=mode)
     price = {"model": model, "input": 0.0, "cached_input": 0.0, "output": 0.0} if local else find_price(model, prices)
     chosen = set(selected) if selected is not None else None
     rows, est_in, est_out, est_cost, unpriced = [], 0, 0, 0.0, False

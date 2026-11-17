@@ -1,5 +1,5 @@
-import { ApiError, type UserOut } from "@sv/api-client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ApiError, type Prefs, type UserOut } from "@sv/api-client";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
 import { LoginPage } from "../pages/LoginPage";
 import { api, UNAUTHORIZED } from "./api";
@@ -19,6 +19,16 @@ export function useMe() {
     staleTime: 5 * 60_000,
     retry: false,
   });
+}
+
+/** Merge a preference change into the latest signed-in user and save it (no-op when signed out). */
+export async function savePrefs(qc: QueryClient, patch: Partial<Prefs>): Promise<UserOut | null> {
+  const me = qc.getQueryData<UserOut | null>(["me"]);
+  if (!me) return null;
+  qc.setQueryData(["me"], { ...me, prefs: { ...me.prefs, ...patch } });     // optimistic
+  const saved = await api.updateMe({ prefs: { ...me.prefs, ...patch } as Prefs });
+  qc.setQueryData(["me"], saved);
+  return saved;
 }
 
 export function useIsAdmin(): boolean {

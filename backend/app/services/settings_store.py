@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from .. import pricing
 from ..models import AiTask, Price, Setting
 from ..security import decrypt, encrypt, mask
+from ..i18n import AppError
 
 AI_KEY = "ai"
 DEFAULT_AI = {
@@ -66,7 +67,7 @@ def update_ai_settings(db: Session, patch: dict) -> dict:
             s[k] = patch[k]
     s["base_url"] = (s["base_url"] or "").strip().rstrip("/")
     if s["base_url"] and not s["base_url"].startswith(("http://", "https://")):
-        raise ValueError("API 位址必須以 http:// 或 https:// 開頭。")
+        raise AppError("api_url_scheme")
     if patch.get("clear_api_key"):
         s["api_key_enc"] = None
     elif patch.get("api_key"):

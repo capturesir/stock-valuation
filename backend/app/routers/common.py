@@ -8,13 +8,14 @@ from zoneinfo import ZoneInfo
 from src.pipeline.tickers import normalize
 
 from ..config import get_settings
+from ..i18n import AppError
 from ..models import Run
 
 
 def ticker_or_400(raw: str) -> str:
     t = normalize(raw)          # raises InvalidTicker → 400 (see main.py)
     if not t:
-        raise ValueError("請輸入股票代號。")
+        raise AppError("ticker_required")
     return t
 
 

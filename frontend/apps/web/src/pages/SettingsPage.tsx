@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
-import { useIsAdmin } from "../lib/session";
+import { savePrefs, useIsAdmin } from "../lib/session";
 import { THEMES, useTheme, type Theme } from "../lib/theme";
 
 type Preset = { id: string; label: string; base_url: string; model: string };
@@ -152,7 +152,7 @@ export function SettingsPage() {
             <h2 id="prefs-h">{t("settings.sec.prefs")}</h2>
             <div className="fields">
               <label className="field">{t("settings.language")}
-                <select value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>
+                <select value={locale} onChange={(e) => { const l = e.target.value as Locale; setLocale(l); void savePrefs(qc, { locale: l }).catch(() => undefined); }}>
                   {LOCALES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
                 </select></label>
               <label className="field">{t("theme.label")}
