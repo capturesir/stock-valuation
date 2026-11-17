@@ -83,9 +83,18 @@ def relever(bu, d_m, e_m, tax):
     return bu * (1 + (1 - tax) * d_m / e_m)
 
 
-def erp():
-    return D(ERP, f"市場數據：Damodaran {ERP_DATE} 隱含 ERP {ERP:.2%}（當月，對應美國 10 年期 {ERP_RF:.2%}）；方法 A：每月採用當月隱含 ERP",
-             "Damodaran Online（Implied ERP）", U_DAM, ERP_DATE)
+def erp(valuation_date=None):
+    """Damodaran implied ERP for the valuation month (dated history, see fetch/damodaran.py).
+    Falls back to the constant above when no history entry is on or before the date."""
+    e = None
+    if valuation_date:
+        from ..fetch import damodaran
+        e = damodaran.erp_for(valuation_date)
+    v, date, rf_ = (e["erp"], e["date"], e.get("rf") or ERP_RF) if e else (ERP, ERP_DATE, ERP_RF)
+    stale = bool(e and e.get("stale"))
+    return D(v, f"市場數據：Damodaran {date} 隱含 ERP {v:.2%}（對應美國 10 年期 {rf_:.2%}）；方法 A：每月採用當月隱含 ERP"
+             + ("；⚠ 估值月份的 ERP 尚未取得，暫用最近一期" if stale else ""),
+             "Damodaran Online（Implied ERP）", U_DAM, date)
 
 
 def crp(country, extra=""):
@@ -113,7 +122,9 @@ def beta(ticker, d_m, e_m, tax, reg, reg_url, reg_date):
 
 def check_g(g, rf, ticker=""):
     if g > rf + 1e-12:
-        raise SystemExit(f"[方法 A] {ticker} 終值 g {g:.2%} 高於模型貨幣 Rf {rf:.2%}")
+        # EngineInputError, not SystemExit: in the API a SystemExit would end the worker thread
+        from .fcff_engine import EngineInputError
+        raise EngineInputError(f"[方法 A] {ticker} 終值 g {g:.2%} 高於模型貨幣 Rf {rf:.2%}")
     return True
 
 

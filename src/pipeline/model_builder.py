@@ -5,7 +5,7 @@ import copy
 import datetime as dt
 from typing import Any
 
-from ..engine.fcff_engine import D, discount_block, run, build_json, save
+from ..engine.fcff_engine import D, EngineInputError, discount_block, run, build_json, save
 from ..engine import method_a as MA
 from ..engine.verify_fcff import verify
 from . import rules
@@ -73,6 +73,7 @@ def _make_rows(spec: dict, growths, margins, zero_dnwc=False, capex_pcts=None) -
     capex_pcts = capex_pcts or spec["capex_pcts"]
     da_pcts = spec["da_pcts"]
     tax = spec["tax_rate"]
+    taxes = spec.get("tax_rates")          # optional per-year path (generic specs: effective -> marginal)
     dnwc_k = spec["dnwc_pct"]
     years = spec["year_labels"]
     discs = spec["discount_periods"]
@@ -135,7 +136,7 @@ def _make_rows(spec: dict, growths, margins, zero_dnwc=False, capex_pcts=None) -
             "revenue_growth_base": spec["growth_base_notes"][i] if i < len(spec.get("growth_base_notes") or []) else "對比上一期",
             "revenue": rev,
             "ebit_margin": margins[i],
-            "tax_rate": tax,
+            "tax_rate": taxes[i] if taxes and i < len(taxes) else tax,
             "da": da,
             "da_pct_revenue": da_p,
             "capex": cap,
@@ -189,13 +190,13 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     E_mkt = P * SH * spec.get("fx_to_model_for_market_cap", 1.0)
     # register industry if needed
     if ticker not in MA.IND:
-        raise SystemExit(f"{ticker} 未在 method_a.IND 登記。請先以 Damodaran 出處 register_ticker。")
+        raise EngineInputError(f"{ticker} 未在 method_a.IND 登記。請先以 Damodaran 出處 register_ticker。")
     MA.check_g(spec["terminal_g"], spec["rf"]["value"], ticker)
     beta_ref, beta_ado, beta_info = MA.beta(
         ticker, D_fin, E_mkt, tax, spec.get("beta_reg"), spec.get("beta_reg_url") or "", spec.get("beta_reg_date") or ""
     )
     disc, cap = discount_block(
-        rf=spec["rf"], erp=MA.erp(), crp=spec["crp"],
+        rf=spec["rf"], erp=MA.erp(spec.get("valuation_date")), crp=spec["crp"],
         beta_ref=beta_ref, beta_adopted=beta_ado,
         kd_pre=spec["kd_pre"], tax=spec["tax_d"],
         E=D(E_mkt, spec["E_basis"], spec.get("price_source") or "", spec.get("price_url") or "", spec["price_date"]),
@@ -325,7 +326,13 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     ]
 
     out = build_json(cfg, sens_w, sens_g, scenarios=scenarios, revisions=revisions, extra=extra)
-    for note in (floor_note, spread_note, sens_note):
+    from ..fetch import damodaran as _dam
+    erp_e = _dam.erp_for(spec.get("valuation_date") or "")
+    erp_note = None
+    if erp_e is None or erp_e.get("stale"):
+        erp_note = (f"ERP：估值月份 {str(spec.get('valuation_date'))[:7]} 的 Damodaran 隱含 ERP 尚未取得，"
+                    f"暫用 {disc['erp']['data_date']} 的 {disc['erp']['value']:.2%}（方法 A 要求按月更新）。")
+    for note in (floor_note, spread_note, sens_note, erp_note):
         if note:
             out.setdefault("data_gaps", []).append(note)
     # A negative or non-finite theoretical value means the model does not fit the
@@ -338,6 +345,9 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
         )
         out.setdefault("data_gaps", []).insert(0, warning)
         out["result_warning"] = warning
+
+    if spec.get("method_warning"):
+        out["method_warning"] = spec["method_warning"]
 
     for s in out["scenarios"]:
         if s["name"] == "基準":

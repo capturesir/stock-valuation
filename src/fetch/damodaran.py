@@ -74,3 +74,96 @@ def lookup_company_industry(ticker: str, company_hint: str = "", indname_path: O
         return out
     out.update(ok=True, matches=hits, industry=hits[0]["industry"], company=hits[0]["company"])
     return out
+
+
+# ---------------------------------------------------------------- implied ERP, refreshed monthly
+#
+# Method A uses Damodaran's implied ERP for the month of the valuation date. The value used to be a
+# constant edited by hand (still 2026-10 in November); it is now read from a dated history: the
+# file shipped in data/damodaran/ plus anything fetched at run time (saved under APP_DATA_DIR).
+
+import datetime as _dt
+import json as _json
+import os as _os
+import re as _re
+
+U_HOME = "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/home.htm"
+ERP_SEED = DATA / "erp_history.json"
+_MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august",
+                                       "september", "october", "november", "december"], start=1)}
+
+
+def _runtime_file() -> Path:
+    base = Path(_os.environ.get("APP_DATA_DIR") or (Path(__file__).resolve().parents[2] / "var"))
+    return base / "damodaran" / "erp_history.json"
+
+
+def erp_history() -> list[dict]:
+    """All known monthly entries, oldest first (runtime entries override the shipped ones)."""
+    by_date: dict[str, dict] = {}
+    for path in (ERP_SEED, _runtime_file()):
+        try:
+            for e in _json.loads(path.read_text(encoding="utf-8")).get("entries", []):
+                by_date[e["date"]] = e
+        except (OSError, ValueError, KeyError):
+            continue
+    return [by_date[k] for k in sorted(by_date)]
+
+
+def erp_for(valuation_date: str) -> Optional[dict]:
+    """The latest entry dated on or before the valuation date, with ``stale`` = it is from an earlier month."""
+    vd = str(valuation_date)[:10]
+    cands = [e for e in erp_history() if e["date"] <= vd]
+    if not cands:
+        return None
+    e = dict(cands[-1])
+    e["stale"] = e["date"][:7] < vd[:7]
+    return e
+
+
+def parse_implied_erp(html_text: str) -> Optional[dict]:
+    """'Implied ERP on November 1, 2026 = 4.41 % (Trailing 12 month, with adjusted payout) … US treasury
+    rate of 4.94%' -> {date, erp, rf}."""
+    m = _re.search(r"Implied ERP on\s+([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})\s*=\s*([0-9]+(?:\.[0-9]+)?)\s*%", html_text)
+    if not m or m.group(1).lower() not in _MONTHS:
+        return None
+    date = _dt.date(int(m.group(3)), _MONTHS[m.group(1).lower()], int(m.group(2))).isoformat()
+    rf = _re.search(r"treasury rate of\s+([0-9]+(?:\.[0-9]+)?)\s*%", html_text[m.end():m.end() + 1200])
+    return {"date": date, "erp": round(float(m.group(4)) / 100, 6), "rf": round(float(rf.group(1)) / 100, 6) if rf else None}
+
+
+def refresh_erp(timeout: int = 25) -> dict:
+    """Fetch the current month's implied ERP and save it; returns {"ok", "entry"|"error"}."""
+    from bs4 import BeautifulSoup
+    from . import httputil
+
+    try:
+        status, body, _ = httputil.get(U_HOME, timeout=timeout)
+    except Exception as exc:
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+    if status != 200 or not body:
+        return {"ok": False, "error": f"HTTP {status}"}
+    text = BeautifulSoup(body.decode("latin-1", errors="replace"), "lxml").get_text(" ", strip=True)
+    parsed = parse_implied_erp(text)
+    if not parsed:
+        return {"ok": False, "error": "Damodaran 首頁格式改變，找不到 Implied ERP"}
+    entry = {**parsed, "source": "Damodaran Online（Implied ERP）", "url": U_HOME,
+             "recorded": _dt.date.today().isoformat()}
+    path = _runtime_file()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = _json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"entries": []}
+        data["entries"] = [e for e in data.get("entries", []) if e.get("date") != entry["date"]] + [entry]
+        path.write_text(_json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    except OSError as exc:
+        return {"ok": True, "entry": entry, "warning": f"未能保存：{exc}"}
+    return {"ok": True, "entry": entry}
+
+
+def ensure_erp(valuation_date: str) -> Optional[dict]:
+    """Fetch only when the history has nothing for the valuation month yet."""
+    e = erp_for(valuation_date)
+    if e is None or e["stale"]:
+        refresh_erp()
+        e = erp_for(valuation_date)
+    return e

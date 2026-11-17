@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import datetime as dt
+from pathlib import Path
 import traceback
 from typing import Optional
 
@@ -50,6 +51,40 @@ def _progress(steps: list[dict]) -> int:
 def trading_ccy(calc: dict) -> Optional[str]:
     pair = ((calc.get("fx_if_any") or {}).get("pair") or "")
     return pair.split("/")[1] if "/" in pair else calc.get("currency")
+
+
+def archive_outputs(job_id: str, result: dict) -> tuple[Optional[str], Optional[str]]:
+    """Copy this run's files into <APP_DATA_DIR>/runs/<job_id>/ and return the archived paths.
+
+    The v1 engine writes to out/<date>_<ticker>/, so a second run of the same ticker on the same day
+    overwrote the first run's Excel and JSON while both database records still pointed there. Each
+    run now keeps its own copy; out/ stays as the v1 tools expect it."""
+    import shutil
+
+    from ..config import get_settings
+
+    dest = get_settings().data_dir / "runs" / job_id
+    out: list[Optional[str]] = []
+    for key in ("path", "xlsx"):
+        src = result.get(key)
+        if not src or not Path(src).is_file():
+            out.append(src)
+            continue
+        try:
+            dest.mkdir(parents=True, exist_ok=True)
+            target = dest / Path(src).name
+            shutil.copy2(src, target)
+            out.append(str(target))
+        except OSError:
+            out.append(src)              # keep the shared path rather than lose the link
+    for extra in ("md",):                # the report travels with the run too
+        src = result.get(extra)
+        if src and Path(src).is_file():
+            try:
+                shutil.copy2(src, dest / Path(src).name)
+            except OSError:
+                pass
+    return out[0], out[1]
 
 
 def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str = "none", trigger: str = "manual",
@@ -190,14 +225,18 @@ def execute(job_id: str, payload: dict) -> None:
         if s["kind"] != "ai" and s["status"] == "pending" and status == "done":
             s["status"] = "done"
 
+    calc_path, xlsx_path = (result or {}).get("path"), (result or {}).get("xlsx")
+    if status == "done" and calc:
+        calc_path, xlsx_path = archive_outputs(job_id, result)
+
     with session() as db:
         run = None
         if status == "done" and calc:
             from . import market
             market.track(db, job["ticker"])
             run = persist_run(db, calc, status="done", ai_mode=job["mode"], trigger=payload.get("trigger") or "manual",
-                              verify_pass=result.get("verify_pass"), calc_path=result.get("path"),
-                              xlsx_path=result.get("xlsx"), ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out,
+                              verify_pass=result.get("verify_pass"), calc_path=calc_path,
+                              xlsx_path=xlsx_path, ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out,
                               valuation_date=job["valuation_date"], requested_by=payload.get("requested_by"))
         else:
             run = Run(ticker=job["ticker"], valuation_date=job["valuation_date"], status=status,

@@ -1,0 +1,7 @@
+{
+ "note": "Damodaran implied ERP (S&P 500, trailing 12 month cash flows with adjusted payout), one entry per month, as published on https://pages.stern.nyu.edu/~adamodar/New_Home_Page/home.htm. Runtime refreshes are saved under <APP_DATA_DIR>/damodaran/erp_history.json and merged with this file.",
+ "entries": [
+  {"date": "2026-10-01", "erp": 0.0420, "rf": 0.0529, "source": "Damodaran Online（Implied ERP）", "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/home.htm", "recorded": "2026-10-08"},
+  {"date": "2026-11-01", "erp": 0.0441, "rf": 0.0494, "source": "Damodaran Online（Implied ERP）", "url": "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/home.htm", "recorded": "2026-11-18"}
+ ]
+}

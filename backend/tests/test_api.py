@@ -298,3 +298,29 @@ def test_legacy_import_counts_one_run_once(client, tmp_path):
         encoding="utf-8")
     with session() as db:
         assert import_legacy(db, out_dir=out) == 1
+
+
+def test_each_run_keeps_its_own_files(configured, monkeypatch, tmp_path):
+    # two runs of one ticker on one day: the v1 engine reuses out/<date>_<ticker>/, so the second run
+    # used to overwrite the first run's Excel while both records pointed at it
+    from src.pipeline import orchestrator
+
+    shared = tmp_path / "out" / "2026-11-18_0883.HK"
+    shared.mkdir(parents=True)
+    calls = {"n": 0}
+
+    def fake_run_ticker(ticker, cfg=None, use_llm=True, valuation_date="", progress=None, should_stop=None,
+                        skip_extract=False):
+        calls["n"] += 1
+        (shared / "2026-11-18_0883.HK_FCFF.xlsx").write_text(f"excel of run {calls['n']}")
+        (shared / "2026-11-18_0883.HK.json").write_text(f"json of run {calls['n']}")
+        return {"json": _fake_calc(ticker, fair=40.0 + calls["n"]), "path": str(shared / "2026-11-18_0883.HK.json"),
+                "xlsx": str(shared / "2026-11-18_0883.HK_FCFF.xlsx"), "verify_pass": True, "verify_errors": []}
+
+    monkeypatch.setattr(orchestrator, "run_ticker", fake_run_ticker)
+    for _ in range(2):
+        _wait(configured, configured.post("/api/v1/valuations", json={"ticker": "0883.HK", "mode": "none"}).json()["id"])
+    runs = configured.get("/api/v1/stocks/0883.HK/valuations").json()["runs"]
+    assert len(runs) == 2
+    bodies = [configured.get(f"/api/v1/runs/{r['id']}/excel").text for r in runs]
+    assert sorted(bodies) == ["excel of run 1", "excel of run 2"]

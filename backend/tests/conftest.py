@@ -58,6 +58,8 @@ def fake_market(monkeypatch):
     old = market.get_source()
     market.set_source(src)
     monkeypatch.setattr(market_jobs, "INLINE", True)
+    from src.fetch import damodaran
+    monkeypatch.setattr(damodaran, "refresh_erp", lambda timeout=25: {"ok": False, "error": "offline in tests"})
     yield src
     market.set_source(old)
 

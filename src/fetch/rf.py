@@ -118,3 +118,64 @@ def _investing(url: str) -> dict:
     if status != 200:
         return {"ok": False, "source": "Investing.com", "url": url, "error": f"HTTP {status}", "http_status": status}
     return {"ok": False, "source": "Investing.com", "url": url, "error": "頁面結構未解析（本次未作為主來源）", "http_status": status}
+
+
+# ---------------------------------------------------------------- by model currency
+#
+# Method A: Rf is the 10-year government yield of the MODEL currency (the currency the cash flows
+# are forecast in), not of the listing. For sovereigns below Aaa, Damodaran's local-currency
+# practice subtracts the rating-based default spread, so default risk enters once, through the CRP.
+# HKD keeps the existing hk_10y() path (the built-in 1830.HK spec is calibrated on it).
+
+ADB_PAGE = {"CNY": "china", "JPY": "japan", "KRW": "korea", "SGD": "singapore"}
+TE_PAGE = {"CNY": "china", "JPY": "japan", "KRW": "south-korea", "TWD": "taiwan", "SGD": "singapore"}
+COUNTRY = {"USD": "US", "HKD": "HK", "CNY": "CN", "JPY": "JP", "KRW": "KR", "TWD": "TW"}
+NAME = {"CNY": "中國", "JPY": "日本", "KRW": "韓國", "TWD": "台灣", "SGD": "新加坡"}
+CROSS_CHECK_GAP = 0.005          # two sources more than 0.5pp apart: say so
+
+
+def supported_currencies() -> set[str]:
+    return {"USD", "HKD"} | set(ADB_PAGE) | set(TE_PAGE)
+
+
+def for_currency(currency: str, cfg: Optional[dict] = None) -> dict:
+    """Risk-free rate for cash flows in ``currency``. Never mixes currencies silently:
+    an unsupported currency returns ok=False and the caller decides (and records the gap)."""
+    from ..engine import method_a as MA
+
+    ccy = (currency or "").upper()
+    if ccy == "USD":
+        return dict(ust_10y(), currency="USD")
+    if ccy == "HKD":
+        return dict(hk_10y(cfg), currency="HKD")
+    if ccy not in ADB_PAGE and ccy not in TE_PAGE:
+        return {"ok": False, "currency": ccy, "error": f"未支援 {ccy} 的本幣 10 年期政府債券孳息"}
+    attempts = []
+    if ccy in ADB_PAGE:
+        a = _adb(f"https://asianbondsonline.adb.org/{ADB_PAGE[ccy]}/")
+        a["basis"] = (a.get("basis") or "").replace("香港", NAME.get(ccy, ccy))
+        attempts.append(a)
+    if ccy in TE_PAGE:
+        t = _trading_economics(f"https://tradingeconomics.com/{TE_PAGE[ccy]}/government-bond-yield")
+        t["basis"] = (t.get("basis") or "").replace("香港", NAME.get(ccy, ccy))
+        attempts.append(t)
+    ok = [a for a in attempts if a.get("ok")]
+    if not ok:
+        return {"ok": False, "currency": ccy, "attempts": attempts,
+                "error": f"未能取得 {NAME.get(ccy, ccy)} 10 年期政府債券孳息（已試 {'、'.join(a['source'] for a in attempts)}）"}
+    primary = ok[0]
+    gross = float(primary["value"])
+    data_date = primary.get("data_date") or next((a.get("data_date") for a in ok if a.get("data_date")), None)
+    country = COUNTRY.get(ccy)
+    spread = MA.DEFAULT_SPREAD.get(country, 0.0) if country else 0.0
+    value = gross - spread
+    out = {"ok": True, "currency": ccy, "value": value, "gross_yield": gross, "default_spread": spread,
+           "data_date": data_date, "source": primary["source"], "url": primary["url"], "attempts": attempts,
+           "basis": (f"市場數據：{NAME.get(ccy, ccy)} 10 年期政府債券孳息 {gross:.3%}（{primary['source']}"
+                     f"{'，' + data_date if data_date else ''}）"
+                     + (f" 減 Damodaran {country} 違約息差 {spread:.2%}（方法 A 本幣做法，違約風險只經 CRP 計入）"
+                        if spread else "") + f" ＝ {value:.3%}")}
+    if len(ok) > 1 and abs(float(ok[0]["value"]) - float(ok[1]["value"])) > CROSS_CHECK_GAP:
+        out["cross_check_warning"] = (f"{ok[0]['source']} {float(ok[0]['value']):.3%} 與 {ok[1]['source']} "
+                                      f"{float(ok[1]['value']):.3%} 相差超過 {CROSS_CHECK_GAP:.1%}，請人工核對。")
+    return out

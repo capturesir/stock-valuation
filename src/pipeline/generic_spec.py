@@ -79,6 +79,35 @@ MARKET_DEFAULTS = {
     "TW": {"market": "台灣", "currency": "TWD", "terminal_g": 0.025},
 }
 
+# Terminal growth ceiling by MODEL currency (also capped at that currency's Rf).
+TERMINAL_G_BY_CCY = {"USD": 0.03, "HKD": 0.025, "CNY": 0.025, "JPY": 0.015, "KRW": 0.02, "TWD": 0.02, "SGD": 0.02}
+
+# Statutory corporate income tax incl. typical local taxes, by Yahoo "country". Near-term NOPAT uses
+# the effective rate, converging to this marginal rate by the last forecast year (Damodaran); the
+# terminal year, beta relevering and the interest tax shield use the marginal rate. Review yearly.
+MARGINAL_TAX = {"United States": 0.25, "China": 0.25, "Hong Kong": 0.165, "Japan": 0.3062, "South Korea": 0.264,
+                "Taiwan": 0.20, "Singapore": 0.17, "United Kingdom": 0.25, "Germany": 0.30, "France": 0.258,
+                "Netherlands": 0.258, "Canada": 0.265, "Australia": 0.30, "India": 0.252, "Switzerland": 0.196,
+                "Ireland": 0.125, "Israel": 0.23, "Macau": 0.12}
+CCY_TAX_COUNTRY = {"CNY": "China", "JPY": "Japan", "KRW": "South Korea", "TWD": "Taiwan", "HKD": "Hong Kong",
+                   "SGD": "Singapore"}
+MARGINAL_TAX_SOURCE = "各地法定企業所得稅率（含一般地方稅；KPMG Corporate tax rates table、Damodaran countrytaxrates.xls，須每年覆核）"
+DEFAULT_MARGINAL_TAX = 0.25
+
+# Industries whose long-term provisions are mostly asset-retirement / restoration obligations
+# (debt-like: the cash outflow is not in the FCFF forecast). Elsewhere they may be operating
+# (warranties), so they are reported, not deducted.
+ARO_INDUSTRIES = ("Oil/Gas", "Metals & Mining", "Coal", "Power", "Utility", "Precious Metals", "Green & Renewable")
+
+FINANCIAL_INDUSTRIES = ("banks", "insurance", "capital markets", "asset management", "credit services",
+                        "mortgage finance", "financial conglomerates", "financial data")
+
+# RONIC in the terminal period: excess returns fade. House rule (McKinsey "Valuation", ch. on
+# continuing value; Damodaran stable growth): RONIC = WACC + half of the historical excess over
+# WACC, the excess capped at 10pp; no excess -> RONIC = WACC (growth then creates no value).
+RONIC_EXCESS_SHARE = 0.5
+RONIC_EXCESS_CAP = 0.10
+
 _BETA_TABLE: Optional[dict] = None
 
 
@@ -240,6 +269,41 @@ def _first(block: dict, date: Optional[str], names) -> tuple[Optional[float], Op
     return None, None
 
 
+# One definition per model input, shared with pipeline/adjustments.py (what the user reviews is what
+# the model uses). Operating income, not Yahoo "EBIT": Yahoo's EBIT is pretax income + interest
+# expense, so it carries non-operating gains, impairments and other income.
+EBIT_ROWS = ["Operating Income", "Total Operating Income As Reported", "EBIT"]
+DA_CF_ROWS = ["Depreciation And Amortization", "Depreciation Amortization Depletion"]
+
+
+def _op_income(is_a: dict, date: str) -> tuple[Optional[float], Optional[str]]:
+    return _first(is_a, date, EBIT_ROWS)
+
+
+def _da(is_a: dict, cf_a: dict, date: str) -> Optional[float]:
+    v, _ = _first(cf_a, date, DA_CF_ROWS)
+    if v is None:
+        v, _ = _first(is_a, date, ["Reconciled Depreciation"])
+    if v is None:
+        v, _ = _first(cf_a, date, ["Depreciation"])
+    return abs(v) if v is not None else None
+
+
+def is_financial(info: dict) -> bool:
+    ind = (info.get("industry") or "").lower()
+    return (info.get("sector") or "").lower() == "financial services" or ind.startswith(FINANCIAL_INDUSTRIES)
+
+
+def ronic_rule(roic: Optional[float], wacc: float) -> tuple[float, str]:
+    if roic is None or roic <= wacc:
+        why = ("歷史營運 ROIC 不可用" if roic is None else f"歷史營運 ROIC {roic:.1%} 不高於 WACC {wacc:.2%}")
+        return wacc, f"終值 RONIC＝WACC {wacc:.2%}（{why}；永續期新投資不創造超額回報）"
+    excess = min(roic, wacc + RONIC_EXCESS_CAP) - wacc
+    r = wacc + RONIC_EXCESS_SHARE * excess
+    return r, (f"終值 RONIC＝WACC {wacc:.2%}＋{RONIC_EXCESS_SHARE:.0%}×超額回報 {excess:.1%}"
+               f"（歷史營運 ROIC {roic:.1%}，超額部份上限 {RONIC_EXCESS_CAP:.0%}）＝{r:.2%}；超額回報在永續期減半，反映競爭侵蝕")
+
+
 def _fx_rate(model_ccy: str, market_ccy: str) -> float:
     """model -> market multiplier (e.g. CNY -> HKD)."""
     model_ccy, market_ccy = (model_ccy or "").upper(), (market_ccy or "").upper()
@@ -294,7 +358,9 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     rev, rev_name = _first(is_a, d0, ["Total Revenue", "Operating Revenue"])
     if not rev or rev <= 0:
         raise GenericSpecError(f"{ticker} 取不到年度營收，無法建立模型。")
-    ebit, ebit_name = _first(is_a, d0, ["EBIT", "Operating Income", "Total Operating Income As Reported"])
+    ebit, ebit_name = _op_income(is_a, d0)
+    if ebit_name == "EBIT":
+        gaps.append("Yahoo 無營業利潤，暫用其 EBIT（＝稅前利潤＋利息，含非經營收益），利潤率可能偏高或偏低。")
     if ebit is None:
         raise GenericSpecError(f"{ticker} 取不到年度 EBIT／營業利潤，無法建立模型。")
 
@@ -305,9 +371,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
             "本引擎的 FCFF 五情境模型假設正 NOPAT，對虧損公司會給出沒有意義（甚至負值）的理論價。"
             "此類公司需先建立虧損轉盈的專用模型（例如按分部或按現金消耗估算），不可用通用規格硬算。"
         )
-    da, _ = _first(is_a, d0, ["Reconciled Depreciation"])
-    if da is None:
-        da, _ = _first(cf_a, d0, ["Depreciation And Amortization", "Depreciation Amortization Depletion", "Depreciation"])
+    da = _da(is_a, cf_a, d0)
     capex_neg, _ = _first(cf_a, d0, ["Capital Expenditure", "Capital Expenditure Reported", "Purchase Of PPE"])
     capex = abs(capex_neg) if capex_neg is not None else None
     ppe_dep, _ = _first(cf_a, d0, ["Depreciation"])
@@ -316,12 +380,24 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         pretax, provision = _val(is_a, d0, "Pretax Income"), _val(is_a, d0, "Tax Provision")
         tax = (provision / pretax) if pretax and provision is not None and pretax else None
     interest, _ = _first(is_a, d0, ["Interest Expense", "Interest Expense Non Operating"])
-    shares = _val(bs_a, bs0, "Ordinary Shares Number", "Share Issued")
-    if not shares:
-        shares = info.get("impliedSharesOutstanding") or info.get("sharesOutstanding")
-    if not shares:
+    # Diluted shares (standard): period-end basic shares + the dilution the company itself reports
+    # (diluted − basic weighted average, same fiscal year), so options / RSUs / convertibles count.
+    basic = _val(bs_a, bs0, "Ordinary Shares Number", "Share Issued")
+    basic_src = f"{bs0} 期末已發行股數（Yahoo balance sheet）"
+    if not basic:
+        basic = info.get("impliedSharesOutstanding") or info.get("sharesOutstanding")
+        basic_src = "Yahoo 目前已發行股數（資產負債表無股數）"
+        gaps.append("資產負債表沒有股數，改用 Yahoo 目前已發行股數；多類別股份的公司須核對是否包含全部類別。")
+    if not basic:
         raise GenericSpecError(f"{ticker} 取不到股數，無法換算每股理論價。")
-    shares_m = float(shares) / 1e6
+    dil_avg, bas_avg = _val(is_a, d0, "Diluted Average Shares"), _val(is_a, d0, "Basic Average Shares")
+    dilution = max(0.0, dil_avg - bas_avg) if dil_avg and bas_avg else 0.0
+    shares = float(basic) + dilution
+    shares_m = shares / 1e6
+    shares_basis = (f"市場數據：{basic_src} {float(basic) / 1e6:,.3f}m ＋ 攤薄 {dilution / 1e6:,.3f}m"
+                    f"（{d0} 攤薄加權平均 − 基本加權平均）＝ {shares_m:,.3f}m 攤薄股數")
+    if not (dil_avg and bas_avg):
+        gaps.append("Yahoo 沒有攤薄／基本加權平均股數，未計期權與可換股證券的攤薄。")
 
     cash, _ = _first(bs_a, bs0, ["Cash Cash Equivalents And Short Term Investments", "Cash And Cash Equivalents"])
     if cash is None:
@@ -342,7 +418,18 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         if v is None:
             gaps.append(f"Yahoo 未提供{label}，已用替代值或規則假設，請核對年報。")
 
-    tax = 0.25 if tax is None else max(0.0, min(float(tax), 0.5))
+    # Tax follows where profits are earned, approximated like the CRP by the reporting currency
+    # (CNOOC is registered in Hong Kong but taxed as a mainland resident enterprise at 25%).
+    rep_ccy = (info.get("financialCurrency") or mk["currency"] or "").upper()
+    country = CCY_TAX_COUNTRY.get(rep_ccy) or info.get("country") or ""
+    marginal = MARGINAL_TAX.get(country)
+    if marginal is None:
+        marginal = DEFAULT_MARGINAL_TAX
+        gaps.append(f"未收錄「{country or '未知'}」的法定稅率，邊際稅率暫用 {marginal:.0%}。")
+    eff_raw = tax
+    tax = marginal if tax is None or not (0.0 <= float(tax) <= 0.5) else float(tax)
+    if eff_raw is None or not (0.0 <= float(eff_raw) <= 0.5):
+        gaps.append(f"有效稅率不可用或不合理（{eff_raw}），首年起即用邊際稅率 {marginal:.1%}。")
     da_pct = (da / rev) if da else 0.05
     cpx_pct = (capex / rev) if capex else max(da_pct, 0.02)
 
@@ -360,10 +447,10 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     if len(hist_rev) >= 2:
         n_years = len(hist_rev) - 1
         rev_cagr = (hist_rev[0][1] / hist_rev[-1][1]) ** (1 / n_years) - 1
-    margin_hist = [(dt_, _val(is_a, dt_, "EBIT", "Operating Income")) for dt_, _ in hist_rev]
+    margin_hist = [(dt_, _op_income(is_a, dt_)[0]) for dt_, _ in hist_rev]
     margins_hist = [v / r for (_, r), (_, v) in zip(hist_rev, margin_hist) if v is not None and r]
     m_avg = sum(margins_hist) / len(margins_hist) if margins_hist else m0
-    da_hist = [(dt_, _val(is_a, dt_, "Reconciled Depreciation")) for dt_, _ in hist_rev]
+    da_hist = [(dt_, _da(is_a, cf_a, dt_)) for dt_, _ in hist_rev]
     da_pcts_hist = [v / r for (_, r), (_, v) in zip(hist_rev, da_hist) if v]
     cpx_hist = [abs(_val(cf_a, dt_, "Capital Expenditure") or 0) / r for dt_, r in hist_rev
                 if _val(cf_a, dt_, "Capital Expenditure")]
@@ -378,11 +465,17 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
 
     # ---- discount-rate inputs
     rf = D(snap["rf"]["value"], snap["rf"]["basis"], snap["rf"]["source"], snap["rf"]["url"], snap["rf"]["data_date"])
-    if code not in MA.CRP:
-        gaps.append(f"Damodaran CRP 未收錄 {code} 市場，暫用美國 CRP＝0，請人工確認國家風險。")
-        code = "US"
-    crp = MA.crp(code, "（通用規格：按上市地推定風險來源，港股若收入主要來自內地應改用 CRP 中國）"
-                 if code == "HK" else "")
+    # Country risk follows where the business is, approximated by the reporting currency (a HK-listed
+    # company reporting in CNY operates mainly in mainland China), not by the listing venue.
+    from ..fetch import rf as _rfmod
+    crp_country = _rfmod.COUNTRY.get(model_ccy) if _rfmod.COUNTRY.get(model_ccy) in MA.CRP else code
+    if crp_country not in MA.CRP:
+        gaps.append(f"Damodaran CRP 未收錄 {crp_country} 市場，暫用美國 CRP＝0，請人工確認國家風險。")
+        crp_country = "US"
+    crp = MA.crp(crp_country, f"（通用規格：按報表貨幣 {model_ccy} 推定業務所在地；跨國業務應按收入地域加權）"
+                 if crp_country != "US" else "")
+    if crp_country != code and code in MA.CRP:
+        gaps.append(f"國家風險按報表貨幣 {model_ccy} 推定為 {MA.CRP[crp_country][2]}，而非上市地 {MA.CRP[code][2]}。")
     e_mkt_model = snap["price"] * fx_mkt_to_model * shares_m
 
     kd = (interest / debt) if interest and debt and debt > 0 else None
@@ -395,11 +488,42 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     d_over_e = ((debt or 0.0) / 1e6) / e_mkt_model if e_mkt_model else 0.0
 
 
-    industry = resolve_industry(ticker, info, tax, d_over_e, gaps)
+    industry = resolve_industry(ticker, info, marginal, d_over_e, gaps)
+
+    # ---- non-operating assets and debt equivalents (EV -> equity bridge)
+    lt_eq, _ = _first(bs_a, bs0, ["Long Term Equity Investment"])
+    if lt_eq is None:
+        a, j = _val(bs_a, bs0, "Investmentsin Associatesat Cost"), _val(bs_a, bs0, "Investmentsin Joint Venturesat Cost")
+        lt_eq = (a or 0.0) + (j or 0.0) if (a or j) else None
+    fin_assets, _ = _first(bs_a, bs0, ["Investmentin Financial Assets"])
+    pref, _ = _first(bs_a, bs0, ["Preferred Stock Equity", "Preferred Stock"])
+    pension, pension_row = _first(bs_a, bs0, ["Non Current Pension And Other Postretirement Benefit Plans",
+                                              "Pensionand Other Post Retirement Benefit Plans", "Employee Benefits"])
+    provisions, _ = _first(bs_a, bs0, ["Long Term Provisions"])
+    aro_industry = any(k.lower() in industry.lower() for k in ARO_INDUSTRIES)
+
+    # ---- operating ROIC -> terminal RONIC (needs WACC, computed exactly as the engine will)
+    equity_total = _val(bs_a, bs0, "Total Equity Gross Minority Interest", "Stockholders Equity")
+    ic = None
+    if equity_total is not None:
+        ic = equity_total + (debt or 0.0) - (cash or 0.0) - (lt_eq or 0.0) - (fin_assets or 0.0)
+    roic = (ebit * (1 - tax)) / ic if ic and ic > 0 else None
+    _beta_ref, _beta_ado, _ = MA.beta(ticker, (debt or 0.0) / 1e6, e_mkt_model, marginal, info.get("beta"), "", "")
+    from ..engine.fcff_engine import discount_block as _disc
+    _d, _ = _disc(rf=rf, erp=MA.erp(snap.get("valuation_date")), crp=crp, beta_ref=_beta_ref, beta_adopted=_beta_ado,
+                  kd_pre=D(kd, ""), tax=D(marginal, ""), E=D(e_mkt_model, ""), Dv=D((debt or 0.0) / 1e6, ""))
+    wacc_est = _d["wacc"]["value"]
+    ronic, ronic_note = ronic_rule(roic, wacc_est)
+    if is_financial(info):
+        method_warning = ("⚠ 金融業（銀行、保險、券商等）：債務是業務原料而非融資，FCFF 與 WACC 的定義並不適用；"
+                          "此結果只作參考（決定 D5），應以 DDM／剩餘收益／P/B–ROE 估值（開發中）。")
+        gaps.insert(0, method_warning)
+    else:
+        method_warning = None
 
     # ---- forecast paths (rules), then optional AI proposal
     n = 10
-    terminal_g = min(mk["terminal_g"], float(snap["rf"]["value"]))
+    terminal_g = min(TERMINAL_G_BY_CCY.get(model_ccy, mk["terminal_g"]), float(snap["rf"]["value"]))
     rev_est = fund.get("rev_est") or {}
     g0 = g1 = None
     cons_note = "Yahoo 無營收一致預期，採用歷史增長。"
@@ -462,7 +586,6 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     # revenue vs D&A 7.5% gave a 4.28 fair value against a 69.2 price). Fade the
     # ratio towards the steady state implied by the engine's own terminal
     # formula: capex% = D&A% + (g / RONIC) × margin − ΔNWC% × g.
-    ronic = 0.12
     steady_capex_pct = da_pct + (terminal_g / ronic) * max(m0, 0.0) - nwc_pct * terminal_g
     steady_capex_pct = max(steady_capex_pct, da_pct * 0.8)
     if cpx_pct > steady_capex_pct + 0.01:
@@ -493,7 +616,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
                           "ebit_margin": round(m0, 4), "tax_rate": round(tax, 4),
                           "da_pct_revenue": round(da_pct, 4), "capex_pct_revenue": round(cpx_pct, 4)},
             "history": [{"date": d, "revenue_m": r / 1e6, "ebit_margin":
-                         round((_val(is_a, d, "EBIT", "Operating Income") or 0) / r, 4)} for d, r in hist_rev],
+                         round((_op_income(is_a, d)[0] or 0) / r, 4)} for d, r in hist_rev],
             "consensus": rev_est, "rules_proposal": {"revenue_growth": growths, "ebit_margins": margins},
         }
         try:
@@ -552,15 +675,37 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
                        "basis": f"市場數據：{bs0} 總債務（含資本租賃）", "source_name": "Yahoo Finance balance sheet",
                        "url": _url(ticker, "balance-sheet"), "data_date": bs0})
     if dtl:
-        bridge.append({"item": "遞延稅項負債", "value": dtl / 1e6, "sign": "-",
-                       "basis": f"市場數據：{bs0} 非流動遞延稅負債", "source_name": "Yahoo Finance balance sheet",
-                       "url": _url(ticker, "balance-sheet"), "data_date": bs0})
+        gaps.append(f"遞延稅項負債 {dtl / 1e6:,.0f} 百萬未在橋接扣減：經營性遞延稅屬權益等價項（McKinsey），"
+                    "Damodaran 亦不扣減；若預期在可見將來以現金清償，應人工扣減。")
     if nci:
         bridge.append({"item": "非控股權益", "value": abs(nci) / 1e6, "sign": "+" if nci < 0 else "-",
                        "basis": f"市場數據：{bs0} 非控股權益 {nci / 1e6:.3f}m",
                        "source_name": "Yahoo Finance balance sheet", "url": _url(ticker, "balance-sheet"),
                        "data_date": bs0})
 
+    if lt_eq:
+        bridge.append({"item": "聯營及合營公司投資（帳面）", "value": abs(lt_eq) / 1e6, "sign": "+",
+                       "basis": f"市場數據：{bs0} 長期股權投資（聯營＋合營），帳面值作市值近似；其收益不在營業利潤內", "source_name": "Yahoo Finance balance sheet",
+                       "url": _url(ticker, "balance-sheet"), "data_date": bs0})
+    if fin_assets:
+        bridge.append({"item": "非流動金融資產（帳面）", "value": abs(fin_assets) / 1e6, "sign": "+",
+                       "basis": f"市場數據：{bs0} 非流動金融資產投資，帳面值作市值近似", "source_name": "Yahoo Finance balance sheet",
+                       "url": _url(ticker, "balance-sheet"), "data_date": bs0})
+    if pref:
+        bridge.append({"item": "優先股", "value": abs(pref) / 1e6, "sign": "-",
+                       "basis": f"市場數據：{bs0} 優先股權益，屬非普通股東權益", "source_name": "Yahoo Finance balance sheet",
+                       "url": _url(ticker, "balance-sheet"), "data_date": bs0})
+    if pension:
+        bridge.append({"item": "退休金及離職後福利負債", "value": abs(pension) / 1e6, "sign": "-",
+                       "basis": f"市場數據：{bs0} 界定福利計劃淨負債（類債務項）", "source_name": "Yahoo Finance balance sheet",
+                       "url": _url(ticker, "balance-sheet"), "data_date": bs0})
+    if provisions and aro_industry:
+        bridge.append({"item": "長期準備（棄置／復原義務）", "value": abs(provisions) / 1e6, "sign": "-",
+                       "basis": f"市場數據：{bs0} 長期準備；{industry} 行業主要為資產棄置及環境復原義務，未來現金流出不在 FCFF 預測內，屬類債務項",
+                       "source_name": "Yahoo Finance balance sheet", "url": _url(ticker, "balance-sheet"), "data_date": bs0})
+    elif provisions:
+        gaps.append(f"長期準備 {provisions / 1e6:,.0f} 百萬未扣減：可能含經營性準備（如保修），其成本已在利潤內；"
+                    "若屬棄置、重組或訴訟等類債務項，應人工扣減。")
     gaps.append(
         f"預測自 {years[0]} 起（基準財年 {d0} 已入帳）；財年結算日按 {base_end.isoformat()} 推定，"
         "若公司改變年結日或已公布中期業績，須重跑。"
@@ -590,8 +735,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         "forecast_years_label": f"{years[0]}–{years[-1]}（10 年）",
         "horizon_rationale": "通用規則：10 年預測期後收斂至終值增長；未有公司特定周期判斷。",
         "shares_m": shares_m,
-        "shares_source": D(shares_m, f"市場數據：{bs0} 已發行股數 {shares / 1e6:.3f}m（Yahoo balance sheet）",
-                           "Yahoo Finance balance sheet", _url(ticker, "balance-sheet"), bs0),
+        "shares_source": D(shares_m, shares_basis, "Yahoo Finance statements", _url(ticker, "balance-sheet"), bs0),
         "debt_m": (debt or 0.0) / 1e6,
         "D_basis": f"市場數據：{bs0} 總債務 {((debt or 0) / 1e6):.3f}m（含資本租賃）",
         "D_source": "Yahoo Finance balance sheet", "D_url": _url(ticker, "balance-sheet"), "D_date": bs0,
@@ -600,9 +744,11 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         "kd_pre": D(kd, f"市場數據：利息費用 {interest / 1e6 if interest else 0:.3f}m ÷ 總債務 {(debt or 0) / 1e6:.3f}m ＝ {kd:.2%}"
                     if interest and debt else f"規則假設：Rf＋違約息差 ＝ {kd:.2%}",
                     "Yahoo Finance statements", _url(ticker, "financials"), d0),
-        "tax_rate": tax,
-        "tax_d": D(tax, f"市場數據：最近年度有效稅率 {tax:.2%}（Yahoo Tax Rate For Calcs／稅項÷稅前）",
-                   "Yahoo Finance statements", _url(ticker, "financials"), d0),
+        "tax_rate": marginal,
+        "tax_rates": rules.fade_levels(tax, marginal, n),
+        "tax_d": D(marginal, f"邊際稅率 {marginal:.2%}（{country or '未知地區'}法定稅率）：用於利息稅盾與 β 再槓桿；"
+                   f"NOPAT 由最近年度有效稅率 {tax:.2%} 逐年過渡至邊際稅率", MARGINAL_TAX_SOURCE,
+                   _url(ticker, "financials"), d0),
         "beta_reg": info.get("beta"),
         "beta_reg_url": _url(ticker, "key-statistics"),
         "beta_reg_date": snap.get("price_date") or "",
@@ -621,9 +767,9 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         "reinvestment_rationales": [re_note] * n,
         "row_sources": [_url(ticker, "financials"), _url(ticker, "balance-sheet"),
                         _url(ticker, "cash-flow"), _url(ticker, "analysis")],
-        "terminal_g": terminal_g, "ronic": 0.12,
+        "terminal_g": terminal_g, "ronic": ronic, "roic_hist": roic, "wacc_estimate": wacc_est,
         "g_rationale": f"終值 g＝{terminal_g:.2%}，不高於{model_ccy} Rf {float(snap['rf']['value']):.2%}；通用規則假設。",
-        "method_rationale": "價值驅動終值：RONIC＝12%（通用規則假設，非公司指引）。",
+        "method_rationale": f"價值驅動終值：{ronic_note}。",
         "tv_method": "value_driver",
         "bridge": bridge,
         "fx_rate": fx_model_to_mkt,
@@ -640,7 +786,8 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         "base_year": {
             "year": f"FY{base_end.year}", "year_end": d0, "currency": f"{model_ccy} millions",
             "revenue": rev / 1e6, "ebit": ebit / 1e6, "ebit_margin": m0, "da": (da or 0) / 1e6,
-            "capex": (capex or 0) / 1e6, "tax_rate_effective": tax, "bridge_date": bs0,
+            "capex": (capex or 0) / 1e6, "tax_rate_effective": tax, "tax_rate_marginal": marginal,
+            "roic_operating": roic, "bridge_date": bs0,
             "revenue_row": rev_name, "ebit_row": ebit_name,
             "sources": [_url(ticker, "financials"), _url(ticker, "balance-sheet")],
         },
@@ -663,6 +810,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         "generic_spec": True,
         "generic_industry": industry,
         "confidence": "low",
+        "method_warning": method_warning,
     }
 
 

@@ -69,6 +69,12 @@ def run_once() -> dict:
     from .services import market
 
     summary = market.update_all(session)
+    try:  # Method A's monthly ERP rides along with the daily job
+        from src.fetch import damodaran
+        r = damodaran.refresh_erp()
+        summary["erp"] = r.get("entry") if r.get("ok") else {"error": r.get("error")}
+    except Exception as exc:
+        summary["erp"] = {"error": f"{type(exc).__name__}: {exc}"}
     with session() as db:
         row = db.get(Setting, STATUS_KEY)
         if row is None:

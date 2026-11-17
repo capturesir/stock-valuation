@@ -89,14 +89,35 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
 
     # Rf
     _step("rf", "正在取得 10 年期政府債券孳息（無風險利率）…")
-    if ticker.endswith(".HK"):
-        rfd = rfmod.hk_10y(cfg)
+    builtin = ticker in ("NVDA", "1830.HK")
+    model_ccy = (info.get("financialCurrency") or snap.get("currency_yahoo") or "").upper()
+    if builtin or not model_ccy:
+        # built-in specs are calibrated on these; unchanged
+        rfd = rfmod.hk_10y(cfg) if ticker.endswith(".HK") else rfmod.ust_10y()
     else:
-        rfd = rfmod.ust_10y()
+        # Method A: Rf of the MODEL currency (the statements' currency), not of the listing —
+        # CNY cash flows discounted at a HKD or USD rate mix two inflation regimes
+        rfd = rfmod.for_currency(model_ccy, cfg)
+        if not rfd.get("ok"):
+            listing = rfmod.hk_10y(cfg) if ticker.endswith(".HK") else rfmod.ust_10y()
+            if listing.get("ok"):
+                snap["data_gaps"].append(
+                    f"未能取得模型貨幣 {model_ccy} 的無風險利率（{rfd.get('error')}），暫用上市地利率 "
+                    f"{listing.get('value', 0):.2%}；現金流貨幣與折現率貨幣不一致，理論價可信度低。")
+                snap["rf_currency_mismatch"] = True
+            rfd = listing
+        elif rfd.get("cross_check_warning"):
+            snap["data_gaps"].append("無風險利率：" + rfd["cross_check_warning"])
     (case_dir / "rf.json").write_text(json.dumps(rfd, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     if not rfd.get("ok"):
         raise RuntimeError(f"無法取得無風險利率：{rfd.get('error')}")
     snap["rf"] = rfd
+    # Method A: the ERP of the valuation month (fetched from Damodaran only when missing)
+    try:
+        from ..fetch import damodaran
+        damodaran.ensure_erp(valuation_date)
+    except Exception:  # the engine falls back to the latest known month and says so
+        pass
 
     # IB consensus from Yahoo only (no invented brokers)
     apt = fund.get("analyst_price_targets") if isinstance(fund.get("analyst_price_targets"), dict) else {}

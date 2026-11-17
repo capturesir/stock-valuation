@@ -65,7 +65,9 @@ def test_builds_spec_from_statements_only():
     assert spec["capex_floor_pct"] and spec["shares_floor_m"] > 0
     # provenance: numbers come from Yahoo rows, and the generic caveat is always listed
     assert spec["base_year"]["revenue"] == pytest.approx(398220.0)
-    assert spec["base_year"]["ebit"] == pytest.approx(176147.0)
+    # operating income, not Yahoo "EBIT" (176,147 = pretax + interest, carries non-operating items)
+    assert spec["base_year"]["ebit"] == pytest.approx(173402.0)
+    assert spec["base_year"]["ebit_row"] == "Operating Income"
     assert any("通用規格" in g for g in spec["data_gaps"])
 
 
@@ -214,20 +216,74 @@ def test_market_code_from_suffix():
     assert G.market_code("600519.SS") == "CN"
 
 
-def test_bridge_deducts_minority_interest_and_deferred_tax():
-    """Non-controlling interest and DTL must reach the EV -> equity bridge.
+def test_bridge_follows_the_standard_ev_to_equity_walk():
+    """EV -> equity (McKinsey / CFA): add non-operating assets, deduct debt and debt equivalents.
 
-    _first() was called with a bare string, iterated it character by character,
-    never found either row, and CNOOC's 2.4bn NCI and 13.6bn DTL (CNY) were
-    silently left out, overstating the per-share value.
+    CNOOC: associates + JVs 45,819 and non-current financial assets 26,587 were missing (their income
+    is not in operating income); long-term provisions 116,039 are mostly abandonment obligations for an
+    oil producer (debt-like); NCI 2,434 is deducted. Book DTL 13,589 is no longer deducted.
     """
     spec = G.build_generic_spec(_snap(), _fund(), {}, use_llm=False)
     bridge = {b["item"]: b for b in spec["bridge"]}
 
-    assert bridge["非控股權益"]["sign"] == "-"
-    assert bridge["非控股權益"]["value"] == pytest.approx(2434.0)
-    assert bridge["遞延稅項負債"]["sign"] == "-"
-    assert bridge["遞延稅項負債"]["value"] == pytest.approx(13589.0)
+    assert bridge["非控股權益"]["sign"] == "-" and bridge["非控股權益"]["value"] == pytest.approx(2434.0)
+    assert bridge["聯營及合營公司投資（帳面）"]["sign"] == "+"
+    assert bridge["聯營及合營公司投資（帳面）"]["value"] == pytest.approx(45819.0)
+    assert bridge["非流動金融資產（帳面）"]["value"] == pytest.approx(26587.0)
+    assert bridge["長期準備（棄置／復原義務）"]["sign"] == "-"
+    assert bridge["長期準備（棄置／復原義務）"]["value"] == pytest.approx(116039.0)
+    assert "遞延稅項負債" not in bridge
+    assert any("遞延稅項負債" in g and "未在橋接扣減" in g for g in spec["data_gaps"])
+
+
+def test_provisions_outside_extractive_industries_are_reported_not_deducted(monkeypatch):
+    monkeypatch.setattr(G, "damodaran_betas", lambda: {"Auto & Truck": (1.0, 1.0)})
+    fund = _fund()
+    fund["info"]["industry"] = "Auto Manufacturers"
+    snap = dict(_snap(), ticker="ZZAUTO.HK")          # 0883.HK is pre-registered as Oil/Gas in method A
+    spec = G.build_generic_spec(snap, fund, {}, use_llm=False)
+    assert not any(b["item"].startswith("長期準備") for b in spec["bridge"])
+    assert any(g.startswith("長期準備") and "未扣減" in g for g in spec["data_gaps"])
+
+
+def test_shares_include_reported_dilution():
+    fund = _fund()
+    d0 = sorted(fund["is_a"])[-1]
+    fund["is_a"][d0]["Diluted Average Shares"] = fund["is_a"][d0]["Basic Average Shares"] + 500e6
+    spec = G.build_generic_spec(_snap(), fund, {}, use_llm=False)
+    basic = sorted(fund["bs_a"].items())[-1][1]["Ordinary Shares Number"] / 1e6
+    assert spec["shares_m"] == pytest.approx(basic + 500.0)
+    assert "攤薄" in spec["shares_source"]["basis"]
+
+
+def test_tax_moves_from_effective_to_marginal():
+    spec = G.build_generic_spec(_snap(), _fund(), {}, use_llm=False)   # CNOOC: China 25%, effective 28.0%
+    assert spec["tax_rates"][0] == pytest.approx(0.279953, rel=1e-4)
+    assert spec["tax_rates"][-1] == pytest.approx(0.25)
+    assert spec["tax_rate"] == pytest.approx(0.25) and spec["tax_d"]["value"] == pytest.approx(0.25)
+
+
+def test_crp_follows_the_reporting_currency():
+    spec = G.build_generic_spec(_snap(), _fund(), {}, use_llm=False)   # HK listing, CNY statements
+    assert spec["crp"]["value"] == pytest.approx(G.MA.CRP["CN"][0])
+    assert any("國家風險按報表貨幣" in g for g in spec["data_gaps"])
+
+
+def test_ronic_rule_fades_excess_returns():
+    assert G.ronic_rule(None, 0.09)[0] == pytest.approx(0.09)
+    assert G.ronic_rule(0.07, 0.09)[0] == pytest.approx(0.09)
+    assert G.ronic_rule(0.15, 0.09)[0] == pytest.approx(0.12)          # half of a 6pp excess
+    assert G.ronic_rule(0.60, 0.09)[0] == pytest.approx(0.14)          # excess capped at 10pp
+    spec = G.build_generic_spec(_snap(), _fund(), {}, use_llm=False)
+    assert spec["ronic"] >= spec["wacc_estimate"] and spec["roic_hist"] > 0
+
+
+def test_banks_get_the_d5_warning(monkeypatch):
+    monkeypatch.setattr(G, "damodaran_betas", lambda: {"Bank (Money Center)": (0.6, 0.6)})
+    fund = _fund()
+    fund["info"].update(sector="Financial Services", industry="Banks - Diversified")
+    spec = G.build_generic_spec(dict(_snap(), ticker="ZZBANK.HK"), fund, {}, use_llm=False)
+    assert spec["method_warning"] and "金融業" in spec["data_gaps"][0]
 
 
 def test_first_accepts_a_single_row_name():
