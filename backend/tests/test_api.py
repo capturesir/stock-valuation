@@ -91,13 +91,16 @@ def test_watchlist_add_list_remove(client):
     assert r.status_code == 404 and r.json()["detail"]["code"] == "not_in_watchlist"
 
 
-def test_api_key_is_write_only_and_encrypted(configured, tmp_path):
+def test_api_key_is_write_only_and_encrypted(configured):
     body = configured.get("/api/v1/settings/ai").json()
     assert body["configured"] is True
     assert body["api_key"] == {"set": True, "length": 22, "tail": "abcd"}
     assert "sk-test" not in json.dumps(body)
-    import sqlite3
-    raw = sqlite3.connect(tmp_path / "test.db").execute("select value from settings where key='ai'").fetchone()[0]
+    from sqlalchemy import text
+
+    from backend.app.db import session
+    with session() as db:
+        raw = json.dumps(db.execute(text("select value from settings where key='ai'")).scalar_one())
     assert "sk-test" not in raw and "api_key_enc" in raw
     # an empty key keeps the old one
     configured.put("/api/v1/settings/ai", json={"api_key": "", "model": "deepseek-flash"})
@@ -266,8 +269,8 @@ def test_run_is_recorded_under_the_requested_date(configured, monkeypatch):
 
 
 def test_legacy_run_time_keeps_its_offset(client, tmp_path):
-    # v1 logged local (Macau) wall time without an offset; SQLite stores no offset either, so
-    # it must come back as the same wall time, not shifted by 8 hours
+    # v1 logged local (Macau) wall time without an offset; it must come back as the same
+    # wall time, not shifted by 8 hours
     import json as _json
 
     from backend.app.db import session
@@ -283,3 +286,28 @@ def test_legacy_run_time_keeps_its_offset(client, tmp_path):
         assert import_legacy(db, out_dir=tmp_path / "out") == 1
     run = client.get("/api/v1/stocks/AAA/valuations").json()["latest"]
     assert run["run_at"] == "2026-11-17T21:40:42+08:00"
+
+
+def test_legacy_import_counts_one_run_once(client, tmp_path):
+    # a built-in-spec run is written to out/<run date>_<ticker>/ and to the v1 run log under the
+    # spec's fixed review date; both describe the same run and must be imported once
+    import json as _json
+    import shutil
+
+    from backend.app import ROOT
+    from backend.app.db import session
+    from backend.app.services.legacy import import_legacy
+
+    out = tmp_path / "out"
+    src = ROOT / "out" / "2026-11-11_NVDA"
+    shutil.copytree(src, out / "2026-11-18_NVDA")
+    for f in list((out / "2026-11-18_NVDA").iterdir()):
+        f.rename(f.with_name(f.name.replace("2026-11-11", "2026-11-18")))
+    calc = _json.loads((src / "2026-11-11_NVDA.json").read_text(encoding="utf-8"))
+    (out / "history").mkdir()
+    (out / "history" / "NVDA.json").write_text(_json.dumps([{
+        "ticker": "NVDA", "run_at": "2026-11-18T00:37:52", "valuation_date": "2026-11-11",
+        "price": calc["price"], "price_date": calc["price_date"], "fair_value": calc["fair_value_per_share"]}]),
+        encoding="utf-8")
+    with session() as db:
+        assert import_legacy(db, out_dir=out) == 1

@@ -2,6 +2,14 @@
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build db redis api worker
 #   cd frontend && pnpm dev        (Vite on :5173 proxies /api to :8000)
 services:
+  # Published on localhost so a native `uvicorn` and `pytest` can use them too:
+  #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db redis
+  db:
+    ports:
+      - "127.0.0.1:${DEV_DB_PORT:-5432}:5432"
+  redis:
+    ports:
+      - "127.0.0.1:${DEV_REDIS_PORT:-6379}:6379"
   api:
     command: ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "backend", "--reload-dir", "src"]
     ports:

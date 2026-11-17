@@ -1,11 +1,11 @@
-"""Database engine and session. PostgreSQL in Docker, SQLite for local dev and tests."""
+"""Database engine and session. PostgreSQL only (dev, tests and production)."""
 from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator, Optional
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -23,15 +23,7 @@ _Session: Optional[sessionmaker] = None
 def engine() -> Engine:
     global _engine, _Session
     if _engine is None:
-        url = get_settings().database_url
-        kw = {"pool_pre_ping": True}
-        if url.startswith("sqlite"):
-            kw["connect_args"] = {"check_same_thread": False}
-        _engine = create_engine(url, **kw)
-        if url.startswith("sqlite"):
-            @event.listens_for(_engine, "connect")
-            def _fk_on(dbapi_conn, _):  # SQLite needs foreign keys switched on per connection
-                dbapi_conn.execute("PRAGMA foreign_keys=ON")
+        _engine = create_engine(get_settings().database_url, pool_pre_ping=True)
         _Session = sessionmaker(bind=_engine, expire_on_commit=False)
     return _engine
 

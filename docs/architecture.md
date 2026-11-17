@@ -42,7 +42,7 @@
 | API 合約 | **OpenAPI 3.1**（`/api/v1/openapi.json`），前端用 `openapi-typescript` 產生型別 | 一份合約，網頁、App、小程序共用同一套型別；改 API 時型別檢查會指出受影響的前端 | 手寫各平台型別 |
 | 長時間工作 | **Redis + arq worker** | 一次估值約 30–90 秒，不能卡住 API；worker 可獨立擴充；取消訊號經 Redis 傳遞 | Celery：較重；API 內執行：多前端同時用會互相阻塞 |
 | 進度推送 | **SSE（Server-Sent Events）＋輪詢後備** | SSE 走普通 HTTP，Caddy 與瀏覽器原生支援；小程序不支援 SSE，改每秒輪詢同一個工作狀態端點 | WebSocket：要另外處理重連與代理 |
-| 資料庫 | **PostgreSQL 16（Docker）／SQLite（本機開發）**，SQLAlchemy 2 + Alembic 遷移 | 多前端、多使用者時需要真正的資料庫；同一套模型兩者通用，本機開發不必裝 Postgres | 只用 JSON 檔：無法查詢、無法並行 |
+| 資料庫 | **PostgreSQL 16**（正式、本機開發、自動測試一律使用），SQLAlchemy 2 + Alembic 遷移 | 多前端、多用戶同時寫入；開發與正式用同一種資料庫，避免只在某一種資料庫出現的錯誤（決定 D3） | 只用 JSON 檔：無法查詢、無法並行；SQLite：多程序寫入會鎖檔，且不保存時區 |
 | 網頁前端 | **React 18 + TypeScript + Vite** | 生態最大；Taro 與 React Native 也用 React 語法，邏輯與型別可共用 | Vue：小程序有 uni-app，但 App 端選擇較少 |
 | 資料請求 | **TanStack Query** | 快取、重試、背景更新、離線狀態都內建 | 自寫 fetch 狀態管理 |
 | 圖表 | **ECharts** | 同一套圖表設定可用於網頁、React Native 與微信小程序（echarts-for-weixin），走勢圖不必寫三次 | Recharts／D3：沒有小程序版本 |
@@ -63,7 +63,7 @@ stock-valuation/
 ├── VERSION                     # 唯一版本來源（2.0.0-alpha.1）
 ├── CHANGELOG.md
 ├── INSTALL.md                  # 安裝說明（Docker／本機開發）
-├── var/                        # 本機執行狀態（SQLite、金鑰），不進版本控制
+├── var/                        # 本機執行狀態（加密金鑰、上傳檔），不進版本控制
 ├── docker-compose.yml          # 正式／本機一條指令啟動
 ├── docker-compose.dev.yml      # 開發用覆寫（熱重載、開放埠）
 ├── .env.example                # Docker 環境變數範例

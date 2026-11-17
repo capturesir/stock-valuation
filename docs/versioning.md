@@ -51,7 +51,7 @@ docker compose up -d --build
 
 - 結構變更一律用 Alembic：先改 `backend/app/models.py`，再產生遷移檔：
   ```bash
-  DATABASE_URL=sqlite:///var/valuation.db alembic -c backend/alembic.ini revision --autogenerate -m "說明"
+  alembic -c backend/alembic.ini revision --autogenerate -m "說明"   # 連到本機開發用 PostgreSQL（見 INSTALL.md B1）
   ```
 - 檢查產生的檔案（特別是改名欄位，Alembic 會誤判為刪除再新增）。
 - API 與 worker 啟動時會自動升級到最新版本（`init_db()`），不需要人手執行。

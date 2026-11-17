@@ -74,7 +74,7 @@ def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str =
         calc_json_path=calc_path, xlsx_path=xlsx_path, data_gaps=calc.get("data_gaps") or [],
     )
     if run_at is not None:
-        # SQLite drops the offset and the API reads naive values back as UTC, so store UTC
+        # store UTC so every row reads back the same way, whatever offset the source used
         run.run_at = run_at.astimezone(dt.timezone.utc) if run_at.tzinfo else run_at
     for s in calc.get("scenarios") or []:
         key = SCENARIOS.get(s.get("name"))

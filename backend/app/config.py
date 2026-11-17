@@ -50,15 +50,28 @@ def _secret(data_dir: Path) -> str:
     return key
 
 
+def _database_url() -> str:
+    """DATABASE_URL, or a local PostgreSQL built from the same POSTGRES_* values Docker uses.
+    PostgreSQL is the only supported database (decision D3): dev, tests and production alike."""
+    url = _env("DATABASE_URL")
+    if url is None:
+        user, pw = _env("POSTGRES_USER", "valuation"), _env("POSTGRES_PASSWORD", "change-me")
+        host, port = _env("POSTGRES_HOST", "localhost"), _env("POSTGRES_PORT", "5432")
+        url = f"postgresql+psycopg://{user}:{pw}@{host}:{port}/{_env('POSTGRES_DB', 'valuation')}"
+    if not url.startswith("postgresql"):
+        raise RuntimeError(f"只支援 PostgreSQL，DATABASE_URL 必須以 postgresql 開頭（目前為 {url.split(':', 1)[0]}）。")
+    return url
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    # var/ (git-ignored) holds the database and secret key; data/ is versioned source data
+    # var/ (git-ignored) holds the generated secret key and uploads; data/ is versioned source data
     data_dir = Path(_env("APP_DATA_DIR") or (ROOT / "var"))
     data_dir.mkdir(parents=True, exist_ok=True)
     origins = [o.strip() for o in (_env("CORS_ORIGINS", "") or "").split(",") if o.strip()]
     return Settings(
         data_dir=data_dir,
-        database_url=_env("DATABASE_URL") or f"sqlite:///{(data_dir / 'valuation.db').as_posix()}",
+        database_url=_database_url(),
         redis_url=_env("REDIS_URL"),
         api_token=_env("APP_API_TOKEN"),
         secret_key=_secret(data_dir),

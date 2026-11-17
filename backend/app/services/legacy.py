@@ -17,8 +17,10 @@ FOLDER_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_(.+)$")
 MARK = "legacy_import"
 
 
-def _key(ticker, date, fair, price) -> tuple:
-    return (ticker, str(date)[:10], round(float(fair or 0), 4), round(float(price or 0), 4))
+def _key(ticker, price_date, fair, price) -> tuple:
+    """Same run = same ticker, price date, price and fair value. The valuation date is not used:
+    built-in specs report a fixed review date, so one run can appear under two dates."""
+    return (ticker, str(price_date)[:10], round(float(fair or 0), 4), round(float(price or 0), 4))
 
 
 def _read(path: Path):
@@ -32,7 +34,7 @@ def import_legacy(db: Session, out_dir: Path = ROOT / "out", force: bool = False
     """Returns the number of runs imported. Idempotent: values already present are skipped."""
     if not force and db.get(Setting, MARK) is not None:
         return 0
-    seen = {_key(r.ticker, r.valuation_date, r.composite_value, r.price)
+    seen = {_key(r.ticker, r.price_date or r.valuation_date, r.composite_value, r.price)
             for r in db.scalars(select(Run).where(Run.status == "done"))}
     added = 0
 
@@ -46,7 +48,8 @@ def import_legacy(db: Session, out_dir: Path = ROOT / "out", force: bool = False
         if not isinstance(calc, dict) or calc.get("fair_value_per_share") is None:
             continue
         meta = _read(folder / "run_meta.json") or {}
-        k = _key(calc.get("ticker", ticker), date, calc["fair_value_per_share"], calc.get("price"))
+        k = _key(calc.get("ticker", ticker), calc.get("price_date") or date, calc["fair_value_per_share"],
+                 calc.get("price"))
         if k in seen:
             continue
         calc = dict(calc, ticker=calc.get("ticker") or ticker, valuation_date=date)
@@ -66,7 +69,7 @@ def import_legacy(db: Session, out_dir: Path = ROOT / "out", force: bool = False
             if r.get("fair_value") is None or r.get("price") is None:
                 continue
             ticker = r.get("ticker") or log.stem
-            k = _key(ticker, r.get("valuation_date"), r["fair_value"], r["price"])
+            k = _key(ticker, r.get("price_date") or r.get("valuation_date"), r["fair_value"], r["price"])
             if k in seen:
                 continue
             calc = {

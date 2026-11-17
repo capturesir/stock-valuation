@@ -97,7 +97,13 @@ docker compose down -v           # 連同所有資料一併刪除（無法復原
 
 - Python 3.12 以上
 - Node.js 20 以上，並執行 `corepack enable` 啟用 pnpm
-- （可選）Redis 7：不裝的話，估值在 API 程序內排隊執行
+- PostgreSQL 16：本系統只支援 PostgreSQL（開發、測試、正式環境相同）。最簡單是用 Docker 只啟動資料庫：
+  ```bash
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db redis
+  ```
+  資料庫與 Redis 會開在本機 `127.0.0.1:5432`、`127.0.0.1:6379`（埠號可用 `DEV_DB_PORT`、`DEV_REDIS_PORT` 更改）。
+  也可以自行安裝 PostgreSQL 16，再設定 `DATABASE_URL`。
+- （可選）Redis 7：不設定 `REDIS_URL` 的話，估值在 API 程序內排隊執行
 
 ### B2. 後端
 
@@ -106,7 +112,9 @@ python -m venv .venv
 source .venv/bin/activate              # Windows：.venv\Scripts\activate
 pip install -r backend/requirements.txt
 
-# SQLite 資料庫與金鑰會自動建立在 var/（已列入 .gitignore）
+# 未設定 DATABASE_URL 時，連到 localhost:5432，帳號、密碼、資料庫名稱取自 POSTGRES_USER／
+# POSTGRES_PASSWORD／POSTGRES_DB（預設 valuation／change-me／valuation，與上面的 Docker 資料庫相同）。
+# 加密金鑰在未設定 APP_SECRET_KEY 時自動建立在 var/（已列入 .gitignore）
 uvicorn backend.app.main:app --port 8000 --reload
 ```
 
@@ -151,7 +159,7 @@ python -m src.web.app                                            # v1 網頁 htt
 
 ```bash
 python -m pytest -q                    # v1 引擎與匯出：143 項
-python -m pytest backend/tests -q      # v2 API：21 項
+python -m pytest backend/tests -q      # v2 API（需要 PostgreSQL，見 B1；或設定 TEST_DATABASE_URL）
 cd frontend && pnpm typecheck && pnpm test && pnpm build
 ```
 
@@ -173,7 +181,7 @@ cd frontend && pnpm typecheck && pnpm test && pnpm build
 
 ## E. 這個版本的驗證範圍
 
-- ✅ 後端 21 項測試（SQLite）、v1 的 143 項測試全部通過。
+- ✅ 後端 21 項測試、v1 的 143 項測試全部通過。（2.0.0-alpha.2 起後端測試改在 PostgreSQL 上執行。）
 - ✅ 在 PostgreSQL 16 上執行資料庫遷移，並跑過主要 API 流程。
 - ✅ Redis＋獨立 arq worker＋API 三個程序串連，SSE 進度串流正常。
 - ✅ 前端型別檢查與正式建置通過；以 Chrome 實測桌面、手機、English、简体中文畫面，主控台沒有錯誤。
