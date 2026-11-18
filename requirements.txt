@@ -1,5 +1,5 @@
 # Python 3.11+ recommended (tested on 3.13)
-yfinance>=1.0
+yfinance>=1.8.0
 requests>=2.32
 # Explicit CA bundle for the local Mac/python.org 3.10 case where cert.pem is
 # missing; src/fetch/httputil.py and src/llm/client.py prefer certifi.
