@@ -50,6 +50,9 @@
     數據源斷線時不再誤報「找不到代號」，改為 503 並提示稍後再試。管理員可在「數據源與佇列狀態」查看各數據源與佇列。
 - **CI 品質關卡**：ruff（pyflakes）、pip-audit、`pnpm audit --prod`、資料庫遷移升級／回退／再升級測試、CodeQL 每週與每個 PR 掃描、Dependabot 每週更新依賴；
   同一 PR 的舊 CI 會被新推送取消。開發改為 PR 流程（見 `docs/versioning.md` §5）。
+  Dependabot 只建議發佈滿 7 天的版本（cooldown），與 pnpm 的 minimumReleaseAge 一致（首次前端更新曾因間接依賴發佈未滿一天而失敗）；
+  小版本與修補版本按生態系合併成一個 PR，大版本逐個審查；GitHub Actions 合併成一個 PR；Docker 基礎映像只自動更新修補版本
+  （正式映像的 Python／Node 版本必須與 CI 測試的版本一致，升級要與 CI 一起刻意進行）。
 - **架構文件** `docs/財報數據與估值架構.md`：四層財報數據管線、版本化對照與檢查規則、會計準則變更（IFRS 18、ASU 2024-03 等）的處理、
   調整的三種來源與留痕、估值方法統一介面，以及抽離為 `libs/sv_data`、`libs/sv_valuation`、`libs/sv_market` 的遷移步驟。
 - **查詢先顯示公司資料**：輸入代號後，個股頁先顯示公司名稱、交易所、交易與財報貨幣、行業、國家、最新收市價、52 週範圍、市值、網站與業務簡介，方便核實代號；
