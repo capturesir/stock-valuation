@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import csv
-import datetime as dt
 import json
-import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -64,7 +62,6 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     out_dir.mkdir(parents=True, exist_ok=True)
     case_dir.mkdir(parents=True, exist_ok=True)
 
-    log = {"ticker": ticker, "valuation_date": valuation_date, "steps": []}
     snap = {"ticker": ticker, "data_gaps": [], "valuation_date": valuation_date}
 
     # prices

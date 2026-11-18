@@ -72,9 +72,12 @@ class YahooSource:
     def history(self, ticker: str, start: Optional[dt.date] = None) -> SourceHistory:
         import yfinance as yf
 
+        from src.fetch import guard
+
         t = yf.Ticker(ticker)
         kw = {"start": start.isoformat()} if start else {"period": "max"}
-        df = t.history(auto_adjust=False, actions=True, raise_errors=True, **kw)
+        with guard.call("yahoo"):
+            df = t.history(auto_adjust=False, actions=True, raise_errors=True, **kw)
         md = getattr(t, "history_metadata", None) or {}
         meta = {"name": md.get("longName") or md.get("shortName"), "exchange": md.get("fullExchangeName") or md.get("exchangeName"),
                 "currency": md.get("currency"), "quote_type": md.get("instrumentType"),
@@ -201,7 +204,32 @@ def track(db: Session, ticker: str) -> Security:
 
 def sync(db: Session, ticker: str, full: bool = False, now: Optional[dt.datetime] = None) -> dict:
     """Backfill the whole history the first time (or with ``full``), otherwise re-read the last
-    INCREMENTAL_DAYS and append. Returns a summary; errors are recorded on the security and raised."""
+    INCREMENTAL_DAYS and append. Returns a summary; errors are recorded on the security and raised.
+
+    One sync per ticker at a time across all processes: a second caller (another user opening the same
+    stock, the scheduler) waits for the running one and then reads what it stored."""
+    from src.infra.kv import kv
+
+    store = kv()
+    if not store.set(f"lk:sync:{ticker}", "1", ttl=300, nx=True):
+        import time as _t
+        deadline = _t.monotonic() + 60
+        while store.get(f"lk:sync:{ticker}") and _t.monotonic() < deadline:
+            _t.sleep(0.2)
+        db.expire_all()
+        sec = db.get(Security, ticker)
+        return {"ticker": ticker, "mode": "joined", "bars_added": 0, "bars_revised": 0, "actions_added": 0,
+                "actions_revised": 0, "first_date": _iso(sec.first_date) if sec else None,
+                "last_date": _iso(sec.last_date) if sec else None, "bars": sec.bars if sec else 0}
+    try:
+        out = _sync(db, ticker, full, now)
+        db.commit()                      # visible to whoever waited on the lock
+        return out
+    finally:
+        store.delete(f"lk:sync:{ticker}")
+
+
+def _sync(db: Session, ticker: str, full: bool, now: Optional[dt.datetime]) -> dict:
     src = get_source()
     sec = track(db, ticker)
     first = full or sec.backfilled_at is None or sec.last_date is None

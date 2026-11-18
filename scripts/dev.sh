@@ -38,8 +38,9 @@ db_up() {
 }
 
 deps() {
-  "$PY" -c "import fastapi, sqlalchemy, argon2" 2>/dev/null || {
+  "$PY" -c "import fastapi, sqlalchemy, argon2, multipart, PIL" 2>/dev/null || {
     echo "安裝後端套件…"; "$PY" -m pip install -q -r backend/requirements.txt; }
+  "$PY" -m ruff --version >/dev/null 2>&1 || "$PY" -m pip install -q ruff
   need pnpm "請執行 corepack enable（Node.js 20 以上）"
   [[ -d frontend/node_modules ]] || (cd frontend && pnpm install --frozen-lockfile)
 }
@@ -72,6 +73,7 @@ case "${1:-up}" in
     ;;
   test)
     deps; db_up
+    echo "== lint";       "$BIN/ruff" check . 2>/dev/null || "$PY" -m ruff check .
     echo "== v1 引擎";    "$PY" -m pytest -q
     echo "== v2 API";     "$PY" -m pytest backend/tests -q
     echo "== 前端";       (cd frontend && pnpm build:tokens >/dev/null && pnpm typecheck && pnpm test && pnpm build >/dev/null && echo "前端建置 ✓")

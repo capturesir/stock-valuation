@@ -391,7 +391,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 開始估值（背景執行） */
+        /** 開始估值（背景執行；同一代號正在估值時加入該工作） */
         post: operations["start_api_v1_valuations_post"];
         delete?: never;
         options?: never;
@@ -622,6 +622,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 請求與估值佇列的限制（管理員） */
+        get: operations["get_limits_api_v1_admin_limits_get"];
+        /** 修改限制（管理員；超出範圍的值會被收窄） */
+        put: operations["put_limits_api_v1_admin_limits_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 數據源熔斷狀態與估值佇列（管理員） */
+        get: operations["ops_status_api_v1_admin_ops_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -844,6 +879,19 @@ export interface components {
             note: string | null;
             /** Version */
             version: number;
+            /**
+             * Joined
+             * @description 同一代號已在估值：此回應是加入那個工作，而非新開一個
+             * @default false
+             */
+            joined: boolean;
+            /**
+             * Queue Position
+             * @description 排隊中時，前面還有幾個工作＋1
+             */
+            queue_position?: number | null;
+            /** Requested By */
+            requested_by?: string | null;
         };
         /** JobStep */
         JobStep: {
@@ -889,6 +937,40 @@ export interface components {
             length: number;
             /** Tail */
             tail: string | null;
+        };
+        /** LimitsIn */
+        LimitsIn: {
+            /** Lookup Per Minute */
+            lookup_per_minute?: number | null;
+            /** Prices Per Minute */
+            prices_per_minute?: number | null;
+            /** Valuations Per Hour */
+            valuations_per_hour?: number | null;
+            /** Concurrent Valuations Per User */
+            concurrent_valuations_per_user?: number | null;
+            /** Queue Max */
+            queue_max?: number | null;
+            /** Revalue Cooldown Hours */
+            revalue_cooldown_hours?: number | null;
+        };
+        /** LimitsOut */
+        LimitsOut: {
+            /** Lookup Per Minute */
+            lookup_per_minute: number;
+            /** Prices Per Minute */
+            prices_per_minute: number;
+            /** Valuations Per Hour */
+            valuations_per_hour: number;
+            /** Concurrent Valuations Per User */
+            concurrent_valuations_per_user: number;
+            /** Queue Max */
+            queue_max: number;
+            /** Revalue Cooldown Hours */
+            revalue_cooldown_hours: number;
+            /** Defaults */
+            defaults: {
+                [key: string]: unknown;
+            };
         };
         /** LoginIn */
         LoginIn: {
@@ -947,6 +1029,17 @@ export interface components {
             value: number | null;
             /** Weight */
             weight?: number | null;
+        };
+        /** OpsStatus */
+        OpsStatus: {
+            /** Providers */
+            providers: {
+                [key: string]: unknown;
+            };
+            /** Queue */
+            queue: {
+                [key: string]: unknown;
+            };
         };
         /** PasswordIn */
         PasswordIn: {
@@ -1273,6 +1366,17 @@ export interface components {
              * @default false
              */
             valued: boolean;
+            /**
+             * Stale
+             * @description 數據源暫時無法連線，這是之前保存的資料
+             * @default false
+             */
+            stale: boolean;
+            /**
+             * As Of
+             * @description stale 時：資料保存的時間（Unix 秒）
+             */
+            as_of?: number | null;
         };
         /** StockValuations */
         StockValuations: {
@@ -1395,6 +1499,12 @@ export interface components {
              * @description 本次上限；省略＝設定頁的每次上限
              */
             budget_usd?: number | null;
+            /**
+             * Force
+             * @description 同一代號、日期、AI 模式近期已估值時仍要重算
+             * @default false
+             */
+            force: boolean;
         };
         /** WatchlistEntry */
         WatchlistEntry: {
@@ -2270,6 +2380,13 @@ export interface operations {
             };
         };
         responses: {
+            /** @description 同一代號已在估值：加入該工作（joined=true） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Successful Response */
             202: {
                 headers: {
@@ -2279,6 +2396,13 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
+            /** @description 近期已用相同條件估值（recent_valuation），可帶 force=true 重算 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2287,6 +2411,20 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+            /** @description 超出每人估值次數或同時數量（rate_limited／too_many_jobs） */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 估值佇列已滿（queue_full） */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2782,6 +2920,106 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_limits_api_v1_admin_limits_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_limits_api_v1_admin_limits_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LimitsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LimitsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ops_status_api_v1_admin_ops_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsStatus"];
                 };
             };
             /** @description Validation Error */

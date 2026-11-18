@@ -33,24 +33,37 @@ def get(url: str, headers: Optional[dict] = None, timeout: float = 30, retries: 
     now convert it into a normal (status=0, error body) tuple so callers can
     report a readable message instead of crashing the request.
     """
+    from . import guard
+
     h = {"User-Agent": DEFAULT_UA, "Accept": "*/*"}
     if headers:
         h.update(headers)
+    provider = guard.provider_for(url)
+    try:
+        guard.check_open(provider)          # paused after repeated failures: answer at once
+    except guard.ProviderUnavailable as e:
+        return 0, json.dumps({"error": str(e)}).encode("utf-8"), {}
     last = None
     for i in range(retries):
         try:
+            guard.acquire(provider)          # every attempt, retries included, takes a paced slot
             req = urllib.request.Request(url, headers=h, method="GET")
             with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
+                guard.record(provider, True)
                 return resp.status, resp.read(), dict(resp.headers)
+        except guard.ProviderUnavailable as e:
+            return 0, json.dumps({"error": str(e)}).encode("utf-8"), {}
         except urllib.error.HTTPError as e:
             last = e
             body = e.read() if hasattr(e, "read") else b""
+            guard.record_status(provider, e.code)
             if e.code in (429, 500, 502, 503, 504) and i + 1 < retries:
                 time.sleep(2 * (i + 1))
                 continue
             return e.code, body, dict(getattr(e, "headers", {}) or {})
         except Exception as e:
             last = e
+            guard.record(provider, False)
             if i + 1 < retries:
                 time.sleep(2 * (i + 1))
                 continue

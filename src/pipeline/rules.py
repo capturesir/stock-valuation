@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Optional
 
 
 def fade_to_g(start_growths: list[float], terminal_g: float, n: int) -> list[float]:

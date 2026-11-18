@@ -69,6 +69,13 @@ def _tab(df) -> dict:
 
 
 def fundamentals(ticker: str) -> dict:
+    from . import guard
+
+    with guard.call("yahoo"):           # paced + circuit breaker, like every other Yahoo call
+        return _fundamentals(ticker)
+
+
+def _fundamentals(ticker: str) -> dict:
     import yfinance as yf
     T = yf.Ticker(ticker)
     o: dict[str, Any] = {

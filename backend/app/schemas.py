@@ -98,6 +98,8 @@ class StockProfile(BaseModel):
     source: str = "Yahoo Finance"
     has_name_spec: bool = False
     valued: bool = False
+    stale: bool = Field(False, description="數據源暫時無法連線，這是之前保存的資料")
+    as_of: Optional[float] = Field(None, description="stale 時：資料保存的時間（Unix 秒）")
 
 
 class Coverage(BaseModel):
@@ -178,6 +180,7 @@ class ValuateIn(BaseModel):
     tasks: Optional[list[str]] = Field(None, description="勾選的 AI 任務（例如 [\"T3\"]）；省略＝該模式的預設")
     valuation_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     budget_usd: Optional[float] = Field(None, ge=0, description="本次上限；省略＝設定頁的每次上限")
+    force: bool = Field(False, description="同一代號、日期、AI 模式近期已估值時仍要重算")
 
 
 class JobStep(BaseModel):
@@ -217,6 +220,9 @@ class Job(BaseModel):
     error: Optional[str]
     note: Optional[str]
     version: int
+    joined: bool = Field(False, description="同一代號已在估值：此回應是加入那個工作，而非新開一個")
+    queue_position: Optional[int] = Field(None, description="排隊中時，前面還有幾個工作＋1")
+    requested_by: Optional[str] = None
 
 
 # ---------------------------------------------------------------- settings / usage
@@ -404,3 +410,29 @@ class RevisionOut(BaseModel):
     new: Optional[float] = None
     source: str
     seen_at: str
+
+
+# ---------------------------------------------------------------- limits and operations (P0)
+
+class LimitsIn(BaseModel):
+    lookup_per_minute: Optional[int] = Field(None, ge=1)
+    prices_per_minute: Optional[int] = Field(None, ge=1)
+    valuations_per_hour: Optional[int] = Field(None, ge=1)
+    concurrent_valuations_per_user: Optional[int] = Field(None, ge=1)
+    queue_max: Optional[int] = Field(None, ge=1)
+    revalue_cooldown_hours: Optional[int] = Field(None, ge=0)
+
+
+class LimitsOut(BaseModel):
+    lookup_per_minute: int
+    prices_per_minute: int
+    valuations_per_hour: int
+    concurrent_valuations_per_user: int
+    queue_max: int
+    revalue_cooldown_hours: int
+    defaults: dict
+
+
+class OpsStatus(BaseModel):
+    providers: dict
+    queue: dict

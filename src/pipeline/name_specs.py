@@ -132,7 +132,6 @@ def spec_nvda(snap: dict) -> dict:
     U_YF = "https://finance.yahoo.com/quote/NVDA/financials"
     U_YCF = "https://finance.yahoo.com/quote/NVDA/cash-flow"
     U_YA = "https://finance.yahoo.com/quote/NVDA/analysis/"
-    U_TNX = "https://finance.yahoo.com/quote/%5ETNX"
     U_SEC = "https://data.sec.gov/submissions/CIK0001045810.json"
     if snap.get("edgar_html_blocked"):
         gaps.append("SEC EDGAR 網頁檔（10-Q／8-K HTML）回傳 HTTP 403；本次財務數字改用 Yahoo Finance 報表（並以 data.sec.gov submissions 核對最新 10-Q 報告期為 2026-07-26，呈交 2026-08-26）。未讀到 2026-08-17 發債 8-K 票息。")
@@ -293,7 +292,6 @@ def spec_nvda(snap: dict) -> dict:
         "data_gaps": gaps,
         "assumption_source": snap.get("assumption_source") or "rules_fallback",
         "llm_status": snap.get("llm_status") or {},
-        "row_sources": [U_YA, U_YF, U_SEC],
     }
     return spec
 
@@ -309,7 +307,6 @@ def spec_1830(snap: dict) -> dict:
     # Operating profit from official P&L (not Yahoo's slightly different Operating Income)
     OP26, OP25 = 212.986, 251.636
     PPE_DEP26, PPE_DEP25 = 55.466, 67.491
-    ROU_DEP26 = 97.767
     DA26 = 153.233  # PPE+ROU (matches Yahoo Reconciled Depreciation)
     CPX26, CPX25, CPX24, CPX23 = 30.258, 34.652, 58.285, 29.047  # Yahoo CF Purchase of PPE
     # note segment capex 24.626 vs CF 30.258
@@ -317,10 +314,9 @@ def spec_1830(snap: dict) -> dict:
     TAX = 32842 / 211181  # 0.155516 FY2026 official
     INT26 = 7.949
     # H1 FY2026 (ended 2025-09-30)
-    H1_26_REV, H1_26_OP, H1_26_PAT = 485.880, 111.008, 94.804
+    H1_26_REV, H1_26_OP, _H1_26_PAT = 485.880, 111.008, 94.804
     H2_26_REV = REV26 - H1_26_REV  # 476.469
     H2_26_OP = OP26 - H1_26_OP  # 101.978
-    H2_26_PAT = 83.9  # official highlight (net profit 2H)
     # Profit alert H1 FY2027 PAT 142–147m; midpoint 144.5 vs 94.804 = +52.4%
     PAT_H1_27_LO, PAT_H1_27_HI = 142.0, 147.0
     PAT_H1_27 = (PAT_H1_27_LO + PAT_H1_27_HI) / 2
@@ -386,7 +382,6 @@ def spec_1830(snap: dict) -> dict:
     U_OPS = "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900137.pdf"
     U_INT = "https://www1.hkexnews.hk/listedco/listconews/sehk/2025/1128/2025112802112.pdf"
     U_BRD = "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/1104/2026110401654.pdf"
-    U_ADB = snap["rf"]["url"]
     # geo FY2026: HK 79.6% → CRP HK
     crp = MA.crp("HK", "（FY2026 全年業績：香港收入 HK$765.591m，佔 79.6%；境外（中國內地、澳門、澳洲、新加坡）20.4%。風險來源以香港為主，故 CRP 用香港而非中國。境外仍有內地業務，屬次要。）")
     rf = D(snap["rf"]["value"], snap["rf"]["basis"], snap["rf"]["source"], snap["rf"]["url"], snap["rf"]["data_date"])

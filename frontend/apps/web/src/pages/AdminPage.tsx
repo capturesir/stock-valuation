@@ -21,6 +21,8 @@ export function AdminPage() {
       <Users />
       <Branding />
       <Market />
+      <Limits />
+      <Ops />
       <footer className="foot">{t("app.disclaimer")}</footer>
     </main>
   );
@@ -197,6 +199,69 @@ function Market() {
       </div>
       <div><button className="btn secondary" type="button" onClick={() => run.mutate()} disabled={run.isPending}>{t("admin.market.updateNow")}</button></div>
       {msg && <div role="status" className={`banner ${msg.kind === "ok" ? "info" : "err"}`}>{msg.text}</div>}
+    </section>
+  );
+}
+
+const LIMIT_KEYS = ["lookup_per_minute", "prices_per_minute", "valuations_per_hour", "concurrent_valuations_per_user",
+                    "queue_max", "revalue_cooldown_hours"] as const;
+
+function Limits() {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["admin-limits"], queryFn: api.limits });
+  const [form, setForm] = useState<Record<string, number>>({});
+  const [msg, setMsg] = useState<Msg>(null);
+  useEffect(() => { if (q.data) setForm(Object.fromEntries(LIMIT_KEYS.map((k) => [k, q.data[k]]))); }, [q.data]);
+  const save = useMutation({ mutationFn: () => api.saveLimits(form), onSuccess: (d) => { qc.setQueryData(["admin-limits"], d); setMsg({ kind: "ok", text: t("common.saved") }); },
+                             onError: (e) => setMsg({ kind: "err", text: errText(e) }) });
+  const defaults = (q.data?.defaults ?? {}) as Record<string, number>;
+  return (
+    <section className="card" aria-labelledby="limits-h">
+      <h2 id="limits-h">{t("admin.sec.limits")}</h2>
+      <p className="muted" style={{ margin: 0 }}>{t("admin.limits.intro")}</p>
+      <form className="fields" onSubmit={(e: FormEvent) => { e.preventDefault(); save.mutate(); }}>
+        {LIMIT_KEYS.map((k) => (
+          <label key={k} className="field">{t(`admin.limits.${k}`)}
+            <input type="number" min={k === "revalue_cooldown_hours" ? 0 : 1} value={form[k] ?? ""}
+                   onChange={(e) => setForm({ ...form, [k]: Number(e.target.value) })} />
+            <small>{t("admin.limits.default", { n: defaults[k] ?? "—" })}</small>
+          </label>
+        ))}
+        <div style={{ alignSelf: "flex-end" }}><button className="btn primary" type="submit">{t("common.save")}</button></div>
+      </form>
+      {msg && <div role="status" className={`banner ${msg.kind === "ok" ? "info" : "err"}`}>{msg.text}</div>}
+    </section>
+  );
+}
+
+function Ops() {
+  const { t } = useI18n();
+  const q = useQuery({ queryKey: ["admin-ops"], queryFn: api.ops, refetchInterval: 15_000 });
+  const providers = (q.data?.providers ?? {}) as Record<string, { open: boolean; retry_after: number; recent_failures: number; interval: number }>;
+  const queue = (q.data?.queue ?? {}) as { running?: number; queued?: number };
+  return (
+    <section className="card" aria-labelledby="ops-h">
+      <h2 id="ops-h">{t("admin.sec.ops")}</h2>
+      <p className="small" style={{ margin: 0 }}>{t("admin.ops.queue", { running: queue.running ?? 0, queued: queue.queued ?? 0 })}</p>
+      <div className="tbl-wrap">
+        <table className="tbl" style={{ minWidth: 560 }}>
+          <thead><tr><th scope="col">{t("admin.ops.provider")}</th><th scope="col" className="l">{t("admin.ops.state")}</th>
+            <th scope="col">{t("admin.ops.failures")}</th><th scope="col">{t("admin.ops.interval")}</th></tr></thead>
+          <tbody>
+            {Object.entries(providers).map(([name, p]) => (
+              <tr key={name}>
+                <td><strong>{name}</strong></td>
+                <td className="l">{p.open ? <span className="tag bad">{t("admin.ops.open", { seconds: Math.ceil(p.retry_after) })}</span>
+                  : <span className="tag ok">{t("admin.ops.ok")}</span>}</td>
+                <td>{p.recent_failures}</td>
+                <td>{t("admin.ops.everyN", { n: p.interval })}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <small className="muted small">{t("admin.ops.note")}</small>
     </section>
   );
 }

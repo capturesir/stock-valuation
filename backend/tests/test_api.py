@@ -182,7 +182,7 @@ def test_over_budget_falls_back_or_refuses(configured, monkeypatch):
     assert calls["use_llm"] is False
     assert next(s for s in job["steps"] if s["key"] == "T3")["note_code"] == "over_budget"
     configured.put("/api/v1/settings/ai", json={"over_budget": "ask"})
-    r = configured.post("/api/v1/valuations", json={"ticker": "0883.HK"}, headers={"Accept-Language": "en"})
+    r = configured.post("/api/v1/valuations", json={"ticker": "0883.HK", "force": True}, headers={"Accept-Language": "en"})
     assert r.status_code == 402 and "exceeds the budget" in r.json()["detail"]["error"]
 
 
@@ -203,14 +203,15 @@ def test_failed_run_reports_error(configured, monkeypatch):
     assert job["status"] == "failed" and "Yahoo 無回應" in job["error"]
 
 
-def test_second_job_for_same_ticker_is_refused(configured, monkeypatch):
+def test_second_request_for_a_running_ticker_joins_that_job(configured, member, monkeypatch):
     _install_fake_engine(monkeypatch, slow=True)
-    first = configured.post("/api/v1/valuations", json={"ticker": "0883.HK", "mode": "none"}).json()
-    r = configured.post("/api/v1/valuations", json={"ticker": "0883.HK", "mode": "none"})
-    assert r.status_code == 409 and r.json()["detail"]["code"] == "job_busy"
-    _wait(configured, first["id"])
-
-
+    first = configured.post("/api/v1/valuations", json={"ticker": "0883.HK", "mode": "none"})
+    second = member.post("/api/v1/valuations", json={"ticker": "0883.HK", "mode": "none"})
+    assert first.status_code == 202 and second.status_code == 200
+    assert second.json()["joined"] is True and second.json()["id"] == first.json()["id"]
+    # the member joined but did not start it: only the starter (or an admin) may stop it
+    assert member.post(f"/api/v1/jobs/{first.json()['id']}/cancel").json()["detail"]["code"] == "not_your_job"
+    _wait(configured, first.json()["id"])
 def test_sse_stream_ends_with_terminal_state(configured, monkeypatch):
     _install_fake_engine(monkeypatch, slow=True)
     job_id = configured.post("/api/v1/valuations", json={"ticker": "0883.HK", "mode": "none"}).json()["id"]
@@ -318,8 +319,9 @@ def test_each_run_keeps_its_own_files(configured, monkeypatch, tmp_path):
                 "xlsx": str(shared / "2026-11-18_0883.HK_FCFF.xlsx"), "verify_pass": True, "verify_errors": []}
 
     monkeypatch.setattr(orchestrator, "run_ticker", fake_run_ticker)
-    for _ in range(2):
-        _wait(configured, configured.post("/api/v1/valuations", json={"ticker": "0883.HK", "mode": "none"}).json()["id"])
+    for _ in range(2):   # force: the second run is a deliberate re-run inside the cool-down window
+        _wait(configured, configured.post("/api/v1/valuations", json={"ticker": "0883.HK", "mode": "none",
+                                                                      "force": True}).json()["id"])
     runs = configured.get("/api/v1/stocks/0883.HK/valuations").json()["runs"]
     assert len(runs) == 2
     bodies = [configured.get(f"/api/v1/runs/{r['id']}/excel").text for r in runs]

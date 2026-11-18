@@ -27,6 +27,7 @@ export function CompanyCard({ p }: { p: StockProfile }) {
         {row("profile.website", p.website ? <a href={p.website} target="_blank" rel="noreferrer">{p.website.replace(/^https?:\/\//, "")}</a> : null)}
       </dl>
       {p.summary && <p className="muted company-summary">{p.summary}</p>}
+      {p.stale && <div className="banner warn" role="status">{t("profile.stale", { time: p.as_of ? f.datetime(new Date(p.as_of * 1000).toISOString()) : "—" })}</div>}
     </section>
   );
 }

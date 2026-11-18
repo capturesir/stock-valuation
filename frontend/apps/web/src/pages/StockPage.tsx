@@ -8,6 +8,7 @@ import { CompanyCard, TickerNotFound } from "../components/CompanyCard";
 import { RunDrawer } from "../components/RunDrawer";
 import { TrendChart, type Range } from "../components/TrendChart";
 import { api } from "../lib/api";
+import { useCooldown } from "../lib/cooldown";
 import { useI18n } from "../lib/i18n";
 
 const TABS = ["overview", "valuation", "statements", "news", "history"] as const;
@@ -26,6 +27,9 @@ export function StockPage() {
   const profile = useQuery({ queryKey: ["profile", ticker], queryFn: () => api.profile(ticker), enabled: !!ticker,
                               staleTime: 10 * 60e3, retry: false });
   const notFound = profile.error instanceof ApiError && profile.error.code === "ticker_not_found";
+  const cool = useCooldown();
+  const startCooldown = cool.from;      // stable (useCallback); the cool object itself changes every render
+  useEffect(() => { if (profile.error) startCooldown(profile.error); }, [profile.error, startCooldown]);
   const vals = useQuery({ queryKey: ["valuations", ticker], queryFn: () => api.valuations(ticker), enabled: !!ticker && !notFound });
   const prices = useQuery({ queryKey: ["prices", ticker], queryFn: () => api.prices(ticker, 400), enabled: !!ticker, staleTime: 3600e3, retry: false });
   const wl = useQuery({ queryKey: ["watchlist"], queryFn: api.watchlist });
@@ -84,6 +88,13 @@ export function StockPage() {
       </nav>
 
       {tab === "overview" && profile.isLoading && <p className="muted">{t("profile.loading")}</p>}
+      {tab === "overview" && profile.error && !notFound && (
+        <div className="banner warn" role="alert">
+          <span style={{ flex: "1 1 240px" }}>{(profile.error as Error).message}</span>
+          <button className="btn secondary small" type="button" disabled={cool.left > 0} onClick={() => void profile.refetch()}>
+            {cool.left > 0 ? t("common.retryIn", { seconds: cool.left }) : t("common.retry")}</button>
+        </div>
+      )}
       {tab === "overview" && profile.data && !latest && <CompanyCard p={profile.data} />}
       {vals.isLoading && <p className="muted">{t("common.loading")}</p>}
       {vals.error && <div className="banner err" role="alert">{t("common.error", { message: (vals.error as Error).message })}</div>}

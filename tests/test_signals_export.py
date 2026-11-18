@@ -13,7 +13,6 @@ from src.signals.export_signals import (
     ProductionPathError,
     SignalValidationError,
     build_document,
-    build_single_document,
     compute_confidence,
     compute_side,
     compute_upside,
