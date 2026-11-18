@@ -5,7 +5,7 @@ requests>=2.32
 # missing; src/fetch/httputil.py and src/llm/client.py prefer certifi.
 certifi>=2023.7
 pandas>=2.0
-openpyxl>=3.1
+openpyxl>=3.1.5
 PyYAML>=6.0
 beautifulsoup4>=4.12
 lxml>=5.0
