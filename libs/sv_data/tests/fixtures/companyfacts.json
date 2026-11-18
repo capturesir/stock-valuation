@@ -1,0 +1,18 @@
+{"cik":1234567,"entityName":"EXAMPLE CORP","facts":{
+ "dei":{"EntityCommonStockSharesOutstanding":{"label":"Entity Common Stock, Shares Outstanding","description":"Shares outstanding on the cover page.",
+   "units":{"shares":[{"end":"2025-02-10","val":2450000000,"accn":"0001234567-25-000010","fy":2024,"fp":"FY","form":"10-K","filed":"2025-02-20","frame":"CY2025Q1I"}]}}},
+ "us-gaap":{
+  "Revenues":{"label":"Revenues","description":"Amount of revenue recognized.","units":{"USD":[
+   {"start":"2023-01-01","end":"2023-12-31","val":60922000000,"accn":"0001234567-24-000005","fy":2023,"fp":"FY","form":"10-K","filed":"2024-02-21"},
+   {"start":"2023-01-01","end":"2023-12-31","val":60900000000,"accn":"0001234567-25-000010","fy":2024,"fp":"FY","form":"10-K","filed":"2025-02-20","frame":"CY2023"},
+   {"start":"2024-01-01","end":"2024-12-31","val":130497000000,"accn":"0001234567-25-000010","fy":2024,"fp":"FY","form":"10-K","filed":"2025-02-20","frame":"CY2024"},
+   {"start":"2024-07-01","end":"2024-09-30","val":35082000000,"accn":"0001234567-24-000020","fy":2024,"fp":"Q3","form":"10-Q","filed":"2024-11-01","frame":"CY2024Q3"},
+   {"start":"2024-07-01","end":"2024-09-30","val":35082000000,"accn":"0001234567-24-000020","fy":2024,"fp":"Q3","form":"10-Q","filed":"2024-11-01"},
+   {"start":"2022-01-01","end":"2022-12-31","val":26974000000,"fy":2023,"fp":"FY","form":"10-K","filed":"2024-02-21"}]}},
+  "Assets":{"label":"Assets","description":"Sum of the carrying amounts of all assets.","units":{"USD":[
+   {"end":"2023-12-31","val":65728000000,"accn":"0001234567-24-000005","fy":2023,"fp":"FY","form":"10-K","filed":"2024-02-21","frame":"CY2023Q4I"},
+   {"end":"2024-12-31","val":111601000000,"accn":"0001234567-25-000010","fy":2024,"fp":"FY","form":"10-K","filed":"2025-02-20","frame":"CY2024Q4I"}]}},
+  "EarningsPerShareDiluted":{"label":"Earnings Per Share, Diluted","description":"Diluted EPS.","units":{"USD/shares":[
+   {"start":"2024-01-01","end":"2024-12-31","val":2.94,"accn":"0001234567-25-000010","fy":2024,"fp":"FY","form":"10-K","filed":"2025-02-20","frame":"CY2024"},
+   {"start":"2024-07-01","end":"2024-09-30","val":0.78,"accn":"0001234567-24-000020","fy":2024,"fp":"Q3","form":"10-Q","filed":"2024-11-01"},
+   {"start":"2024-07-01","end":"2024-09-30","val":0.79,"accn":"0001234567-24-000020","fy":2024,"fp":"Q3","form":"10-Q","filed":"2024-11-01"}]}}}}}

@@ -1,6 +1,6 @@
 # 可攜式、可換模型的股票估值系統（A 組 FCFF 框架）
 
-- 版本：2.0.0-alpha.2（v2 預覽版；v1.1 功能照常可用）
+- 版本：2.0.0-alpha.2（v2 預覽版；v1.1 功能照常可用）；2.0.0-alpha.3 開發中：美股財報已可從 SEC 取得並逐筆累積
 - 日期：2026-11-18（亞洲／澳門時間，UTC+8）
 - 語言：繁體中文（介面另支援简体中文、English）
 - 倉庫：[https://github.com/capturesir/stock-valuation](https://github.com/capturesir/stock-valuation)
@@ -22,6 +22,7 @@ docker compose up -d --build
 | [`docs/architecture.md`](docs/architecture.md) | 技術架構與理由、多語言、安全 |
 | [`docs/資料庫設計.md`](docs/資料庫設計.md) | 資料表、欄位、遷移紀錄 |
 | [`docs/接口文件.md`](docs/接口文件.md) | API 接口：用途、權限、格式、錯誤代碼 |
+| [`docs/財報數據與估值架構.md`](docs/財報數據與估值架構.md) | 財報四層架構、會計準則變更、獨立程式庫（`libs/`） |
 | [`docs/design-system.html`](docs/design-system.html) | 設計規範（顏色、字體、元件、圖表、跨平台） |
 | [`docs/versioning.md`](docs/versioning.md) | 版本規則、發佈步驟、資料庫遷移 |
 | [`docs/決策紀錄與路線圖-v2.1.md`](docs/決策紀錄與路線圖-v2.1.md) | 擁有者決定（D1–D12）與路線圖 |

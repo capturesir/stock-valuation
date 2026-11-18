@@ -1,4 +1,4 @@
-import { ApiError, type AdminUserIn, type AdminUserUpdate, type UserOut } from "@sv/api-client";
+import { ApiError, type AdminUserIn, type AdminUserUpdate, type StatementsSyncResult, type UserOut } from "@sv/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
@@ -21,6 +21,7 @@ export function AdminPage() {
       <Users />
       <Branding />
       <Market />
+      <DataSources />
       <Limits />
       <Ops />
       <footer className="foot">{t("app.disclaimer")}</footer>
@@ -199,6 +200,53 @@ function Market() {
         </table>
       </div>
       <div><button className="btn secondary" type="button" onClick={() => run.mutate()} disabled={run.isPending}>{t("admin.market.updateNow")}</button></div>
+      {msg && <div role="status" className={`banner ${msg.kind === "ok" ? "info" : "err"}`}>{msg.text}</div>}
+    </section>
+  );
+}
+
+function DataSources() {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["data-sources"], queryFn: api.dataSources });
+  const [contact, setContact] = useState("");
+  const [ticker, setTicker] = useState("");
+  const [msg, setMsg] = useState<Msg>(null);
+  const [result, setResult] = useState<StatementsSyncResult | null>(null);
+  useEffect(() => { if (q.data) setContact(q.data.sec_contact ?? ""); }, [q.data]);
+  const save = useMutation({ mutationFn: () => api.saveDataSources(contact.trim() || null),
+                             onSuccess: (d) => { qc.setQueryData(["data-sources"], d); setMsg({ kind: "ok", text: t("common.saved") }); },
+                             onError: (e) => setMsg({ kind: "err", text: errText(e) }) });
+  const sync = useMutation({ mutationFn: () => api.syncStatements(ticker.trim()),
+                             onMutate: () => { setMsg(null); setResult(null); },
+                             onSuccess: (r) => setResult(r), onError: (e) => setMsg({ kind: "err", text: errText(e) }) });
+  return (
+    <section className="card" aria-labelledby="sources-h">
+      <h2 id="sources-h">{t("admin.sec.sources")}</h2>
+      <p className="muted" style={{ margin: 0 }}>{t("admin.sources.intro")}</p>
+      <form className="fields" onSubmit={(e: FormEvent) => { e.preventDefault(); save.mutate(); }}>
+        <label className="field" style={{ flex: "1 1 320px" }}>{t("admin.sources.secContact")}
+          <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Example Research admin@example.com" autoComplete="off" />
+          <small>{t("admin.sources.secContactHelp")}</small>
+        </label>
+        <div style={{ alignSelf: "flex-end" }}><button className="btn primary" type="submit">{t("common.save")}</button></div>
+      </form>
+      <form className="fields" onSubmit={(e: FormEvent) => { e.preventDefault(); if (ticker.trim()) sync.mutate(); }}>
+        <label className="field">{t("admin.sources.syncTicker")}
+          <input value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} placeholder="NVDA" autoComplete="off" />
+        </label>
+        <div style={{ alignSelf: "flex-end" }}>
+          <button className="btn secondary" type="submit" disabled={sync.isPending || !q.data?.sec_ready}>
+            {sync.isPending ? t("admin.sources.syncing") : t("admin.sources.sync")}</button>
+        </div>
+      </form>
+      {q.data && !q.data.sec_ready && <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.needContact")}</p>}
+      {result && <div role="status" className="banner info">
+        {t(result.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {
+          ticker: result.ticker, name: result.name ?? "", filings: result.filings_added, facts: result.facts_added,
+          total: result.facts_total.toLocaleString() })}
+        {!result.has_xbrl && <> {t("admin.sources.noXbrl")}</>}
+      </div>}
       {msg && <div role="status" className={`banner ${msg.kind === "ok" ? "info" : "err"}`}>{msg.text}</div>}
     </section>
   );

@@ -657,6 +657,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/data-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 數據來源設定：SEC 聯絡資料（管理員） */
+        get: operations["get_sources_api_v1_admin_data_sources_get"];
+        /** 修改數據來源設定（管理員） */
+        put: operations["put_sources_api_v1_admin_data_sources_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/statements/sync/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 從 SEC 取得一隻美股的申報清單與全部 XBRL 數字（force=true 重新讀取舊頁並重新解析；管理員） */
+        post: operations["sync_api_v1_admin_statements_sync__ticker__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/filer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** SEC 申報公司資料與已累積的申報數量 */
+        get: operations["filer_api_v1_stocks__ticker__filer_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/filed-concepts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 申報原貌：公司申報過的全部科目，附筆數與期間 */
+        get: operations["concepts_api_v1_stocks__ticker__filed_concepts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/filed-facts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 申報原貌：一個科目的每個申報數字，附申報文件連結（重編時同一期間有多筆） */
+        get: operations["facts_api_v1_stocks__ticker__filed_facts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -796,6 +882,107 @@ export interface components {
             bars: number;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /** DataSourcesIn */
+        DataSourcesIn: {
+            /**
+             * Sec Contact
+             * @description SEC User-Agent：機構名稱＋電郵，例如 "Example Research admin@example.com"；空白＝清除
+             */
+            sec_contact?: string | null;
+        };
+        /** DataSourcesOut */
+        DataSourcesOut: {
+            /** Sec Contact */
+            sec_contact?: string | null;
+            /** Sec Ready */
+            sec_ready: boolean;
+        };
+        /** FiledConceptOut */
+        FiledConceptOut: {
+            /** Taxonomy */
+            taxonomy: string;
+            /** Concept */
+            concept: string;
+            /** Label */
+            label?: string | null;
+            /** Units */
+            units: string[];
+            /** Facts */
+            facts: number;
+            /** First End */
+            first_end: string;
+            /** Last End */
+            last_end: string;
+        };
+        /** FiledFactOut */
+        FiledFactOut: {
+            /** Taxonomy */
+            taxonomy: string;
+            /** Concept */
+            concept: string;
+            /** Unit */
+            unit: string;
+            /**
+             * Value
+             * @description 申報原值，精確十進位字串（不經浮點數）
+             */
+            value: string;
+            /** Period Start */
+            period_start?: string | null;
+            /** Period End */
+            period_end: string;
+            /** Fy */
+            fy?: number | null;
+            /** Fp */
+            fp?: string | null;
+            /** Form */
+            form: string;
+            /** Accession */
+            accession: string;
+            /** Filed */
+            filed: string;
+            /** Frame */
+            frame?: string | null;
+            /** Index Url */
+            index_url: string;
+            /** Document Url */
+            document_url?: string | null;
+        };
+        /** FilerOut */
+        FilerOut: {
+            /** Cik */
+            cik: string;
+            /** Name */
+            name?: string | null;
+            /** Entity Type */
+            entity_type?: string | null;
+            /** Sic */
+            sic?: string | null;
+            /** Sic Description */
+            sic_description?: string | null;
+            /** Fiscal Year End */
+            fiscal_year_end?: string | null;
+            /** Category */
+            category?: string | null;
+            /**
+             * Tickers
+             * @default []
+             */
+            tickers: string[];
+            /**
+             * Exchanges
+             * @default []
+             */
+            exchanges: string[];
+            /** Filings */
+            filings: number;
+            /** Facts */
+            facts: number;
+            /** Synced At */
+            synced_at?: string | null;
+            /** Last Error */
+            last_error?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1310,6 +1497,40 @@ export interface components {
             checks?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** StatementsSyncResult */
+        StatementsSyncResult: {
+            /** Ticker */
+            ticker: string;
+            /** Cik */
+            cik: string;
+            /** Name */
+            name?: string | null;
+            /** Filings Added */
+            filings_added: number;
+            /** Facts Added */
+            facts_added: number;
+            /** Facts Total */
+            facts_total: number;
+            /** Has Xbrl */
+            has_xbrl: boolean;
+            /** Unchanged */
+            unchanged: boolean;
+            /**
+             * Duplicates
+             * @default 0
+             */
+            duplicates: number;
+            /**
+             * Conflicts
+             * @default 0
+             */
+            conflicts: number;
+            /**
+             * Skipped
+             * @default 0
+             */
+            skipped: number;
         };
         /**
          * StockProfile
@@ -3020,6 +3241,217 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpsStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sources_api_v1_admin_data_sources_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataSourcesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_sources_api_v1_admin_data_sources_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataSourcesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataSourcesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_api_v1_admin_statements_sync__ticker__post: {
+        parameters: {
+            query?: {
+                force?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementsSyncResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    filer_api_v1_stocks__ticker__filer_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FilerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    concepts_api_v1_stocks__ticker__filed_concepts_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FiledConceptOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    facts_api_v1_stocks__ticker__filed_facts_get: {
+        parameters: {
+            query: {
+                concept: string;
+                taxonomy?: string;
+                unit?: string | null;
+                limit?: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FiledFactOut"][];
                 };
             };
             /** @description Validation Error */

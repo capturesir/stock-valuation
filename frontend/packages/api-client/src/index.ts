@@ -38,6 +38,11 @@ export interface Suggestion { ticker: string; name?: string | null; exchange?: s
 export type SecurityOut = S["SecurityOut"];
 export type MarketStatus = S["MarketStatus"];
 export type SyncResult = S["SyncResult"];
+export type DataSourcesOut = S["DataSourcesOut"];
+export type StatementsSyncResult = S["StatementsSyncResult"];
+export type FilerOut = S["FilerOut"];
+export type FiledConceptOut = S["FiledConceptOut"];
+export type FiledFactOut = S["FiledFactOut"];
 
 export interface ClientConfig {
   /** "" = same origin (served behind Caddy); e.g. "https://valuation.example.com" for apps */
@@ -122,6 +127,14 @@ export function createClient(cfg: ClientConfig = {}) {
     marketStatus: () => req<MarketStatus>("GET", "/market/status"),
     syncSecurity: (ticker: string, full = false) => req<SyncResult>("POST", `/admin/market/sync/${enc(ticker)}${q({ full: full ? "true" : undefined })}`),
     updateAllMarket: () => req<{ started: boolean }>("POST", "/admin/market/update-all"),
+    dataSources: () => req<DataSourcesOut>("GET", "/admin/data-sources"),
+    saveDataSources: (sec_contact: string | null) => req<DataSourcesOut>("PUT", "/admin/data-sources", { sec_contact }),
+    syncStatements: (ticker: string, force = false) =>
+      req<StatementsSyncResult>("POST", `/admin/statements/sync/${enc(ticker)}${q({ force: force ? "true" : undefined })}`),
+    filer: (ticker: string) => req<FilerOut>("GET", `/stocks/${enc(ticker)}/filer`),
+    filedConcepts: (ticker: string) => req<FiledConceptOut[]>("GET", `/stocks/${enc(ticker)}/filed-concepts`),
+    filedFacts: (ticker: string, concept: string, taxonomy = "us-gaap") =>
+      req<FiledFactOut[]>("GET", `/stocks/${enc(ticker)}/filed-facts${q({ concept, taxonomy })}`),
     removeLogo: (variant: "light" | "dark") => req<BrandingOut>("DELETE", `/admin/branding/logo/${variant}`),
     /** absolute URL for an <img> (branding URLs from the API are root-relative) */
     assetUrl: (path: string) => (cfg.baseUrl ?? "").replace(/\/$/, "") + path,

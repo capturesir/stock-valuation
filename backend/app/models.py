@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
+from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import JSON, BigInteger, Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (JSON, BigInteger, Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, Numeric, String, Text,
+                        UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -206,3 +208,107 @@ class PriceRevision(Base):
     new: Mapped[Optional[float]] = mapped_column(Float)
     source: Mapped[str] = mapped_column(String(24), default="yahoo")
     seen_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+# ---------------------------------------------------------------- statement data (roadmap §3, alpha.3)
+# Layer ① raw documents and layer ② filed facts. Built by libs/sv_data; stored by services/statements.py.
+
+class RawDocumentRow(Base):
+    """A fetched document, kept byte for byte (gzip file under <APP_DATA_DIR>/raw/); never modified.
+    One row per distinct content: fetching unchanged content only moves ``last_checked_at``."""
+    __tablename__ = "raw_documents"
+    __table_args__ = (UniqueConstraint("source", "kind", "key", "sha256", name="uq_raw_documents_content"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    source: Mapped[str] = mapped_column(String(24))                       # sec …
+    kind: Mapped[str] = mapped_column(String(32))                         # company_tickers | submissions | companyfacts
+    key: Mapped[str] = mapped_column(String(64), index=True)              # CIK, or "all"
+    url: Mapped[str] = mapped_column(Text)
+    sha256: Mapped[str] = mapped_column(String(64))
+    bytes: Mapped[int] = mapped_column(BigInteger)
+    content_type: Mapped[str] = mapped_column(String(64))
+    path: Mapped[str] = mapped_column(Text)                               # relative to <APP_DATA_DIR>/raw/
+    http_status: Mapped[int] = mapped_column(Integer)
+    fetched_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    last_checked_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class SecTicker(Base):
+    """SEC's ticker → CIK list (company_tickers.json), refreshed weekly."""
+    __tablename__ = "sec_tickers"
+    ticker: Mapped[str] = mapped_column(String(24), primary_key=True)
+    cik: Mapped[str] = mapped_column(String(10), index=True)
+    title: Mapped[Optional[str]] = mapped_column(String(200))
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class Filer(Base):
+    """A company that files with the SEC, from its submissions file."""
+    __tablename__ = "filers"
+    cik: Mapped[str] = mapped_column(String(10), primary_key=True)
+    name: Mapped[Optional[str]] = mapped_column(String(200))
+    entity_type: Mapped[Optional[str]] = mapped_column(String(40))
+    sic: Mapped[Optional[str]] = mapped_column(String(8))
+    sic_description: Mapped[Optional[str]] = mapped_column(String(200))
+    fiscal_year_end: Mapped[Optional[str]] = mapped_column(String(4))     # MMDD
+    category: Mapped[Optional[str]] = mapped_column(String(80))
+    state_of_incorporation: Mapped[Optional[str]] = mapped_column(String(8))
+    tickers: Mapped[Optional[list]] = mapped_column(JSON)
+    exchanges: Mapped[Optional[list]] = mapped_column(JSON)
+    pages_loaded: Mapped[Optional[list]] = mapped_column(JSON)            # older submissions pages already read
+    facts_document_id: Mapped[Optional[int]] = mapped_column(ForeignKey("raw_documents.id"))
+    facts: Mapped[int] = mapped_column(Integer, default=0)
+    synced_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class Filing(Base):
+    """One filing (10-K, 10-Q, 8-K …) — what every filed fact points back to."""
+    __tablename__ = "filings"
+    accession: Mapped[str] = mapped_column(String(20), primary_key=True)
+    cik: Mapped[str] = mapped_column(ForeignKey("filers.cik", ondelete="CASCADE"), index=True)
+    form: Mapped[str] = mapped_column(String(16))
+    filed: Mapped[Optional[dt.date]] = mapped_column(Date)
+    report_date: Mapped[Optional[dt.date]] = mapped_column(Date)
+    accepted_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    primary_document: Mapped[Optional[str]] = mapped_column(String(200))
+    description: Mapped[Optional[str]] = mapped_column(String(200))
+    items: Mapped[Optional[str]] = mapped_column(String(200))
+    is_xbrl: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_inline_xbrl: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class FiledConceptRow(Base):
+    """Label and definition of a taxonomy concept (us-gaap:Revenues …), as SEC publishes them."""
+    __tablename__ = "filed_concepts"
+    taxonomy: Mapped[str] = mapped_column(String(24), primary_key=True)
+    concept: Mapped[str] = mapped_column(String(200), primary_key=True)
+    label: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class FiledFactRow(Base):
+    """Layer ②: one reported number exactly as filed. A later filing that reports the same period
+    adds another row (a restatement is never an overwrite). Values are exact decimals."""
+    __tablename__ = "filed_facts"
+    __table_args__ = (
+        UniqueConstraint("cik", "taxonomy", "concept", "unit", "period_start", "period_end", "accession",
+                         name="uq_filed_facts_fact", postgresql_nulls_not_distinct=True),
+        Index("ix_filed_facts_lookup", "cik", "taxonomy", "concept"),
+    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    cik: Mapped[str] = mapped_column(ForeignKey("filers.cik", ondelete="CASCADE"))
+    taxonomy: Mapped[str] = mapped_column(String(24))
+    concept: Mapped[str] = mapped_column(String(200))
+    unit: Mapped[str] = mapped_column(String(40))
+    value: Mapped[Decimal] = mapped_column(Numeric)
+    period_start: Mapped[Optional[dt.date]] = mapped_column(Date)          # empty for an instant
+    period_end: Mapped[dt.date] = mapped_column(Date)
+    fy: Mapped[Optional[int]] = mapped_column(Integer)
+    fp: Mapped[Optional[str]] = mapped_column(String(4))
+    form: Mapped[str] = mapped_column(String(16))
+    accession: Mapped[str] = mapped_column(String(20), index=True)
+    filed: Mapped[dt.date] = mapped_column(Date)
+    frame: Mapped[Optional[str]] = mapped_column(String(20))
+    raw_document_id: Mapped[int] = mapped_column(ForeignKey("raw_documents.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
