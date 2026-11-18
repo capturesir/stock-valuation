@@ -1,7 +1,7 @@
 import { ApiError, type AdminUserIn, type AdminUserUpdate, type StatementsSyncResult, type UserOut } from "@sv/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useBranding } from "../lib/branding";
 import { useI18n } from "../lib/i18n";
@@ -212,18 +212,26 @@ function DataSources() {
   const [org, setOrg] = useState("");
   const [email, setEmail] = useState("");
   const [ticker, setTicker] = useState("");
-  const [msg, setMsg] = useState<Msg>(null);
+  const [saveMsg, setSaveMsg] = useState<Msg>(null);
+  const [syncErr, setSyncErr] = useState<string | null>(null);
   const [result, setResult] = useState<StatementsSyncResult | null>(null);
   useEffect(() => { if (q.data) { setOrg(q.data.sec_organisation ?? ""); setEmail(q.data.sec_email ?? ""); } }, [q.data]);
   const save = useMutation({ mutationFn: () => api.saveDataSources({ sec_organisation: org.trim() || null, sec_email: email.trim() || null }),
-                             onSuccess: (d) => { qc.setQueryData(["data-sources"], d); setMsg({ kind: "ok", text: t("common.saved") }); },
-                             onError: (e) => setMsg({ kind: "err", text: errText(e) }) });
-  const sync = useMutation({ mutationFn: () => api.syncStatements(ticker.trim()),
-                             onMutate: () => { setMsg(null); setResult(null); },
-                             onSuccess: (r) => setResult(r), onError: (e) => setMsg({ kind: "err", text: errText(e) }) });
+                             onMutate: () => setSaveMsg(null),
+                             onSuccess: (d) => { qc.setQueryData(["data-sources"], d);
+                               setSaveMsg({ kind: "ok", text: d.sec_ready ? t("admin.sources.saved", { contact: d.sec_contact ?? "" }) : t("admin.sources.cleared") }); },
+                             onError: (e) => setSaveMsg({ kind: "err", text: errText(e) }) });
+  const sync = useMutation({ mutationFn: (tk: string) => api.syncStatements(tk),
+                             onMutate: () => { setSyncErr(null); setResult(null); },
+                             onSuccess: (r) => { setResult(r); for (const k of ["filer", "filed-concepts", "filed-facts"]) void qc.invalidateQueries({ queryKey: [k, r.ticker] }); },
+                             onError: (e) => setSyncErr(errText(e)) });
+  const ready = !!q.data?.sec_ready;
   return (
     <section className="card" aria-labelledby="sources-h">
-      <h2 id="sources-h">{t("admin.sec.sources")}</h2>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <h2 id="sources-h">{t("admin.sec.sources")}</h2>
+        {q.data && <span className={`tag ${ready ? "ok" : "warn"}`}>{t(ready ? "admin.sources.ready" : "admin.sources.notReady")}</span>}
+      </div>
       <p className="muted" style={{ margin: 0 }}>{t("admin.sources.intro")}</p>
       <form className="fields" onSubmit={(e: FormEvent) => { e.preventDefault(); save.mutate(); }}>
         <label className="field" style={{ flex: "1 1 220px" }}>{t("admin.sources.secOrganisation")}
@@ -232,26 +240,30 @@ function DataSources() {
         <label className="field" style={{ flex: "1 1 220px" }}>{t("admin.sources.secEmail")}
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" autoComplete="email" maxLength={254} />
         </label>
-        <div style={{ alignSelf: "flex-end" }}><button className="btn primary" type="submit">{t("common.save")}</button></div>
+        <div style={{ alignSelf: "flex-end" }}><button className="btn primary" type="submit" disabled={save.isPending}>{t("common.save")}</button></div>
       </form>
-      <form className="fields" onSubmit={(e: FormEvent) => { e.preventDefault(); if (ticker.trim()) sync.mutate(); }}>
+      <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.secContactHelp")}</p>
+      {saveMsg && <div role="status" className={`banner ${saveMsg.kind === "ok" ? "info" : "err"}`}>{saveMsg.text}</div>}
+      <form className="fields" onSubmit={(e: FormEvent) => { e.preventDefault(); if (ticker.trim()) sync.mutate(ticker.trim()); }}>
         <label className="field">{t("admin.sources.syncTicker")}
           <input value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} placeholder="NVDA" autoComplete="off" />
         </label>
         <div style={{ alignSelf: "flex-end" }}>
-          <button className="btn secondary" type="submit" disabled={sync.isPending || !q.data?.sec_ready}>
+          <button className="btn secondary" type="submit" disabled={sync.isPending || !ready}>
             {sync.isPending ? t("admin.sources.syncing") : t("admin.sources.sync")}</button>
         </div>
       </form>
-      <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.secContactHelp")}</p>
-      {q.data && !q.data.sec_ready && <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.needContact")}</p>}
+      {q.data && !ready && <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.needContact")}</p>}
       {result && <div role="status" className="banner info">
-        {t(result.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {
-          ticker: result.ticker, name: result.name ?? "", filings: result.filings_added, facts: result.facts_added,
-          total: result.facts_total.toLocaleString() })}
-        {!result.has_xbrl && <> {t("admin.sources.noXbrl")}</>}
+        <span style={{ flex: "1 1 240px" }}>
+          {t(result.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {
+            ticker: result.ticker, name: result.name ?? "", filings: result.filings_added, facts: result.facts_added,
+            total: result.facts_total.toLocaleString() })}
+          {!result.has_xbrl && <> {t("admin.sources.noXbrl")}</>}
+        </span>
+        {result.has_xbrl && <Link to={`/stock/${encodeURIComponent(result.ticker)}/statements`} style={{ fontWeight: 600 }}>{t("admin.sources.view", { ticker: result.ticker })}</Link>}
       </div>}
-      {msg && <div role="status" className={`banner ${msg.kind === "ok" ? "info" : "err"}`}>{msg.text}</div>}
+      {syncErr && <div role="alert" className="banner err">{syncErr}</div>}
     </section>
   );
 }

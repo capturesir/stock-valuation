@@ -226,3 +226,10 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; 
   border: 1px solid var(--sv-line-soft); border-radius: var(--sv-radius-lg); text-decoration: none; color: var(--sv-ink-900); }
 .suggest a:hover { border-color: var(--sv-primary); background: var(--sv-primary-weak); }
 .suggest span { color: var(--sv-ink-500); font-size: var(--sv-fs-md); }
+
+/* statements tab: list of filed concepts */
+.concept { display: flex; flex-direction: column; gap: 2px; text-align: left; border: 0; border-bottom: 1px solid var(--sv-line-faint);
+  background: transparent; padding: 8px 10px; cursor: pointer; color: var(--sv-ink-900); font: inherit; overflow-wrap: anywhere; }
+.concept:hover { background: var(--sv-track); }
+.concept.active { background: var(--sv-primary-weak); color: var(--sv-primary-strong); font-weight: 600; }
+.concept .small { font-weight: 400; }
