@@ -5,7 +5,7 @@ alembic>=1.13,<2
 arq>=0.26,<1
 redis>=5,<6   # arq (job queue) requires redis-py < 6; see .github/dependabot.yml
 cryptography>=42
-psycopg[binary]>=3.2,<4
+psycopg[binary]>=3.3.8,<4
 # accounts, uploads and branding (2.0.0-alpha.2)
 argon2-cffi>=25.1.0
 python-multipart>=0.0.9
