@@ -4,7 +4,7 @@ requests>=2.32
 # Explicit CA bundle for the local Mac/python.org 3.10 case where cert.pem is
 # missing; src/fetch/httputil.py and src/llm/client.py prefer certifi.
 certifi>=2023.7
-pandas>=2.0
+pandas>=3.1.1
 openpyxl>=3.1
 PyYAML>=6.0
 beautifulsoup4>=4.12
