@@ -1,10 +1,10 @@
 # v2 backend = the v1 engine's requirements + API/queue/database packages.
 -r ../requirements.txt
 sqlalchemy>=2.1.8,<3
-alembic>=1.13,<2
+alembic>=1.20.1,<2
 arq>=0.28.0,<1
-redis>=5,<6   # arq (job queue) requires redis-py < 6; see .github/dependabot.yml
-cryptography>=42
+redis>=5.3.1,<6   # arq (job queue) requires redis-py < 6; see .github/dependabot.yml
+cryptography>=50.0.2
 psycopg[binary]>=3.3.8,<4
 # accounts, uploads and branding (2.0.0-alpha.2)
 argon2-cffi>=25.1.0
