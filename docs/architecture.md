@@ -95,23 +95,12 @@ stock-valuation/
 
 日後新增前端時只加目錄：`frontend/apps/mobile`（Capacitor 或 Expo）、`frontend/apps/miniprogram`（Taro）。
 
-## 4. API 一覽（v1）
+## 4. API 與資料庫
 
-| 方法 | 路徑 | 用途 |
-| --- | --- | --- |
-| GET | `/api/v1/health` | 服務、資料庫、佇列狀態與版本 |
-| GET | `/api/v1/stocks/{ticker}/lookup` | 查詢公司名稱與最新市價（不估值） |
-| GET | `/api/v1/stocks/{ticker}/valuations` | 走勢圖資料：每次估值的各方法、各情境結果與當時市價 |
-| GET | `/api/v1/stocks/{ticker}/prices?days=365` | 每日收市價（走勢圖市價線） |
-| GET／POST／DELETE | `/api/v1/watchlist` | 觀察名單，附每檔最新估值 |
-| GET | `/api/v1/ai/plan?ticker=&mode=` | AI 工作清單：每項預估 Token 與費用、是否可用、略過原因 |
-| POST | `/api/v1/valuations` | 開始估值（模式、勾選的任務、本次上限），回傳工作 |
-| GET | `/api/v1/jobs/{id}` | 工作狀態（小程序輪詢用） |
-| GET | `/api/v1/jobs/{id}/events` | 工作進度 SSE 串流 |
-| POST | `/api/v1/jobs/{id}/cancel` | 停止（已完成的部分保留） |
-| GET／PUT | `/api/v1/settings/ai` | 服務商、位址、模型、金鑰（只寫）、預算 |
-| GET／PUT | `/api/v1/settings/prices` | 價格表 |
-| GET | `/api/v1/ai/usage?month=` | 用量：每日、按任務、按股票 |
+- 全部接口（用途、權限、格式、錯誤代碼）：[`docs/接口文件.md`](接口文件.md)
+- 全部資料表與遷移：[`docs/資料庫設計.md`](資料庫設計.md)
+
+兩份文件由 CI 測試核對，與程式碼不符時 PR 不能合併。
 
 ## 5. 多語言
 
