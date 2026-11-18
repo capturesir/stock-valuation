@@ -49,6 +49,87 @@ def test_total_return_matches_the_source_adjusted_close(client, fake_market):
     assert pts[0].adj_close == pytest.approx(first.adj_close, rel=1e-9)
 
 
+def test_usd_dividend_error_in_the_source_is_explained(client, fake_market):
+    """HSBC / MINISO: dividends declared in USD, traded in HKD. Yahoo's Adj Close deducts the USD
+    amount from the HKD price; the system's figure is right and the gap is labelled as the source's."""
+    from backend.app.models import Security
+    from backend.app.services import market
+
+    divs = {D(2024, 3, 1): 0.34, D(2025, 3, 3): 0.81, D(2026, 3, 2): 0.57}
+    fake_market.add("9896.HK", start=D(2023, 1, 2), base=30.0, currency="HKD", tz="Asia/Hong_Kong",
+                    dividends=divs, adj_divisor={D(2024, 3, 1): 7.80, D(2025, 3, 3): 7.83, D(2026, 3, 2): 7.79})
+    with _db() as db:
+        market.sync(db, "9896.HK")
+        check = db.get(Security, "9896.HK").checks["total_return"]
+    assert check["status"] == "explained" and check["note_code"] == "source_usd_dividend"
+    assert check["max_deviation"] > 0.01 and check["residual_deviation"] <= 0.001
+    assert [e["date"] for e in check["events"]] == ["2024-03-01", "2025-03-03", "2026-03-02"]
+    assert check["events"][0]["source_applied"] == pytest.approx(0.34 / 7.80, rel=1e-3)
+
+
+@pytest.mark.parametrize("case", ["usd_listing", "one_good_one_odd", "rights_issue"])
+def test_other_mismatches_still_need_review(client, fake_market, case):
+    from backend.app.models import Security
+    from backend.app.services import market
+
+    divs = {D(2024, 3, 1): 0.5, D(2025, 3, 3): 0.6}
+    kw = {"usd_listing": dict(currency="USD", adj_divisor={D(2024, 3, 1): 7.8}),            # ratio fits, currency does not
+          "one_good_one_odd": dict(currency="HKD", adj_divisor={D(2024, 3, 1): 7.8, D(2025, 3, 3): 2.0}),
+          "rights_issue": dict(currency="HKD", adj_divisor={D(2024, 3, 1): 0.25})}[case]   # source deducts more
+    fake_market.add("ODD", start=D(2023, 1, 2), base=20.0, dividends=divs, **kw)
+    with _db() as db:
+        market.sync(db, "ODD")
+        check = db.get(Security, "ODD").checks["total_return"]
+    assert check["status"] == "warn" and check["note_code"] == "adjusted_mismatch"
+
+
+def test_unknown_symbol_is_not_kept(client, fake_market):
+    """A mistyped code (TENCENT) used to stay tracked and fail in every daily update."""
+    from backend.app import scheduler
+    from backend.app.models import Security
+    from backend.app.services import market
+
+    fake_market.unknown.add("TENCENT")
+    r = client.get("/api/v1/stocks/TENCENT/prices").json()
+    assert r["points"] == [] and "TENCENT" in r["error"]
+    with _db() as db:
+        assert db.get(Security, "TENCENT") is None
+        market.track(db, "TENCENT")                 # e.g. a row left by an older version
+    summary = scheduler.run_once()
+    assert [f["ticker"] for f in summary["failed"]] == ["TENCENT"]
+    with _db() as db:
+        assert db.get(Security, "TENCENT") is None
+
+
+def test_a_symbol_with_history_keeps_it_when_the_source_drops_it(client, fake_market):
+    from backend.app import scheduler
+    from backend.app.models import Security
+    from backend.app.services import market
+
+    with _db() as db:
+        market.sync(db, "GONE")
+    fake_market.unknown.add("GONE")                 # delisted: keep what was accumulated, record why
+    scheduler.run_once()
+    with _db() as db:
+        sec = db.get(Security, "GONE")
+        assert sec is not None and sec.bars > 700 and "GONE" in sec.last_error
+
+
+def test_not_found_does_not_open_the_source_breaker(monkeypatch):
+    from src.fetch import guard
+    from src.infra.kv import kv
+
+    class YFTzMissingError(Exception):
+        pass
+
+    monkeypatch.setenv("APP_OUTBOUND_LIMITS", "0")
+    for _ in range(8):
+        with pytest.raises(YFTzMissingError):
+            with guard.call("yahoo"):
+                raise YFTzMissingError("$TENCENT: possibly delisted; no timezone found")
+    assert not kv().get("cb:yahoo:open")
+
+
 def test_update_appends_and_keeps_old_values_as_revisions(client, fake_market):
     from backend.app.models import PriceBar, PriceRevision, Security
     from backend.app.services import market

@@ -36,6 +36,14 @@ REL_TOL = 1e-5                  # differences below 0.001 % are rounding, not re
 INCREMENTAL_DAYS = 14           # overlap re-read on each update, to catch late corrections
 CLOSE_HOUR = 17                 # local exchange time after which today's bar counts as final
 ADJ_CHECK_TOL = 0.001           # total-return series must match the source within 0.1 %
+USD_HKD_BAND = (7.70, 7.90)     # Linked Exchange Rate band (7.75–7.85) with a little room for the source's FX
+DIV_MATCH_TOL = 0.02            # a source dividend step within 2 % of the standard one counts as the same
+
+
+class SymbolNotFound(LookupError):
+    """The source says this symbol does not exist (as opposed to the source being down)."""
+
+
 
 
 # ------------------------------------------------------------------ source interface
@@ -76,8 +84,13 @@ class YahooSource:
 
         t = yf.Ticker(ticker)
         kw = {"start": start.isoformat()} if start else {"period": "max"}
-        with guard.call("yahoo"):
-            df = t.history(auto_adjust=False, actions=True, raise_errors=True, **kw)
+        try:
+            with guard.call("yahoo"):
+                df = t.history(auto_adjust=False, actions=True, raise_errors=True, **kw)
+        except Exception as exc:
+            if type(exc).__name__ in guard.NOT_FAILURES:      # yfinance: no such symbol
+                raise SymbolNotFound(f"{ticker}: {exc}") from exc
+            raise
         md = getattr(t, "history_metadata", None) or {}
         meta = {"name": md.get("longName") or md.get("shortName"), "exchange": md.get("fullExchangeName") or md.get("exchangeName"),
                 "currency": md.get("currency"), "quote_type": md.get("instrumentType"),
@@ -237,6 +250,8 @@ def _sync(db: Session, ticker: str, full: bool, now: Optional[dt.datetime]) -> d
     try:
         hist = src.history(ticker, start=start)
     except Exception as exc:
+        if _forget_unknown(db, sec, exc):
+            raise
         sec.last_error = f"{type(exc).__name__}: {exc}"[:500]
         sec.updated_at = _now()
         db.flush()
@@ -251,7 +266,7 @@ def _sync(db: Session, ticker: str, full: bool, now: Optional[dt.datetime]) -> d
     added, revised = _upsert_bars(db, ticker, bars, src.name)
     a_added, a_revised = _upsert_actions(db, ticker, actions, src.name)
     if first:
-        sec.checks = dict(sec.checks or {}, total_return=_check_total_return(source_bars, bars, actions))
+        sec.checks = dict(sec.checks or {}, total_return=_check_total_return(source_bars, bars, actions, sec.currency))
         sec.backfilled_at = _now()
     _refresh_coverage(db, sec)
     sec.updated_at, sec.last_error = _now(), None
@@ -259,6 +274,17 @@ def _sync(db: Session, ticker: str, full: bool, now: Optional[dt.datetime]) -> d
     return {"ticker": ticker, "mode": "backfill" if first else "update", "bars_added": added, "bars_revised": revised,
             "actions_added": a_added, "actions_revised": a_revised, "first_date": _iso(sec.first_date),
             "last_date": _iso(sec.last_date), "bars": sec.bars}
+
+
+def _forget_unknown(db: Session, sec: Security, exc: Exception) -> bool:
+    """A symbol the source does not know, with nothing stored, is not kept: otherwise a mistyped
+    code (e.g. TENCENT) would stay tracked and fail in every daily update. Symbols with history
+    (delisted, renamed) keep their data and their error."""
+    if isinstance(exc, SymbolNotFound) and not sec.bars and sec.backfilled_at is None:
+        db.delete(sec)
+        db.flush()
+        return True
+    return False
 
 
 def _iso(d: Optional[dt.date]) -> Optional[str]:
@@ -320,30 +346,71 @@ def _refresh_coverage(db: Session, sec: Security) -> None:
     sec.first_date, sec.last_date, sec.bars = first, last, n or 0
 
 
-def _check_total_return(source_bars: list[SourceBar], bars: list[Bar], actions) -> dict:
-    """Our total-return series vs the source's adjusted close, both scaled to the latest day."""
-    pairs = [(sb, b) for sb, b in zip(sorted(source_bars, key=lambda x: x.date), bars) if sb.adj_close]
-    if len(pairs) < 2:
-        return {"status": "skipped", "reason_code": "no_source_adjusted", "reason": "來源沒有調整後價格"}
-    ours = total_return([(b.date, b.close) for b in bars], actions)
-    ours_by_date = {b.date: v for b, v in zip(bars, ours)}
-    last_src = pairs[-1][0].adj_close
-    last_ours = ours_by_date[pairs[-1][1].date]
+def _max_deviation(pairs, bars: list[Bar], actions) -> tuple[float, Optional[dt.date]]:
+    """Largest relative gap between our series and the source's adjusted close, both scaled to the latest day."""
+    ours_by_date = dict(zip((b.date for b in bars), total_return([(b.date, b.close) for b in bars], actions)))
+    last_src, last_ours = pairs[-1][0].adj_close, ours_by_date[pairs[-1][1].date]
     worst, worst_date = 0.0, None
     for sb, b in pairs:
-        a = ours_by_date[b.date] / last_ours
         s = sb.adj_close / last_src
         if s > 0:
-            dev = abs(a / s - 1)
+            dev = abs((ours_by_date[b.date] / last_ours) / s - 1)
             if dev > worst:
                 worst, worst_date = dev, b.date
+    return worst, worst_date
+
+
+def _source_dividend_steps(source_bars: list[SourceBar]) -> list[dict]:
+    """For each ex-date, the dividend the source's adjusted close actually deducted:
+    step = (adj/close the day before) / (adj/close on the day) = 1 − D_applied / previous close."""
+    sb = sorted(source_bars, key=lambda x: x.date)
+    out = []
+    for i in range(1, len(sb)):
+        b, prev = sb[i], sb[i - 1]
+        if not b.dividend or not (b.adj_close and prev.adj_close and b.close and prev.close):
+            continue
+        step = (prev.adj_close / prev.close) / (b.adj_close / b.close)
+        applied = (1 - step) * prev.close
+        out.append({"date": b.date, "dividend": b.dividend, "applied": applied,
+                    "ratio": b.dividend / applied if applied > 0 else None})
+    return out
+
+
+def _check_total_return(source_bars: list[SourceBar], bars: list[Bar], actions, currency: Optional[str] = None) -> dict:
+    """Our total-return series vs the source's adjusted close.
+
+    When they differ, look for the one known source error: a dividend declared in USD but traded in
+    HKD (HSBC 0005.HK, MINISO 9896.HK) whose USD amount Yahoo deducts from the HKD price, so its step
+    is ~7.8 times too small. If every mismatching ex-date has that ratio, and repeating the source's
+    mistake reproduces its series within tolerance, the gap is explained: our figure is the correct one."""
+    src_sorted = sorted(source_bars, key=lambda x: x.date)
+    pairs = [(sb, b) for sb, b in zip(src_sorted, bars) if sb.adj_close]
+    if len(pairs) < 2:
+        return {"status": "skipped", "reason_code": "no_source_adjusted", "reason": "來源沒有調整後價格"}
+    worst, worst_date = _max_deviation(pairs, bars, actions)
     out = {"status": "ok" if worst <= ADJ_CHECK_TOL else "warn", "max_deviation": round(worst, 6),
            "at": _iso(worst_date), "tolerance": ADJ_CHECK_TOL, "checked_at": _now().isoformat(timespec="seconds")}
-    if out["status"] == "warn":
-        # seen with HSBC (0005.HK): Yahoo's dividends are in HKD but its Adj Close applies the USD amount
-        out["note_code"] = "adjusted_mismatch"
-        out["note"] = ("系統計算的總回報與來源的調整後價格不一致，需要人工覆核。常見原因：來源以錯誤貨幣計算派息"
-                       "（例如以美元宣派、港元交易的股票）、或漏計供股等公司行動。系統的總回報由未調整價格與派息自行計算。")
+    if out["status"] == "ok":
+        return out
+    steps = _source_dividend_steps(source_bars)
+    wrong = [e for e in steps if e["ratio"] is None or abs(e["ratio"] - 1) > DIV_MATCH_TOL]
+    lo, hi = USD_HKD_BAND
+    usd = [e for e in wrong if e["ratio"] and lo <= e["ratio"] <= hi]
+    if (currency or "").upper() == "HKD" and wrong and len(usd) == len(wrong):
+        # repeat the source's mistake on those dates; what is left must be within tolerance
+        fix = {e["date"]: e["ratio"] for e in usd}
+        mimic = [(d, k, v / fix[d]) if k == "dividend" and d in fix else (d, k, v) for d, k, v in actions]
+        residual, _ = _max_deviation(pairs, bars, mimic)
+        if residual <= ADJ_CHECK_TOL:
+            out.update(status="explained", residual_deviation=round(residual, 6), note_code="source_usd_dividend",
+                       events=[{"date": _iso(e["date"]), "dividend": round(e["dividend"], 6),
+                                "source_applied": round(e["applied"], 6)} for e in usd],
+                       note=("來源的調整後價格把以美元宣派的派息當作港元扣減（約少扣 7.8 倍）；"
+                             "系統的總回報按港元派息計算，是正確的數字。"))
+            return out
+    out["note_code"] = "adjusted_mismatch"
+    out["note"] = ("系統計算的總回報與來源的調整後價格不一致，需要人工覆核。常見原因：來源以錯誤貨幣計算派息"
+                   "（例如以美元宣派、港元交易的股票）、或漏計供股等公司行動。系統的總回報由未調整價格與派息自行計算。")
     return out
 
 
@@ -399,7 +466,7 @@ def update_all(session_factory) -> dict:
                 log.warning("market sync failed for %s: %s", t, exc)
                 with session_factory() as db:      # the failed transaction rolled back; record it separately
                     sec = db.get(Security, t)
-                    if sec is not None:
+                    if sec is not None and not _forget_unknown(db, sec, exc):
                         sec.last_error, sec.updated_at = err, _now()
 
     with session_factory() as db:
