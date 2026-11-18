@@ -88,6 +88,10 @@
 - Python 依賴下限：pandas ≥3.1.1、yfinance ≥1.8.0、pytest ≥9.2.0、lxml ≥6.1.3、argon2-cffi ≥25.1.0、openpyxl ≥3.1.5、
   jsonschema ≥4.26.0、PyYAML ≥6.0.3、xlrd ≥2.0.2（在獨立虛擬環境測試全部測試，並以真實數據估值 NVDA、0883.HK、7203.T）。
 - GitHub Actions：checkout、setup-python、setup-node v7，pnpm/action-setup v6，CodeQL v4。
+- 第二批：SQLAlchemy ≥2.1.8、psycopg ≥3.3.8、Pillow ≥13.0.0、uvicorn ≥0.54.0、python-multipart ≥0.0.33、arq ≥0.28.0、
+  beautifulsoup4 ≥4.15.0、certifi ≥2026.10.23（同樣在獨立環境跑全部測試並以真實數據估值）。
+- Dependabot：Python 只保留一組設定（掃描根目錄時已包含 `backend/requirements.txt`，兩組設定會開出重複 PR），
+  所有 Python 更新每週合併成一個 PR（提高版本下限的更新沒有大小版本之分，按版本類型分組無效）。
 - **redis 客戶端維持 5.x**：工作佇列 arq（最新 0.28）要求 redis-py < 6；Dependabot 已設定在 arq 支援之前不再提出 redis 6 以上的升級。
 
 ### 修正
