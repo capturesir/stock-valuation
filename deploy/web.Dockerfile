@@ -1,7 +1,7 @@
 # Web container: builds the PWA, then serves it with Caddy, which also proxies /api
 # to the API container and can obtain HTTPS certificates automatically.
 # Build context: repository root.
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN corepack enable
 WORKDIR /src/frontend
