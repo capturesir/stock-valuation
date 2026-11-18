@@ -1,6 +1,6 @@
 # One image for both the API and the worker (docker-compose picks the command).
 # Build context: repository root (the v1 engine in src/ is reused as-is).
-FROM python:3.12-slim AS base
+FROM python:3.15-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
