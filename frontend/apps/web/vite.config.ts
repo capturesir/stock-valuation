@@ -1,12 +1,24 @@
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // API in dev: `uvicorn backend.app.main:app --port 8000` (proxied below).
 // In Docker the web container (Caddy) serves this build and proxies /api itself.
+// Vite only watches this app's folder. The shared workspace packages (API client, i18n, tokens) live
+// in ../../packages, so without this an edit there is never picked up and the browser keeps the old
+// module until the dev server restarts.
+const watchWorkspacePackages = (): Plugin => ({
+  name: "sv-watch-workspace-packages",
+  configureServer(server) {
+    server.watcher.add(fileURLToPath(new URL("../../packages", import.meta.url)));
+  },
+});
+
 export default defineConfig({
   plugins: [
     react(),
+    watchWorkspacePackages(),
     VitePWA({
       registerType: "prompt",
       includeAssets: ["icon.svg", "apple-touch-icon.png"],
