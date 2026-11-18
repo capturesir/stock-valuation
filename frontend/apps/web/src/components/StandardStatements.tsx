@@ -5,19 +5,6 @@ import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { groupDigits } from "./FiledData";
 
-/** Display order within each statement (the API's order follows the rule file, where formulas come last). */
-const ORDER: Record<StdRow["statement"], string[]> = {
-  income: ["revenue", "cost_of_revenue", "gross_profit", "research_development", "selling_general_admin", "operating_expenses",
-           "operating_income", "interest_expense", "pretax_income", "income_tax", "net_income", "net_income_nci",
-           "net_income_parent", "eps_basic", "eps_diluted", "shares_basic_weighted", "shares_diluted_weighted"],
-  balance: ["cash", "short_term_investments", "receivables", "inventory", "current_assets", "ppe_net", "goodwill", "intangibles",
-            "total_assets", "accounts_payable", "current_liabilities", "debt_current", "debt_noncurrent", "total_liabilities",
-            "equity_parent", "equity_nci", "total_equity", "liabilities_and_equity", "shares_outstanding"],
-  cash_flow: ["cfo", "depreciation_amortization", "share_based_compensation", "capex", "cfi", "dividends_paid",
-              "share_repurchases", "cff", "free_cash_flow"],
-};
-const TOTALS = new Set(["gross_profit", "operating_income", "net_income_parent", "total_assets", "total_liabilities", "total_equity",
-                        "liabilities_and_equity", "cfo", "free_cash_flow"]);
 const STATEMENTS: StdRow["statement"][] = ["income", "balance", "cash_flow"];
 const GRADE_TAG: Record<string, string> = { A: "ok", B: "warn", C: "bad" };
 
@@ -65,14 +52,13 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
           </div>
         </div>
       </div>
-      {d.template !== "general" && <div className="banner warn" role="note">{t(`std.template.${d.template}`)}</div>}
+      {d.template !== "general" && <div className="banner info" role="note">{t(`std.template.${d.template}`)}</div>}
       {(d.splits_applied ?? []).length > 0 && <span className="small">{t("std.splits", {
         list: (d.splits_applied ?? []).map((s) => t("std.split", { date: String(s.date), ratio: String(s.ratio) })).join("、") })}</span>}
       <span className="muted small">{t("std.legend")}</span>
 
       {STATEMENTS.map((st) => {
-        const rows = d.rows.filter((r) => r.statement === st)
-          .sort((a, b) => ORDER[st].indexOf(a.code) - ORDER[st].indexOf(b.code));
+        const rows = d.rows.filter((r) => r.statement === st);        // already in display order
         const sel = picked && rows.find((r) => r.code === picked.code);
         return (
           <Fragment key={st}>
@@ -87,7 +73,7 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
                 </tr></thead>
                 <tbody>
                   {rows.map((r) => (
-                    <tr key={r.code} className={TOTALS.has(r.code) ? "total" : ""}>
+                    <tr key={r.code} className={r.total ? "total" : ""}>
                       <th scope="row" className="l">{t(`std.item.${r.code}`)}</th>
                       {r.cells.map((c, i) => (
                         <td key={i} className={d.years[i].kind === "ttm" ? "ttm" : ""}>

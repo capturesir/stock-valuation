@@ -27,6 +27,10 @@ from typing import Iterable, Optional
 
 RULES_DIR = Path(__file__).parent / "rules"
 ANNUAL_FORMS = {"10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A"}
+# Only financial-statement filings feed the standard layer. Other filings tag some of the same concepts with
+# different numbers: e.g. a proxy statement (DEF 14A) reports "net income" in its pay-versus-performance table,
+# rounded or adjusted (JPMorgan FY2025: 57,000 vs 57,048 in the 10-K), and is filed later, so it would win.
+STATEMENT_FORMS = ANNUAL_FORMS | {"10-K405", "10-KT", "10-KT/A", "10-Q", "10-Q/A", "6-K", "6-K/A"}
 ANNUAL_DAYS = (350, 380)            # 52/53-week years included
 START_TOLERANCE = 3                 # days: a concept's year may start a day or two off the others
 STATEMENTS = ("income", "balance", "cash_flow")
@@ -73,6 +77,17 @@ class Ruleset:
     version: str
     template: str
     items: tuple[Item, ...]
+    display: tuple[tuple[str, tuple[str, ...]], ...] = ()   # (statement, item codes in display order)
+    totals: frozenset = frozenset()                          # items shown as totals (bold)
+    anchors: tuple[tuple[str, tuple[str, ...]], ...] = ()    # (statement, items that pick the period's filing)
+
+    def display_order(self, statement: str) -> list[str]:
+        """Items of one statement in display order (the rule order where the file gives none)."""
+        given = dict(self.display).get(statement)
+        codes = [i.code for i in self.items if i.statement == statement]
+        if not given:
+            return codes
+        return [c for c in given if c in codes] + [c for c in codes if c not in given]
 
     @property
     def concepts(self) -> set[tuple[str, str]]:
@@ -84,6 +99,14 @@ class Ruleset:
 
 class RulesError(ValueError):
     pass
+
+
+# Filing-consistent selection: per period and statement, the filing that reports the anchor item is used for
+# every item it reports, so one period never mixes accounting bases (e.g. equity re-reported in a later
+# 10-K's equity roll-forward after a restatement, while liabilities at that date are only in the older 10-K).
+DEFAULT_ANCHORS = {"balance": ("total_assets", "liabilities_and_equity"),
+                   "income": ("net_income_parent", "revenue", "net_income"),
+                   "cash_flow": ("cfo",)}
 
 
 def _date(v) -> Optional[dt.date]:
@@ -140,7 +163,25 @@ def ruleset_from_dict(d: dict) -> Ruleset:
             raise RulesError(f"{code}: no rules")
         items.append(Item(code, raw["statement"], raw["period"], raw["unit"], tuple(rules)))
         seen.add(code)
-    return Ruleset(str(d["ruleset"]), str(d["version"]), str(d["template"]), tuple(items))
+    by_code = {i.code: i for i in items}
+    display = []
+    for st, codes in (d.get("display") or {}).items():
+        if st not in STATEMENTS:
+            raise RulesError(f"display: unknown statement {st}")
+        for c in codes:
+            if c not in by_code or by_code[c].statement != st:
+                raise RulesError(f"display: {c} is not an item of the {st} statement")
+        display.append((st, tuple(codes)))
+    totals = frozenset(d.get("totals") or ())
+    if not totals <= set(by_code):
+        raise RulesError(f"totals: unknown items {sorted(totals - set(by_code))}")
+    anchors = []
+    for st, codes in (d.get("anchors") or DEFAULT_ANCHORS).items():
+        codes = tuple(c for c in codes if c in by_code and by_code[c].statement == st)
+        if codes:
+            anchors.append((st, codes))
+    return Ruleset(str(d["ruleset"]), str(d["version"]), str(d["template"]), tuple(items), tuple(display), totals,
+                   tuple(anchors))
 
 
 @lru_cache(maxsize=8)
@@ -153,14 +194,14 @@ def load_ruleset(name: str = "general") -> Ruleset:
 
 
 def template_for_sic(sic: Optional[str]) -> str:
-    """Industry template by SEC SIC code: banks and credit (60xx–61xx), insurance (63xx–64xx)."""
+    """Industry template by SEC SIC code: banks and credit (60xx–61xx), insurance carriers (63xx)."""
     try:
         n = int(str(sic or "").strip())
     except ValueError:
         return "general"
     if 6000 <= n <= 6199:
         return "bank"
-    if 6300 <= n <= 6499:
+    if 6300 <= n <= 6399:          # carriers; 6411 (agents and brokers, e.g. Aon) are not insurers
         return "insurance"
     return "general"
 
@@ -222,6 +263,7 @@ class StdValue:
     inputs: list[str] = field(default_factory=list)          # items a formula used; quarters a TTM sum used
     assumed_zero: list[str] = field(default_factory=list)    # optional formula terms not filed
     parts: list = field(default_factory=list)                # (sign, FactRef) for a derived quarter or TTM
+    other_filing: bool = False      # not in the period's anchor filing (that filing does not report this item)
 
 
 @dataclass
@@ -426,7 +468,7 @@ def standardize(facts: Iterable[FactRef], ruleset: Ruleset, view: str = "latest"
     ratio is reported as ``split_adjusted`` rather than ``restated``."""
     if view not in ("latest", "original"):
         raise ValueError("view must be latest or original")
-    facts = [f for f in facts if as_of is None or f.filed <= as_of]
+    facts = [f for f in facts if f.form in STATEMENT_FORMS and (as_of is None or f.filed <= as_of)]
     ccy = reporting_currency(facts)
     years = fiscal_years(facts)
     quarters = fiscal_quarters(facts, years)
@@ -452,10 +494,13 @@ def standardize(facts: Iterable[FactRef], ruleset: Ruleset, view: str = "latest"
             return f.value * k, Decimal(0), k
         return f.value, Decimal(0), k
 
-    def pick(item: Item, cands: list[FactRef]) -> tuple[FactRef, Decimal, Optional[str], Decimal, Decimal, Decimal]:
-        """(chosen fact, its adjusted value, change, first value, latest value, split factor)."""
+    def pick(item: Item, cands: list[FactRef], anchor: Optional[str] = None
+             ) -> tuple[FactRef, Decimal, Optional[str], Decimal, Decimal, Decimal]:
+        """(chosen fact, its adjusted value, change, first value, latest value, split factor).
+        With ``anchor`` (an accession), a fact from that filing is preferred."""
         cands = sorted(cands, key=order)
-        chosen = cands[-1] if view == "latest" else cands[0]
+        in_anchor = [f for f in cands if f.accession == anchor] if anchor else []
+        chosen = (in_anchor[-1] if in_anchor else cands[-1]) if view == "latest" else (in_anchor[0] if in_anchor else cands[0])
         (v0, u0, _), (v1, u1, _) = adjust(item, cands[0]), adjust(item, cands[-1])
         value, _, k = adjust(item, chosen)
         if splits is None:
@@ -482,20 +527,39 @@ def standardize(facts: Iterable[FactRef], ruleset: Ruleset, view: str = "latest"
         return StdValue(item.code, label, total, _unit_label(item, ccy), "formula", rule.id,
                         formula=rule.formula_text, inputs=inputs, assumed_zero=zero)
 
+    def anchor_filings(p: FiscalYear) -> dict[str, str]:
+        """statement → accession of the filing chosen for the period's anchor item."""
+        out_: dict[str, str] = {}
+        for st, codes in ruleset.anchors:
+            for code in codes:
+                item = ruleset.item(code)
+                rule = next((r for r in item.rules if r.applies(p.start)), None)
+                for src in (rule.sources if rule else ()):
+                    cands = [f for f in by_concept.get(src, ()) if _unit_ok(item, f.unit, ccy) and _in_period(item, f, p)]
+                    if cands:
+                        out_[st] = pick(item, cands)[0].accession
+                        break
+                if st in out_:
+                    break
+        return out_
+
     def resolve(p: FiscalYear) -> None:
+        anchors = anchor_filings(p)
         for item in ruleset.items:
             rule = next((r for r in item.rules if r.applies(p.start)), None)
             if rule is None:
                 continue
             got = None
+            anchor = anchors.get(item.statement)
             for src in rule.sources:
                 pool = [f for f in by_concept.get(src, ()) if _unit_ok(item, f.unit, ccy)]
                 cands = [f for f in pool if _in_period(item, f, p)]
                 if cands:
-                    chosen, value, change, v0, v1, k = pick(item, cands)
+                    chosen, value, change, v0, v1, k = pick(item, cands, anchor)
                     got = StdValue(item.code, p.label, value, _unit_label(item, ccy), "concept", rule.id,
                                    concept=f"{src[0]}:{src[1]}", fact=chosen, restated=change == "restated", change=change,
-                                   original_value=v0, latest_value=v1, raw_value=chosen.value, split_factor=k)
+                                   original_value=v0, latest_value=v1, raw_value=chosen.value, split_factor=k,
+                                   other_filing=anchor is not None and chosen.accession != anchor)
                     break
                 # a quarter without its own three-month value: year-to-date minus the previous year-to-date
                 if (p.kind == "quarter" and p.quarter and p.quarter > 1 and item.unit == "money"

@@ -1,0 +1,31 @@
+# Check rules for the bank chart (same format as checks_general.yaml).
+# Yahoo's "Total Revenue" for banks is defined differently from SEC net revenue, so only net income and
+# total assets are cross-checked.
+
+checks: bank
+version: "2026.11.1"
+
+rules:
+  - {id: balance_total, kind: equal, severity: error, left: total_assets, right: liabilities_and_equity, tolerance: 0.005}
+  - {id: balance_parts, kind: equal, severity: error, left: total_assets, right: total_liabilities + total_equity, tolerance: 0.005}
+  - {id: net_interest_income, kind: equal, severity: warning, left: net_interest_income, right: interest_income - interest_expense, tolerance: 0.005}
+  - {id: bank_revenue, kind: equal, severity: warning, left: revenue, right: net_interest_income + noninterest_income, tolerance: 0.005}
+  - {id: net_income_split, kind: equal, severity: warning, left: net_income, right: net_income_parent + net_income_nci, tolerance: 0.005}
+  - {id: deposits_within_liabilities, kind: le, severity: error, left: deposits, right: total_liabilities}
+  - {id: loans_within_assets, kind: le, severity: error, left: loans_gross, right: total_assets}
+  - {id: eps_diluted, kind: ratio, severity: warning, item: eps_diluted, numerator: net_income_common, denominator: shares_diluted_weighted, tolerance: 0.03}
+  - {id: total_assets_positive, kind: sign, severity: error, item: total_assets, strict: true}
+  - {id: deposits_not_negative, kind: sign, severity: error, item: deposits}
+  - {id: loan_allowance_not_negative, kind: sign, severity: warning, item: loan_allowance}
+  - {id: net_interest_income_jump, kind: jump, severity: warning, item: net_interest_income, factor: 20}
+  - {id: total_assets_jump, kind: jump, severity: warning, item: total_assets, factor: 20}
+  - {id: quarters_add_up, kind: quarters_sum, severity: warning, items: [net_interest_income, net_income_parent], tolerance: 0.005}
+  - {id: no_missing_years, kind: continuity, severity: info}
+  - id: yahoo_matches
+    kind: cross_source
+    severity: warning
+    source: yahoo
+    tolerance: 0.01
+    items:
+      net_income_parent: [Net Income, Net Income Common Stockholders]
+      total_assets: [Total Assets]

@@ -1608,7 +1608,7 @@ export interface components {
             template: "general" | "bank" | "insurance";
             /**
              * Template Applied
-             * @description 實際套用的模板；銀行與保險模板推出前為 general
+             * @description 實際套用的科目表（general｜bank｜insurance）
              */
             template_applied: string;
             checks: components["schemas"]["StatementChecks"];
@@ -1853,8 +1853,14 @@ export interface components {
              */
             unit: "money" | "per_share" | "shares";
             /**
+             * Total
+             * @description 小計或合計（粗體顯示）
+             * @default false
+             */
+            total: boolean;
+            /**
              * Cells
-             * @description 與 years 一一對應；沒有數字時為 null
+             * @description 與 years 一一對應；沒有數字時為 null；行的次序即顯示次序
              */
             cells: (components["schemas"]["StdCell"] | null)[];
         };

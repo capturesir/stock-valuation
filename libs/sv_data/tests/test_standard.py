@@ -156,7 +156,8 @@ def _nvda_like():
             fact("EarningsPerShareDiluted", "0.17", *FY23_, D(2025, 2, 26), unit="USD/shares", accn="K25"),
             fact("WeightedAverageNumberOfDilutedSharesOutstanding", 2507000000, *FY23_, D(2024, 2, 21), unit="shares", accn="K24"),
             fact("WeightedAverageNumberOfDilutedSharesOutstanding", 25070000000, *FY23_, D(2025, 2, 26), unit="shares", accn="K25"),
-            fact("Revenues", 26974, *FY22, D(2023, 2, 24), accn="K23"), fact("Revenues", 26974, *FY23_, D(2024, 2, 21), accn="K24")]
+            fact("Revenues", 26974, *FY22, D(2023, 2, 24), accn="K23"), fact("Revenues", 26974, *FY23_, D(2024, 2, 21), accn="K24"),
+            fact("Revenues", 26974, *FY23_, D(2025, 2, 26), accn="K25")]
 
 
 def test_confirmed_splits_put_every_year_on_todays_share_basis():
@@ -182,9 +183,37 @@ def test_a_market_split_the_filings_do_not_show_is_ignored():
     assert confirmed_splits(facts, [Split(D(2010, 1, 21), Decimal(50))]) == []
 
 
+def test_only_financial_statement_filings_count():
+    """A proxy statement's pay-versus-performance table tags net income too, rounded, and is filed later."""
+    facts = [fact("NetIncomeLoss", 57048000000, *FY24, D(2025, 2, 13), accn="10K"),
+             fact("NetIncomeLoss", 57000000000, *FY24, D(2025, 4, 6), form="DEF 14A", accn="PROXY"),
+             fact("Revenues", 1, *FY24, D(2025, 2, 13), accn="10K")]
+    v = standardize(facts, load_ruleset("general")).get("net_income_parent", "FY2024")
+    assert v.value == Decimal(57048000000) and v.fact.form == "10-K" and not v.restated
+
+
+def test_one_period_never_mixes_filings_with_different_bases():
+    """MetLife FY2021: after LDTI the 2024 10-K re-reported equity at 2021-12-31 (in the equity roll-forward)
+    but no 2021 balance sheet; liabilities at that date exist only in the older 10-Ks."""
+    end = D(2021, 12, 31)
+    facts = [fact("Assets", 759708, None, end, D(2023, 2, 23), accn="K22"),
+             fact("Liabilities", 691959, None, end, D(2023, 2, 23), accn="K22"),
+             fact("StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", 67749, None, end, D(2023, 2, 23), accn="K22"),
+             fact("StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", 50013, None, end, D(2024, 2, 16), accn="K23"),
+             fact("Revenues", 1, D(2021, 1, 1), end, D(2023, 2, 23), accn="K22")]
+    s = standardize(facts, load_ruleset("general"))
+    eq = s.get("total_equity", "FY2021")
+    assert eq.value == 67749 and eq.fact.accession == "K22" and not eq.other_filing   # same filing as total assets
+    assert eq.restated and eq.latest_value == 50013                                      # the later number is still shown as a restatement
+    only_later = [f for f in facts if f.concept != "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest" or f.accession == "K23"]
+    eq2 = standardize(only_later, load_ruleset("general")).get("total_equity", "FY2021")
+    assert eq2.value == 50013 and eq2.other_filing                                      # not in the anchor filing: taken from another, flagged
+
+
 def test_template_from_sic():
     assert template_for_sic("6331") == "insurance" and template_for_sic("6021") == "bank"
     assert template_for_sic("3674") == "general" and template_for_sic(None) == "general" and template_for_sic("x") == "general"
+    assert template_for_sic("6411") == "general"           # insurance brokers are not insurers
 
 
 # ------------------------------------------------------------------ quarters and TTM (alpha.3 step 4)

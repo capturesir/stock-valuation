@@ -485,7 +485,8 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
 
     from ..models import CorporateAction
 
-    rs = load_ruleset("general")
+    template = template_for_sic(filer.sic)
+    rs = load_ruleset(template)                  # general | bank | insurance, chosen by SIC code
     rows = db.execute(select(FiledFactRow).where(
         FiledFactRow.cik == filer.cik,
         tuple_(FiledFactRow.taxonomy, FiledFactRow.concept).in_(sorted(rs.concepts)))).scalars()
@@ -530,7 +531,7 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
 
     from libs.sv_data.checks import grades, load_checks, run_checks
 
-    cs = load_checks()
+    cs = load_checks(f"checks_{template}")
     yahoo, yahoo_at = yahoo_figures(db, ticker or "")
     results = run_checks(std, cs, external={"yahoo": yahoo} if yahoo is not None else None)
     shown = {y.label for y in fys}
@@ -546,7 +547,6 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
                             "difference": format(r.difference.quantize(Decimal("0.0001")), "f") if r.difference is not None else None}
                            for r in results if r.status == "fail" and r.period in shown]}
 
-    template = template_for_sic(filer.sic)
     return {"cik": filer.cik, "name": filer.name, "template": template, "template_applied": rs.template, "checks": checks,
             "ruleset": rs.name, "ruleset_version": rs.version, "currency": std.currency, "view": view,
             "as_of": as_of.isoformat() if as_of else None,
@@ -554,5 +554,6 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
             "period": period,
             "years": [{"label": y.label, "start": y.start.isoformat(), "end": y.end.isoformat(), "kind": y.kind,
                        "fiscal_year": y.fy_label, "quarter": y.quarter} for y in fys],
-            "rows": [{"code": i.code, "statement": i.statement, "unit": i.unit,
-                      "cells": [cell(i.code, y.label) for y in fys]} for i in rs.items]}
+            "rows": [{"code": code, "statement": st, "unit": rs.item(code).unit, "total": code in rs.totals,
+                      "cells": [cell(code, y.label) for y in fys]}
+                     for st in ("income", "balance", "cash_flow") for code in rs.display_order(st)]}

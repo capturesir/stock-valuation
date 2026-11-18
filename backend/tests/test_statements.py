@@ -357,3 +357,27 @@ def test_checks_without_a_second_source(client, sec, member):
     client.post(f"{API}/admin/statements/sync/EXMP")
     c = member.get(f"{API}/stocks/EXMP/statements").json()["checks"]
     assert c["yahoo_fetched_at"] is None and all(g in ("A", "B", "C") for g in c["grades"].values())
+
+
+def test_banks_get_the_bank_chart_and_checks(client, sec, member):
+    sub = json.loads((FIX / "submissions.json").read_text())
+    sub["sic"], sub["sicDescription"] = "6021", "National Commercial Banks"
+    sec.routes[sec_source.SUBMISSIONS_URL.format(name=f"CIK{CIK}.json")] = (200, json.dumps(sub).encode())
+    doc = json.loads((FIX / "companyfacts.json").read_text())
+    g = doc["facts"]["us-gaap"]
+    k = {"accn": "0001234567-25-000010", "fy": 2024, "fp": "FY", "form": "10-K", "filed": "2025-02-20"}
+    for concept, v in {"InterestIncomeOperating": 193341000000, "InterestExpenseOperating": 97898000000,
+                       "InterestIncomeExpenseNet": 95443000000, "NoninterestIncome": 87004000000}.items():
+        g[concept] = {"label": concept, "description": "", "units": {"USD": [{"start": "2024-01-01", "end": "2024-12-31", "val": v, **k}]}}
+    g["Deposits"] = {"label": "Deposits", "description": "", "units": {"USD": [{"end": "2024-12-31", "val": 2559320000000, **k}]}}
+    sec.facts(doc)
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    assert (d["template"], d["template_applied"], d["checks"]["checkset"]) == ("bank", "bank", "bank")
+    rows = {r["code"]: r for r in d["rows"]}
+    assert rows["net_interest_income"]["cells"][0]["value"] == "95443000000" and rows["net_interest_income"]["total"]
+    assert [r["code"] for r in d["rows"] if r["statement"] == "income"][:3] == ["interest_income", "interest_expense", "net_interest_income"]
+    assert "gross_profit" not in rows                                            # not a bank item
+    fails = {(x["rule_id"], x["period"]) for x in d["checks"]["failures"]}
+    assert ("net_interest_income", "FY2024") not in fails                        # 193,341 − 97,898 = 95,443
+    assert ("deposits_within_liabilities", "FY2024") not in fails                # no total liabilities filed here: skipped, not failed

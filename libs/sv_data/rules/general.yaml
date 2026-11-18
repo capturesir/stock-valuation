@@ -21,8 +21,20 @@
 # Formulas may only use items defined above them.
 
 ruleset: general
-version: "2026.11.1"
+version: "2026.11.2"
 template: general
+
+display:
+  income: [revenue, cost_of_revenue, gross_profit, research_development, selling_general_admin, operating_expenses,
+           operating_income, interest_expense, pretax_income, income_tax, net_income, net_income_nci, net_income_parent,
+           eps_basic, eps_diluted, shares_basic_weighted, shares_diluted_weighted]
+  balance: [cash, short_term_investments, receivables, inventory, current_assets, ppe_net, goodwill, intangibles,
+            total_assets, accounts_payable, current_liabilities, debt_current, debt_noncurrent, total_liabilities,
+            equity_parent, equity_nci, total_equity, liabilities_and_equity, shares_outstanding]
+  cash_flow: [cfo, depreciation_amortization, share_based_compensation, capex, cfi, dividends_paid, share_repurchases,
+              cff, free_cash_flow]
+totals: [gross_profit, operating_income, net_income_parent, total_assets, total_liabilities, total_equity,
+         liabilities_and_equity, cfo, free_cash_flow]
 
 items:
   # ---------------------------------------------------------------- income statement

@@ -57,3 +57,21 @@ def test_api_doc_lists_every_endpoint(client):
     documented = set(ROW.findall(listed))
     assert not actual - documented, f"docs/接口文件.md is missing: {sorted(actual - documented)}"
     assert not documented - actual, f"docs/接口文件.md lists endpoints that do not exist: {sorted(documented - actual)}"
+
+
+def test_every_chart_item_and_check_has_a_label_in_every_language():
+    """A new standard item or check rule without its zh-Hant / zh-Hans / en label fails CI."""
+    import json
+
+    import yaml
+
+    rules = Path(__file__).resolve().parents[2] / "libs" / "sv_data" / "rules"
+    locales = Path(__file__).resolve().parents[2] / "frontend" / "packages" / "i18n" / "src" / "locales"
+    keys = set()
+    for f in rules.glob("*.yaml"):
+        d = yaml.safe_load(f.read_text(encoding="utf-8"))
+        keys |= {f"std.item.{i['code']}" for i in d.get("items") or []}
+        keys |= {f"check.{r['id']}" for r in d.get("rules") or []}
+    for lang in ("zh-Hant", "zh-Hans", "en"):
+        have = json.loads((locales / f"{lang}.json").read_text(encoding="utf-8"))
+        assert not keys - set(have), f"{lang} is missing labels: {sorted(keys - set(have))}"

@@ -569,7 +569,8 @@ class StdRow(BaseModel):
     code: str
     statement: Literal["income", "balance", "cash_flow"]
     unit: Literal["money", "per_share", "shares"]
-    cells: list[Optional[StdCell]] = Field(description="與 years 一一對應；沒有數字時為 null")
+    total: bool = Field(False, description="小計或合計（粗體顯示）")
+    cells: list[Optional[StdCell]] = Field(description="與 years 一一對應；沒有數字時為 null；行的次序即顯示次序")
 
 
 class CheckFailure(BaseModel):
@@ -594,7 +595,7 @@ class StandardStatements(BaseModel):
     cik: str
     name: Optional[str] = None
     template: Literal["general", "bank", "insurance"] = Field(description="按 SIC 判斷的行業模板")
-    template_applied: str = Field(description="實際套用的模板；銀行與保險模板推出前為 general")
+    template_applied: str = Field(description="實際套用的科目表（general｜bank｜insurance）")
     checks: StatementChecks
     ruleset: str
     ruleset_version: str
