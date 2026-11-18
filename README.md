@@ -19,7 +19,9 @@ docker compose up -d --build
 | 文件 | 內容 |
 | --- | --- |
 | [`INSTALL.md`](INSTALL.md) | 安裝（Docker／本機開發）、更新、備份、疑難排解 |
-| [`docs/architecture.md`](docs/architecture.md) | 技術架構與理由、API 一覽、多語言、安全 |
+| [`docs/architecture.md`](docs/architecture.md) | 技術架構與理由、多語言、安全 |
+| [`docs/資料庫設計.md`](docs/資料庫設計.md) | 資料表、欄位、遷移紀錄 |
+| [`docs/接口文件.md`](docs/接口文件.md) | API 接口：用途、權限、格式、錯誤代碼 |
 | [`docs/design-system.html`](docs/design-system.html) | 設計規範（顏色、字體、元件、圖表、跨平台） |
 | [`docs/versioning.md`](docs/versioning.md) | 版本規則、發佈步驟、資料庫遷移 |
 | [`docs/決策紀錄與路線圖-v2.1.md`](docs/決策紀錄與路線圖-v2.1.md) | 擁有者決定（D1–D12）與路線圖 |
