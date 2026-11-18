@@ -21,4 +21,4 @@ httpx>=0.27
 pytest>=8.0
 
 # Optional but recommended: validate B-compatible signals.json (manual fallback if missing)
-jsonschema>=4.18
+jsonschema>=4.26.0
