@@ -743,6 +743,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 標準化年度財報：每個標準科目的數字、所用規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字） */
+        get: operations["standard_api_v1_stocks__ticker__statements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1510,6 +1527,50 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** StandardStatements */
+        StandardStatements: {
+            /** Ticker */
+            ticker: string;
+            /** Cik */
+            cik: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Template
+             * @description 按 SIC 判斷的行業模板
+             * @enum {string}
+             */
+            template: "general" | "bank" | "insurance";
+            /**
+             * Template Applied
+             * @description 實際套用的模板；銀行與保險模板推出前為 general
+             */
+            template_applied: string;
+            /** Ruleset */
+            ruleset: string;
+            /** Ruleset Version */
+            ruleset_version: string;
+            /** Currency */
+            currency?: string | null;
+            /**
+             * View
+             * @enum {string}
+             */
+            view: "latest" | "original";
+            /** As Of */
+            as_of?: string | null;
+            /**
+             * Splits Applied
+             * @description 已套用的股份分拆（日期、比例），只計申報文件確認過的
+             */
+            splits_applied?: {
+                [key: string]: unknown;
+            }[];
+            /** Years */
+            years: components["schemas"]["StdYear"][];
+            /** Rows */
+            rows: components["schemas"]["StdRow"][];
+        };
         /** StatementsSyncResult */
         StatementsSyncResult: {
             /** Ticker */
@@ -1543,6 +1604,105 @@ export interface components {
              * @default 0
              */
             skipped: number;
+        };
+        /** StdCell */
+        StdCell: {
+            /**
+             * Value
+             * @description 標準值，精確十進位字串
+             */
+            value: string;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "concept" | "formula";
+            /** Rule Id */
+            rule_id: string;
+            /**
+             * Concept
+             * @description 取自的申報科目（taxonomy:Concept）
+             */
+            concept?: string | null;
+            /**
+             * Restated
+             * @default false
+             */
+            restated: boolean;
+            /**
+             * Change
+             * @description 同一期間在較新申報中數字不同的原因
+             */
+            change?: ("restated" | "split_adjusted") | null;
+            /** Original Value */
+            original_value?: string | null;
+            /** Latest Value */
+            latest_value?: string | null;
+            /**
+             * Formula
+             * @description 公式（標準科目代碼，以 + − 連接；? 表示可缺、按零計）
+             */
+            formula?: string | null;
+            /**
+             * Raw Value
+             * @description 申報原值（股份分拆調整前）
+             */
+            raw_value?: string | null;
+            /**
+             * Split Factor
+             * @description 申報後發生、經申報文件確認的股份分拆累計比例；每股數字已除以、股數已乘以此數
+             * @default 1
+             */
+            split_factor: string;
+            /**
+             * Inputs
+             * @description 公式用到的標準科目
+             */
+            inputs?: string[];
+            /**
+             * Assumed Zero
+             * @description 公式中未申報、按零計算的可選項目
+             */
+            assumed_zero?: string[];
+            /** Form */
+            form?: string | null;
+            /** Accession */
+            accession?: string | null;
+            /** Filed */
+            filed?: string | null;
+            /** Index Url */
+            index_url?: string | null;
+            /** Document Url */
+            document_url?: string | null;
+        };
+        /** StdRow */
+        StdRow: {
+            /** Code */
+            code: string;
+            /**
+             * Statement
+             * @enum {string}
+             */
+            statement: "income" | "balance" | "cash_flow";
+            /**
+             * Unit
+             * @enum {string}
+             */
+            unit: "money" | "per_share" | "shares";
+            /**
+             * Cells
+             * @description 與 years 一一對應；沒有數字時為 null
+             */
+            cells: (components["schemas"]["StdCell"] | null)[];
+        };
+        /** StdYear */
+        StdYear: {
+            /** Label */
+            label: string;
+            /** Start */
+            start: string;
+            /** End */
+            end: string;
         };
         /**
          * StockProfile
@@ -3464,6 +3624,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FiledFactOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    standard_api_v1_stocks__ticker__statements_get: {
+        parameters: {
+            query?: {
+                view?: "latest" | "original";
+                as_of?: string | null;
+                years?: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardStatements"];
                 };
             };
             /** @description Validation Error */

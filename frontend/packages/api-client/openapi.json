@@ -3514,6 +3514,123 @@
      }
     }
    }
+  },
+  "/api/v1/stocks/{ticker}/statements": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "標準化年度財報：每個標準科目的數字、所用規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字）",
+    "operationId": "standard_api_v1_stocks__ticker__statements_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "view",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "latest",
+        "original"
+       ],
+       "type": "string",
+       "default": "latest",
+       "title": "View"
+      }
+     },
+     {
+      "name": "as_of",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "date"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "As Of"
+      }
+     },
+     {
+      "name": "years",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 30,
+       "minimum": 1,
+       "default": 10,
+       "title": "Years"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StandardStatements"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -5906,6 +6023,118 @@
     ],
     "title": "SecurityOut"
    },
+   "StandardStatements": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "cik": {
+      "type": "string",
+      "title": "Cik"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "template": {
+      "type": "string",
+      "enum": [
+       "general",
+       "bank",
+       "insurance"
+      ],
+      "title": "Template",
+      "description": "按 SIC 判斷的行業模板"
+     },
+     "template_applied": {
+      "type": "string",
+      "title": "Template Applied",
+      "description": "實際套用的模板；銀行與保險模板推出前為 general"
+     },
+     "ruleset": {
+      "type": "string",
+      "title": "Ruleset"
+     },
+     "ruleset_version": {
+      "type": "string",
+      "title": "Ruleset Version"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "view": {
+      "type": "string",
+      "enum": [
+       "latest",
+       "original"
+      ],
+      "title": "View"
+     },
+     "as_of": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "As Of"
+     },
+     "splits_applied": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Splits Applied",
+      "description": "已套用的股份分拆（日期、比例），只計申報文件確認過的"
+     },
+     "years": {
+      "items": {
+       "$ref": "#/components/schemas/StdYear"
+      },
+      "type": "array",
+      "title": "Years"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/StdRow"
+      },
+      "type": "array",
+      "title": "Rows"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "cik",
+     "template",
+     "template_applied",
+     "ruleset",
+     "ruleset_version",
+     "view",
+     "years",
+     "rows"
+    ],
+    "title": "StandardStatements"
+   },
    "StatementsSyncResult": {
     "properties": {
      "ticker": {
@@ -5974,6 +6203,262 @@
      "unchanged"
     ],
     "title": "StatementsSyncResult"
+   },
+   "StdCell": {
+    "properties": {
+     "value": {
+      "type": "string",
+      "title": "Value",
+      "description": "標準值，精確十進位字串"
+     },
+     "method": {
+      "type": "string",
+      "enum": [
+       "concept",
+       "formula"
+      ],
+      "title": "Method"
+     },
+     "rule_id": {
+      "type": "string",
+      "title": "Rule Id"
+     },
+     "concept": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Concept",
+      "description": "取自的申報科目（taxonomy:Concept）"
+     },
+     "restated": {
+      "type": "boolean",
+      "title": "Restated",
+      "default": false
+     },
+     "change": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "restated",
+         "split_adjusted"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Change",
+      "description": "同一期間在較新申報中數字不同的原因"
+     },
+     "original_value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Original Value"
+     },
+     "latest_value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Latest Value"
+     },
+     "formula": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Formula",
+      "description": "公式（標準科目代碼，以 + − 連接；? 表示可缺、按零計）"
+     },
+     "raw_value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Raw Value",
+      "description": "申報原值（股份分拆調整前）"
+     },
+     "split_factor": {
+      "type": "string",
+      "title": "Split Factor",
+      "description": "申報後發生、經申報文件確認的股份分拆累計比例；每股數字已除以、股數已乘以此數",
+      "default": "1"
+     },
+     "inputs": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Inputs",
+      "description": "公式用到的標準科目"
+     },
+     "assumed_zero": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Assumed Zero",
+      "description": "公式中未申報、按零計算的可選項目"
+     },
+     "form": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Form"
+     },
+     "accession": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Accession"
+     },
+     "filed": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Filed"
+     },
+     "index_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Index Url"
+     },
+     "document_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Document Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "value",
+     "method",
+     "rule_id"
+    ],
+    "title": "StdCell"
+   },
+   "StdRow": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "statement": {
+      "type": "string",
+      "enum": [
+       "income",
+       "balance",
+       "cash_flow"
+      ],
+      "title": "Statement"
+     },
+     "unit": {
+      "type": "string",
+      "enum": [
+       "money",
+       "per_share",
+       "shares"
+      ],
+      "title": "Unit"
+     },
+     "cells": {
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/StdCell"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Cells",
+      "description": "與 years 一一對應；沒有數字時為 null"
+     }
+    },
+    "type": "object",
+    "required": [
+     "code",
+     "statement",
+     "unit",
+     "cells"
+    ],
+    "title": "StdRow"
+   },
+   "StdYear": {
+    "properties": {
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "start": {
+      "type": "string",
+      "title": "Start"
+     },
+     "end": {
+      "type": "string",
+      "title": "End"
+     }
+    },
+    "type": "object",
+    "required": [
+     "label",
+     "start",
+     "end"
+    ],
+    "title": "StdYear"
    },
    "StockProfile": {
     "properties": {

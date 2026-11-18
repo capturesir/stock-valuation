@@ -1,0 +1,520 @@
+# SV standard chart of accounts — general (non-financial) companies — and the mapping rules
+# from filed XBRL concepts (docs/財報數據與估值架構.md §2.1).
+#
+# This file is data, not code. Every change bumps `version`; every standardised value records the
+# version and the rule id it came from, so any number can be explained and reproduced.
+#
+# Per item:
+#   code       standard item (labels live in the frontend dictionary: std.item.<code>)
+#   statement  income | balance | cash_flow
+#   period     duration (a period, e.g. a fiscal year) | instant (a balance-sheet date)
+#   unit       money (reporting currency) | per_share (currency per share) | shares
+#   rules      tried in order for each period; a rule applies when the period starts inside
+#              [effective_from, effective_to] (both optional). In a rule:
+#     sources  filed concepts in priority order; the first one the company filed for that period wins
+#     formula  used when no source was filed: other items joined by + and −, all from the same period;
+#              a term ending in ? may be missing and then counts as zero (recorded on the value)
+#
+# Signs follow the concept definitions: expenses and cash payments (capex, dividends, buybacks) are
+# positive amounts; net cash flows are negative when cash goes out.
+#
+# Formulas may only use items defined above them.
+
+ruleset: general
+version: "2026.11.1"
+template: general
+
+items:
+  # ---------------------------------------------------------------- income statement
+  - code: revenue
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: revenue.1
+        sources:
+          - us-gaap:Revenues
+          - us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax
+          - us-gaap:RevenueFromContractWithCustomerIncludingAssessedTax
+          - us-gaap:SalesRevenueNet
+          - us-gaap:SalesRevenueGoodsNet
+          - ifrs-full:Revenue
+          - ifrs-full:RevenueFromContractsWithCustomers
+
+  - code: cost_of_revenue
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: cost_of_revenue.1
+        sources:
+          - us-gaap:CostOfRevenue
+          - us-gaap:CostOfGoodsAndServicesSold
+          - us-gaap:CostOfGoodsSold
+          - us-gaap:CostOfServices
+          - ifrs-full:CostOfSales
+
+  - code: gross_profit
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: gross_profit.1
+        sources:
+          - us-gaap:GrossProfit
+          - ifrs-full:GrossProfit
+        formula: revenue - cost_of_revenue
+
+  - code: research_development
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: research_development.1
+        sources:
+          - us-gaap:ResearchAndDevelopmentExpense
+          - us-gaap:ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost
+          - ifrs-full:ResearchAndDevelopmentExpense
+
+  - code: selling_general_admin
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: selling_general_admin.1
+        sources:
+          - us-gaap:SellingGeneralAndAdministrativeExpense
+          - ifrs-full:SellingGeneralAndAdministrativeExpense
+
+  - code: operating_expenses
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: operating_expenses.1
+        sources:
+          - us-gaap:OperatingExpenses
+
+  - code: operating_income
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: operating_income.1
+        effective_to: 2026-12-31
+        sources:
+          - us-gaap:OperatingIncomeLoss
+          - ifrs-full:ProfitLossFromOperatingActivities
+      # IFRS 18 (annual periods from 2027-01-01) defines the operating profit subtotal; the category
+      # changes, so values from this rule are not comparable with earlier IFRS years
+      - id: operating_income.ifrs18
+        effective_from: 2027-01-01
+        sources:
+          - us-gaap:OperatingIncomeLoss
+          - ifrs-full:OperatingProfitLoss
+          - ifrs-full:ProfitLossFromOperatingActivities
+
+  - code: interest_expense
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: interest_expense.1
+        sources:
+          - us-gaap:InterestExpense
+          - us-gaap:InterestExpenseNonoperating
+          - us-gaap:InterestExpenseDebt
+          - ifrs-full:FinanceCosts
+
+  - code: pretax_income
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: pretax_income.1
+        sources:
+          - us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest
+          - us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments
+          - ifrs-full:ProfitLossBeforeTax
+
+  - code: income_tax
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: income_tax.1
+        sources:
+          - us-gaap:IncomeTaxExpenseBenefit
+          - ifrs-full:IncomeTaxExpenseContinuingOperations
+
+  - code: net_income_parent
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: net_income_parent.1
+        sources:
+          - us-gaap:NetIncomeLoss
+          - ifrs-full:ProfitLossAttributableToOwnersOfParent
+
+  - code: net_income_nci
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: net_income_nci.1
+        sources:
+          - us-gaap:NetIncomeLossAttributableToNoncontrollingInterest
+          - ifrs-full:ProfitLossAttributableToNoncontrollingInterests
+
+  - code: net_income
+    statement: income
+    period: duration
+    unit: money
+    rules:
+      - id: net_income.1
+        sources:
+          - us-gaap:ProfitLoss
+          - ifrs-full:ProfitLoss
+        formula: net_income_parent + net_income_nci?
+
+  - code: eps_basic
+    statement: income
+    period: duration
+    unit: per_share
+    rules:
+      - id: eps_basic.1
+        sources:
+          - us-gaap:EarningsPerShareBasic
+          - ifrs-full:BasicEarningsLossPerShare
+
+  - code: eps_diluted
+    statement: income
+    period: duration
+    unit: per_share
+    rules:
+      - id: eps_diluted.1
+        sources:
+          - us-gaap:EarningsPerShareDiluted
+          - us-gaap:EarningsPerShareBasicAndDiluted
+          - ifrs-full:DilutedEarningsLossPerShare
+
+  - code: shares_basic_weighted
+    statement: income
+    period: duration
+    unit: shares
+    rules:
+      - id: shares_basic_weighted.1
+        sources:
+          - us-gaap:WeightedAverageNumberOfSharesOutstandingBasic
+          - ifrs-full:WeightedAverageShares
+
+  - code: shares_diluted_weighted
+    statement: income
+    period: duration
+    unit: shares
+    rules:
+      - id: shares_diluted_weighted.1
+        sources:
+          - us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding
+          - ifrs-full:AdjustedWeightedAverageShares
+
+  # ---------------------------------------------------------------- balance sheet
+  - code: cash
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: cash.1
+        sources:
+          - us-gaap:CashAndCashEquivalentsAtCarryingValue
+          - us-gaap:Cash
+          - ifrs-full:CashAndCashEquivalents
+          # last resort, includes restricted cash (some filers, e.g. Berkshire, report only this total)
+          - us-gaap:CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents
+
+  - code: short_term_investments
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: short_term_investments.1
+        sources:
+          - us-gaap:ShortTermInvestments
+          - us-gaap:MarketableSecuritiesCurrent
+          - us-gaap:AvailableForSaleSecuritiesDebtSecuritiesCurrent
+          - ifrs-full:CurrentInvestments
+
+  - code: receivables
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: receivables.1
+        sources:
+          - us-gaap:AccountsReceivableNetCurrent
+          - us-gaap:ReceivablesNetCurrent
+          - ifrs-full:TradeAndOtherCurrentReceivables
+
+  - code: inventory
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: inventory.1
+        sources:
+          - us-gaap:InventoryNet
+          - ifrs-full:Inventories
+
+  - code: current_assets
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: current_assets.1
+        sources:
+          - us-gaap:AssetsCurrent
+          - ifrs-full:CurrentAssets
+
+  - code: ppe_net
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: ppe_net.1
+        sources:
+          - us-gaap:PropertyPlantAndEquipmentNet
+          - us-gaap:PropertyPlantAndEquipmentAndFinanceLeaseRightOfUseAssetAfterAccumulatedDepreciationAndAmortization
+          - ifrs-full:PropertyPlantAndEquipment
+
+  - code: goodwill
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: goodwill.1
+        sources:
+          - us-gaap:Goodwill
+          - ifrs-full:Goodwill
+
+  - code: intangibles
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: intangibles.1
+        sources:
+          - us-gaap:IntangibleAssetsNetExcludingGoodwill
+          - us-gaap:FiniteLivedIntangibleAssetsNet
+          - ifrs-full:IntangibleAssetsOtherThanGoodwill
+
+  - code: total_assets
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: total_assets.1
+        sources:
+          - us-gaap:Assets
+          - ifrs-full:Assets
+
+  - code: accounts_payable
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: accounts_payable.1
+        sources:
+          - us-gaap:AccountsPayableCurrent
+          - ifrs-full:TradeAndOtherCurrentPayables
+
+  - code: current_liabilities
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: current_liabilities.1
+        sources:
+          - us-gaap:LiabilitiesCurrent
+          - ifrs-full:CurrentLiabilities
+
+  - code: debt_current
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: debt_current.1
+        sources:
+          - us-gaap:LongTermDebtCurrent
+          - us-gaap:DebtCurrent
+          - us-gaap:ShortTermBorrowings
+          - ifrs-full:CurrentBorrowingsAndCurrentPortionOfNoncurrentBorrowings
+
+  - code: debt_noncurrent
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: debt_noncurrent.1
+        sources:
+          - us-gaap:LongTermDebtNoncurrent
+          - us-gaap:LongTermDebtAndCapitalLeaseObligations
+          - ifrs-full:NoncurrentPortionOfNoncurrentBorrowings
+
+  - code: equity_parent
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: equity_parent.1
+        sources:
+          - us-gaap:StockholdersEquity
+          - ifrs-full:EquityAttributableToOwnersOfParent
+
+  - code: equity_nci
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: equity_nci.1
+        sources:
+          - us-gaap:MinorityInterest
+          - ifrs-full:NoncontrollingInterests
+
+  - code: total_equity
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: total_equity.1
+        sources:
+          - us-gaap:StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest
+          - ifrs-full:Equity
+        formula: equity_parent + equity_nci?
+
+  - code: liabilities_and_equity
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: liabilities_and_equity.1
+        sources:
+          - us-gaap:LiabilitiesAndStockholdersEquity
+          - ifrs-full:EquityAndLiabilities
+
+  # many US filers report no total-liabilities line; it then follows from the balance sheet
+  - code: total_liabilities
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: total_liabilities.1
+        sources:
+          - us-gaap:Liabilities
+          - ifrs-full:Liabilities
+        formula: liabilities_and_equity - total_equity
+
+  - code: shares_outstanding
+    statement: balance
+    period: instant
+    unit: shares
+    rules:
+      - id: shares_outstanding.1
+        sources:
+          - us-gaap:CommonStockSharesOutstanding
+          - ifrs-full:NumberOfSharesOutstanding
+
+  # ---------------------------------------------------------------- cash flow statement
+  - code: cfo
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: cfo.1
+        sources:
+          - us-gaap:NetCashProvidedByUsedInOperatingActivities
+          - us-gaap:NetCashProvidedByUsedInOperatingActivitiesContinuingOperations
+          - ifrs-full:CashFlowsFromUsedInOperatingActivities
+
+  - code: depreciation_amortization
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: depreciation_amortization.1
+        sources:
+          - us-gaap:DepreciationDepletionAndAmortization
+          - us-gaap:DepreciationAmortizationAndAccretionNet
+          - us-gaap:DepreciationAndAmortization
+          - ifrs-full:DepreciationAndAmortisationExpense
+
+  - code: share_based_compensation
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: share_based_compensation.1
+        sources:
+          - us-gaap:ShareBasedCompensation
+          - us-gaap:AllocatedShareBasedCompensationExpense
+
+  - code: capex
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: capex.1
+        sources:
+          - us-gaap:PaymentsToAcquirePropertyPlantAndEquipment
+          - us-gaap:PaymentsToAcquireProductiveAssets
+          - ifrs-full:PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities
+
+  - code: cfi
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: cfi.1
+        sources:
+          - us-gaap:NetCashProvidedByUsedInInvestingActivities
+          - us-gaap:NetCashProvidedByUsedInInvestingActivitiesContinuingOperations
+          - ifrs-full:CashFlowsFromUsedInInvestingActivities
+
+  - code: dividends_paid
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: dividends_paid.1
+        sources:
+          - us-gaap:PaymentsOfDividends
+          - us-gaap:PaymentsOfDividendsCommonStock
+          - ifrs-full:DividendsPaidClassifiedAsFinancingActivities
+
+  - code: share_repurchases
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: share_repurchases.1
+        sources:
+          - us-gaap:PaymentsForRepurchaseOfCommonStock
+
+  - code: cff
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: cff.1
+        sources:
+          - us-gaap:NetCashProvidedByUsedInFinancingActivities
+          - us-gaap:NetCashProvidedByUsedInFinancingActivitiesContinuingOperations
+          - ifrs-full:CashFlowsFromUsedInFinancingActivities
+
+  - code: free_cash_flow
+    statement: cash_flow
+    period: duration
+    unit: money
+    rules:
+      - id: free_cash_flow.1
+        formula: cfo - capex

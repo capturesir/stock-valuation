@@ -1,6 +1,9 @@
 """Statement data, layers ① raw and ② filed (alpha.3): SEC settings, sync, and the facts as filed."""
 from __future__ import annotations
 
+import datetime as dt
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -9,7 +12,8 @@ from ..auth import Principal, require_admin
 from ..db import get_db
 from ..i18n import http_error, lang_dep
 from ..models import FiledConceptRow, FiledFactRow, Filer, Filing
-from ..schemas import DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, StatementsSyncResult
+from ..schemas import (DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, StandardStatements,
+                       StatementsSyncResult)
 from ..services import statements
 from .common import iso, ticker_or_400
 
@@ -92,3 +96,12 @@ def facts(ticker: str, concept: str = Query(..., max_length=200), taxonomy: str 
                     "accession": r.accession, "filed": r.filed.isoformat(), "frame": r.frame,
                     **statements.filing_urls(f.cik, r.accession, primary)})
     return out
+
+
+@router.get("/stocks/{ticker}/statements", response_model=StandardStatements,
+            summary="標準化年度財報：每個標準科目的數字、所用規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字）")
+def standard(ticker: str, view: Literal["latest", "original"] = "latest", as_of: dt.date | None = None,
+             years: int = Query(10, ge=1, le=30), db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+    f = _filer_or_404(db, ticker, lang)
+    return {"ticker": ticker_or_400(ticker), **statements.standard_statements(db, f, view=view, as_of=as_of, years=years,
+                                                                                  ticker=ticker_or_400(ticker))}

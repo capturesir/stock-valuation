@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useIsAdmin } from "../lib/session";
+import { StandardStatements } from "./StandardStatements";
 
 /** Concepts most people look for first; the first one the company filed is opened by default. */
 const STARTERS = ["Revenues", "RevenueFromContractWithCustomerExcludingAssessedTax", "SalesRevenueNet", "NetIncomeLoss",
@@ -34,11 +35,12 @@ export function FiledData({ ticker }: { ticker: string }) {
   const sync = useMutation({
     mutationFn: () => api.syncStatements(ticker),
     onSuccess: () => {
-      for (const k of ["filer", "filed-concepts", "filed-facts"]) void qc.invalidateQueries({ queryKey: [k, ticker] });
+      for (const k of ["filer", "filed-concepts", "filed-facts", "std"]) void qc.invalidateQueries({ queryKey: [k, ticker] });
     },
   });
   const [picked, setPicked] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [mode, setMode] = useState<"standard" | "filed">("standard");
 
   useEffect(() => {
     if (picked || !concepts.data?.length) return;
@@ -88,13 +90,21 @@ export function FiledData({ ticker }: { ticker: string }) {
             {syncButton}
           </div>
         </div>
-        <div className="banner info" style={{ margin: 0 }}>{t("filed.asFiledNote")}</div>
         {sync.data && <div role="status" className="banner info">{t(sync.data.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {
           ticker, name: sync.data.name ?? "", filings: sync.data.filings_added, facts: sync.data.facts_added, total: sync.data.facts_total.toLocaleString() })}</div>}
         {syncError}
       </section>
 
-      <div className="row">
+      <div className="seg" role="group" aria-label={t("filed.mode")} style={{ alignSelf: "flex-start" }}>
+        {(["standard", "filed"] as const).map((m) => (
+          <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}>{t(`filed.mode.${m}`)}</button>
+        ))}
+      </div>
+
+      {mode === "standard" && <StandardStatements ticker={ticker} onShowFiled={(c) => { setPicked(c); setSearch(""); setMode("filed"); }} />}
+
+      {mode === "filed" && <div className="banner info" style={{ margin: 0 }}>{t("filed.asFiledNote")}</div>}
+      {mode === "filed" && <div className="row">
         <section className="card col-side" aria-labelledby="concepts-h" style={{ gap: 8 }}>
           <h2 id="concepts-h" style={{ fontSize: "var(--sv-fs-lg)" }}>{t("filed.concepts", { n: concepts.data?.length ?? 0 })}</h2>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("filed.search")} aria-label={t("filed.search")} />
@@ -116,7 +126,7 @@ export function FiledData({ ticker }: { ticker: string }) {
         <section className="card col-main" aria-labelledby="facts-h">
           {current ? <Facts ticker={ticker} concept={current} /> : <p className="muted">{t("common.loading")}</p>}
         </section>
-      </div>
+      </div>}
     </>
   );
 }

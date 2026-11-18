@@ -507,3 +507,53 @@ class FiledFactOut(BaseModel):
     frame: Optional[str] = None
     index_url: str
     document_url: Optional[str] = None
+
+
+class StdYear(BaseModel):
+    label: str
+    start: str
+    end: str
+
+
+class StdCell(BaseModel):
+    value: str = Field(description="標準值，精確十進位字串")
+    method: Literal["concept", "formula"]
+    rule_id: str
+    concept: Optional[str] = Field(None, description="取自的申報科目（taxonomy:Concept）")
+    restated: bool = False
+    change: Optional[Literal["restated", "split_adjusted"]] = Field(None, description="同一期間在較新申報中數字不同的原因")
+    original_value: Optional[str] = None
+    latest_value: Optional[str] = None
+    formula: Optional[str] = Field(None, description="公式（標準科目代碼，以 + − 連接；? 表示可缺、按零計）")
+    raw_value: Optional[str] = Field(None, description="申報原值（股份分拆調整前）")
+    split_factor: str = Field("1", description="申報後發生、經申報文件確認的股份分拆累計比例；每股數字已除以、股數已乘以此數")
+    inputs: list[str] = Field(default_factory=list, description="公式用到的標準科目")
+    assumed_zero: list[str] = Field(default_factory=list, description="公式中未申報、按零計算的可選項目")
+    form: Optional[str] = None
+    accession: Optional[str] = None
+    filed: Optional[str] = None
+    index_url: Optional[str] = None
+    document_url: Optional[str] = None
+
+
+class StdRow(BaseModel):
+    code: str
+    statement: Literal["income", "balance", "cash_flow"]
+    unit: Literal["money", "per_share", "shares"]
+    cells: list[Optional[StdCell]] = Field(description="與 years 一一對應；沒有數字時為 null")
+
+
+class StandardStatements(BaseModel):
+    ticker: str
+    cik: str
+    name: Optional[str] = None
+    template: Literal["general", "bank", "insurance"] = Field(description="按 SIC 判斷的行業模板")
+    template_applied: str = Field(description="實際套用的模板；銀行與保險模板推出前為 general")
+    ruleset: str
+    ruleset_version: str
+    currency: Optional[str] = None
+    view: Literal["latest", "original"]
+    as_of: Optional[str] = None
+    splits_applied: list[dict] = Field(default_factory=list, description="已套用的股份分拆（日期、比例），只計申報文件確認過的")
+    years: list[StdYear]
+    rows: list[StdRow]
