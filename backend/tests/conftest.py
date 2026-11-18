@@ -70,6 +70,9 @@ def client(tmp_path, monkeypatch, pg_url):
     monkeypatch.setenv("DATABASE_URL", pg_url)
     monkeypatch.setenv("APP_IMPORT_LEGACY", "0")
     monkeypatch.setenv("APP_MARKET_SCHEDULER", "0")
+    monkeypatch.setenv("APP_OUTBOUND_LIMITS", "0")
+    from src.infra import kv as _kv
+    _kv.reset()                         # rate-limit counters, locks and cache start empty in every test
     for k in ("REDIS_URL", "APP_API_TOKEN", "APP_SECRET_KEY", "LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL"):
         monkeypatch.delenv(k, raising=False)
     from backend.app import config, db, jobs

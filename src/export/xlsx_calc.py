@@ -163,7 +163,7 @@ class W:
             c2 = spans.get(lab, c)
             if c2 > c:
                 self.ws.merge_cells(start_row=self.r, start_column=c, end_row=self.r, end_column=c2)
-            x = self.cell(self.r, c, lab, HDR_F, fill=HDR_FILL, wrap=True, align="center")
+            self.cell(self.r, c, lab, HDR_F, fill=HDR_FILL, wrap=True, align="center")
             for k in range(c + 1, c2 + 1):
                 self.ws.cell(self.r, k).border = BD; self.ws.cell(self.r, k).fill = HDR_FILL
             c = c2 + 1
@@ -176,7 +176,7 @@ class W:
         is_f = isinstance(value, str) and value.startswith("=")
         self.cell(r, 1, label, KEY_F if key_row else Font(name=FN, size=10, bold=True, color="262B33"), wrap=True)
         is_txt = isinstance(value, str) and not is_f
-        x = self.cell(r, 2, value, KEY_F if key_row else (CALC_F if is_f else IN_F), fmt,
+        self.cell(r, 2, value, KEY_F if key_row else (CALC_F if is_f else IN_F), fmt,
                       KEY_FILL if key_row else (None if is_f else IN_FILL), align="left" if is_txt else "right", wrap=is_txt)
         self.cell(r, 3, unit or None, TXT_F, align="center")
         k = kind if kind is not None else (kind_of(basis) or ("計算" if is_f else ""))
@@ -315,7 +315,7 @@ def add_calc_sheet(wb, d, name, peer=None):
             w.inp("capex_guide", "2026 全年資本支出指引（取中位）", round(p0["capex"] + capex_h1), NUM0, MU, "分析師假設：" + p0["reinvestment_rationale"])
             w.inp("capex_h1", "1H2026 實際資本支出", capex_h1, NUM0, MU, h1s.get("basis", "市場數據"), h1s.get("source_name", ""), h1s.get("url", ""), h1s.get("data_date", ""))
     else:
-        cal = d["unit_economics_calibration"]; dr0 = p0["drivers"]; dr1 = d["projections"][1]["drivers"]
+        cal = d["unit_economics_calibration"]; dr0 = p0["drivers"]
         src_ann, url_ann = "中海油 2026 中期業績公告（港交所）", cal.get("source", "")
         rs = by["revenue_source"]
         w.inp("rev_h1", "1H2026 油氣銷售收入", by["revenue"], NUM0, MU, f"市場數據：RMB{rs['value']:,.0f}m ÷ 1H 平均 USD/CNY {fx.get('usdcny_h1_avg')}", rs["source_name"], rs["url"], rs["data_date"])

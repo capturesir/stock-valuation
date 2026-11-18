@@ -16,7 +16,7 @@ Conventions (apply to every asset):
         (Equivalent to TV_end-year = TV * (1+WACC)**0.5 discounted at t_N + 0.5.)
   * WACC = We*Ke + Wd*Kd*(1-t); Ke = Rf + Beta*(ERP + CRP); We = E/(E+D), E = price*diluted shares (in model ccy).
 """
-import copy, json, os
+import json, os
 
 class EngineInputError(RuntimeError):
     """Inputs for which the DCF formula has no meaning (e.g. WACC <= g)."""

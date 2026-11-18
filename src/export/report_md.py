@@ -100,7 +100,7 @@ def write_report(d: dict, path: str) -> str:
     a("")
     a("## 驗證")
     a("")
-    a(f"- 獨立重算：見同目錄 verify 結果。算術通過只代表內部一致，不代表假設在估值日仍然完整。")
+    a("- 獨立重算：見同目錄 verify 結果。算術通過只代表內部一致，不代表假設在估值日仍然完整。")
     a("")
     return path if _dump(path, "\n".join(lines) + "\n") else path
 

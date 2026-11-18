@@ -357,7 +357,7 @@ def api_ai_plan(ticker: str = Query(..., min_length=1), date: str | None = None,
                 use_llm: bool = True):
     """What the AI steps would do for this ticker, before the run starts (R13)."""
     ticker_n = services.norm_ticker(ticker)
-    cfg = services.load_config()
+    services.load_config()
     client_status = services.llm_status()
     return research.ai_plan(ticker_n, date, use_llm=use_llm,
                             model=client_status.get("model"))

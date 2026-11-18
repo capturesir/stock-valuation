@@ -15,10 +15,12 @@ from . import __version__
 from .config import get_settings
 from .db import init_db, session
 from .i18n import AppError, msg, pick
+from .limits import RateLimited
 from .auth import current_principal
 from .routers import auth as auth_router
 from .routers import branding as branding_router
 from .routers import market as market_router
+from .routers import ops as ops_router
 from .routers import settings as settings_router
 from .routers import stocks, valuations, watchlist
 from .schemas import Health
@@ -81,6 +83,14 @@ def create_app() -> FastAPI:
         return JSONResponse(status_code=400, content={"detail": {"code": "invalid_ticker",
                                                                  "error": msg("invalid_ticker", lang, ticker=raw)}})
 
+    @app.exception_handler(RateLimited)
+    async def _rate_limited(request: Request, exc: RateLimited):
+        lang = pick(request.headers.get("accept-language"))
+        status = 503 if exc.code == "queue_full" else 429
+        return JSONResponse(status_code=status, headers={"Retry-After": str(exc.retry_after)},
+                            content={"detail": {"code": exc.code, "retry_after": exc.retry_after,
+                                                "error": msg(exc.code, lang, seconds=exc.retry_after, **exc.params)}})
+
     @app.exception_handler(AppError)
     async def _app_error(request: Request, exc: AppError):
         lang = pick(request.headers.get("accept-language"))
@@ -114,7 +124,7 @@ def create_app() -> FastAPI:
     app.include_router(branding_router.public, prefix=API)
     secured = [Depends(current_principal)]
     for r in (auth_router.me_router, auth_router.admin, branding_router.admin, stocks.router, watchlist.router, valuations.router,
-              settings_router.router, market_router.router):
+              settings_router.router, market_router.router, ops_router.router):
         app.include_router(r, prefix=API, dependencies=secured)
     return app
 

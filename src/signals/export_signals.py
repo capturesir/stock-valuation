@@ -19,7 +19,7 @@ import re
 import tempfile
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
-from typing import Any, Iterable, Optional
+from typing import Iterable, Optional
 from zoneinfo import ZoneInfo
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]

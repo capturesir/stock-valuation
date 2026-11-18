@@ -1633,7 +1633,7 @@
     "tags": [
      "valuations"
     ],
-    "summary": "開始估值（背景執行）",
+    "summary": "開始估值（背景執行；同一代號正在估值時加入該工作）",
     "operationId": "start_api_v1_valuations_post",
     "parameters": [
      {
@@ -1689,6 +1689,18 @@
         }
        }
       }
+     },
+     "200": {
+      "description": "同一代號已在估值：加入該工作（joined=true）"
+     },
+     "409": {
+      "description": "近期已用相同條件估值（recent_valuation），可帶 force=true 重算"
+     },
+     "429": {
+      "description": "超出每人估值次數或同時數量（rate_limited／too_many_jobs）"
+     },
+     "503": {
+      "description": "估值佇列已滿（queue_full）"
      },
      "422": {
       "description": "Validation Error",
@@ -2797,6 +2809,209 @@
      }
     }
    }
+  },
+  "/api/v1/admin/limits": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "請求與估值佇列的限制（管理員）",
+    "operationId": "get_limits_api_v1_admin_limits_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LimitsOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "修改限制（管理員；超出範圍的值會被收窄）",
+    "operationId": "put_limits_api_v1_admin_limits_put",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LimitsIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LimitsOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/ops": {
+   "get": {
+    "tags": [
+     "admin"
+    ],
+    "summary": "數據源熔斷狀態與估值佇列（管理員）",
+    "operationId": "ops_status_api_v1_admin_ops_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OpsStatus"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -3421,6 +3636,35 @@
      "version": {
       "type": "integer",
       "title": "Version"
+     },
+     "joined": {
+      "type": "boolean",
+      "title": "Joined",
+      "description": "同一代號已在估值：此回應是加入那個工作，而非新開一個",
+      "default": false
+     },
+     "queue_position": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Queue Position",
+      "description": "排隊中時，前面還有幾個工作＋1"
+     },
+     "requested_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Requested By"
      }
     },
     "type": "object",
@@ -3610,6 +3854,128 @@
     ],
     "title": "KeyMask"
    },
+   "LimitsIn": {
+    "properties": {
+     "lookup_per_minute": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lookup Per Minute"
+     },
+     "prices_per_minute": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Prices Per Minute"
+     },
+     "valuations_per_hour": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Valuations Per Hour"
+     },
+     "concurrent_valuations_per_user": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Concurrent Valuations Per User"
+     },
+     "queue_max": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Queue Max"
+     },
+     "revalue_cooldown_hours": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Revalue Cooldown Hours"
+     }
+    },
+    "type": "object",
+    "title": "LimitsIn"
+   },
+   "LimitsOut": {
+    "properties": {
+     "lookup_per_minute": {
+      "type": "integer",
+      "title": "Lookup Per Minute"
+     },
+     "prices_per_minute": {
+      "type": "integer",
+      "title": "Prices Per Minute"
+     },
+     "valuations_per_hour": {
+      "type": "integer",
+      "title": "Valuations Per Hour"
+     },
+     "concurrent_valuations_per_user": {
+      "type": "integer",
+      "title": "Concurrent Valuations Per User"
+     },
+     "queue_max": {
+      "type": "integer",
+      "title": "Queue Max"
+     },
+     "revalue_cooldown_hours": {
+      "type": "integer",
+      "title": "Revalue Cooldown Hours"
+     },
+     "defaults": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Defaults"
+     }
+    },
+    "type": "object",
+    "required": [
+     "lookup_per_minute",
+     "prices_per_minute",
+     "valuations_per_hour",
+     "concurrent_valuations_per_user",
+     "queue_max",
+     "revalue_cooldown_hours",
+     "defaults"
+    ],
+    "title": "LimitsOut"
+   },
    "LoginIn": {
     "properties": {
      "email": {
@@ -3787,6 +4153,26 @@
      "value"
     ],
     "title": "MethodValue"
+   },
+   "OpsStatus": {
+    "properties": {
+     "providers": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Providers"
+     },
+     "queue": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Queue"
+     }
+    },
+    "type": "object",
+    "required": [
+     "providers",
+     "queue"
+    ],
+    "title": "OpsStatus"
    },
    "PasswordIn": {
     "properties": {
@@ -4839,6 +5225,24 @@
       "type": "boolean",
       "title": "Valued",
       "default": false
+     },
+     "stale": {
+      "type": "boolean",
+      "title": "Stale",
+      "description": "數據源暫時無法連線，這是之前保存的資料",
+      "default": false
+     },
+     "as_of": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "As Of",
+      "description": "stale 時：資料保存的時間（Unix 秒）"
      }
     },
     "type": "object",
@@ -5210,6 +5614,12 @@
       ],
       "title": "Budget Usd",
       "description": "本次上限；省略＝設定頁的每次上限"
+     },
+     "force": {
+      "type": "boolean",
+      "title": "Force",
+      "description": "同一代號、日期、AI 模式近期已估值時仍要重算",
+      "default": false
      }
     },
     "type": "object",

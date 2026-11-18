@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import copy
-import datetime as dt
-from typing import Any
 
 from ..engine.fcff_engine import D, EngineInputError, discount_block, run, build_json, save
 from ..engine import method_a as MA
@@ -255,7 +253,7 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
 
     # static: g=0, terminal 0, delta nwc 0; optionally keep stub revenue
     g0 = [0.0] * len(spec["growths"])
-    sp_static = dict(spec)
+    dict(spec)
     # Zero growth needs no growth investment: maintenance capex = D&A (steady state; the engine's
     # value-driver terminal already implies the same at g = 0). Owner decision S8, 2026-11-18.
     maint_capex = list(spec["da_pcts"])

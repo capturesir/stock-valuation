@@ -2,6 +2,7 @@ import { ApiError, followJob, type Job, type JobStep, type Mode, type PlanTask }
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
+import { useCooldown } from "../lib/cooldown";
 import { useI18n } from "../lib/i18n";
 import { Close, StepIcon } from "./Icons";
 
@@ -17,6 +18,9 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
   const [date, setDate] = useState(today());
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recent, setRecent] = useState<string | null>(null);   // same ticker/date/mode valued moments ago
+  const [joined, setJoined] = useState(false);                 // following a job someone else started
+  const cool = useCooldown();
   const [now, setNow] = useState(Date.now());
   const stopRef = useRef<(() => void) | null>(null);
   const tasks = picked ? [...picked] : undefined;
@@ -50,11 +54,16 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const start = async () => {
+  const start = async (force = false) => {
     setError(null);
+    setRecent(null);
     try {
-      follow(await api.startValuation({ ticker, mode, tasks, valuation_date: date }));
+      const j = await api.startValuation({ ticker, mode, tasks, valuation_date: date, force });
+      setJoined(Boolean(j.joined));
+      follow(j);
     } catch (e) {
+      if (e instanceof ApiError && e.code === "recent_valuation") { setRecent(e.message); return; }
+      cool.from(e);              // 429 / 503: count down before the button works again
       setError(e instanceof ApiError ? e.message : String(e));
     }
   };
@@ -126,11 +135,18 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
                 </div>
               )}
               {error && <div className="banner err" role="alert">{error}</div>}
+              {recent && (
+                <div className="banner warn" role="alert" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                  <span>{recent}</span>
+                  <button className="btn secondary small" type="button" onClick={() => void start(true)}>{t("run.recentAgain")}</button>
+                </div>
+              )}
             </div>
             <div className="drawer-f">
               <button className="btn secondary" type="button" onClick={onClose}>{t("common.cancel")}</button>
-              <button className="btn primary" type="button" onClick={start} disabled={plan.isLoading}>
-                {plan.data && plan.data.total.cost_usd > 0 ? t("run.startWithCost", { cost: f.usd(plan.data.total.cost_usd) }) : t("run.start")}
+              <button className="btn primary" type="button" onClick={() => void start()} disabled={plan.isLoading || cool.left > 0}>
+                {cool.left > 0 ? t("run.cooldown", { seconds: cool.left })
+                  : plan.data && plan.data.total.cost_usd > 0 ? t("run.startWithCost", { cost: f.usd(plan.data.total.cost_usd) }) : t("run.start")}
               </button>
             </div>
           </>
@@ -140,9 +156,12 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
           <>
             <div className="drawer-b">
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--sv-fs-md)" }}>
-                <span>{job.status === "queued" ? t("run.queued") : t("run.elapsed", { time: f.duration(elapsed(job, now)) })}</span>
+                <span>{job.status === "queued"
+                  ? (job.queue_position && job.queue_position > 1 ? t("run.queuePosition", { n: job.queue_position - 1 }) : t("run.queued"))
+                  : t("run.elapsed", { time: f.duration(elapsed(job, now)) })}</span>
                 <span>{job.progress}%</span>
               </div>
+              {joined && <div className="banner info" role="status">{t("run.joined")}</div>}
               <div className="bar" role="progressbar" aria-valuenow={job.progress} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${job.progress}%` }} /></div>
               <div className="minis">
                 <div><span className="muted small">{t("run.costSoFar")}</span><strong>{f.usd(job.cost_usd)}</strong></div>

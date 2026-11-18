@@ -62,6 +62,11 @@ docker compose up -d --build
 - `main` 永遠可以部署；功能在 `feat/…`、修正在 `fix/…` 分支開發，以 PR 合併。
 - 提交訊息用 Conventional Commits：`feat:`、`fix:`、`docs:`、`refactor:`、`test:`、`chore:`，方便整理 CHANGELOG。
 - 每個 PR 必須：測試通過、更新 CHANGELOG 的「未發佈」段落、API 變動時附上新的 `openapi.json`。
+- 流程（2026-11-18 起）：分支 → 推送 → 開 PR 到 `main` → CI 全綠（後端、前端、Docker、CodeQL）→ 合併（squash）。不直接推送到 `main`。
+- CI 關卡：ruff（pyflakes 錯誤，見 `ruff.toml`）、pip-audit、`pnpm audit --prod`（會送到瀏覽器的依賴，阻擋）、
+  v1 與 v2 測試（PostgreSQL，含資料庫遷移升級／回退／再升級）、前端型別檢查與建置、Docker 映像建置、CodeQL 程式碼掃描。
+- Dependabot 每週一開依賴更新 PR，同樣要 CI 全綠才合併。
+- 本機一次跑完全部檢查：`scripts/dev.sh test`。
 
 ## 6. 支援期
 

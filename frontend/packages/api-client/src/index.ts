@@ -30,6 +30,9 @@ export type AdminUserIn = S["AdminUserIn"];
 export type AdminUserUpdate = S["AdminUserUpdate"];
 export type BrandingOut = S["BrandingOut"];
 export type StockProfile = S["StockProfile"];
+export type LimitsOut = S["LimitsOut"];
+export type LimitsIn = S["LimitsIn"];
+export type OpsStatus = S["OpsStatus"];
 /** In the 404 body of /stocks/{ticker}/profile (detail.suggestions); not a response model, so typed here. */
 export interface Suggestion { ticker: string; name?: string | null; exchange?: string | null; type?: string | null }
 export type SecurityOut = S["SecurityOut"];
@@ -124,6 +127,9 @@ export function createClient(cfg: ClientConfig = {}) {
     assetUrl: (path: string) => (cfg.baseUrl ?? "").replace(/\/$/, "") + path,
     lookup: (ticker: string) => req<Record<string, unknown>>("GET", `/stocks/${enc(ticker)}/lookup`),
     profile: (ticker: string) => req<StockProfile>("GET", `/stocks/${enc(ticker)}/profile`),
+    limits: () => req<LimitsOut>("GET", "/admin/limits"),
+    saveLimits: (body: LimitsIn) => req<LimitsOut>("PUT", "/admin/limits", body),
+    ops: () => req<OpsStatus>("GET", "/admin/ops"),
     valuations: (ticker: string) => req<StockValuations>("GET", `/stocks/${enc(ticker)}/valuations`),
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),
     excelUrl: (runId: string) => `${base}/runs/${enc(runId)}/excel`,

@@ -27,15 +27,25 @@ def now_iso() -> str:
 
 
 def new_job(ticker: str, mode: str, valuation_date: str, tasks: list[dict], steps: list[dict],
-            estimate: dict, budget_usd: Optional[float], note: Optional[str] = None) -> dict:
+            estimate: dict, budget_usd: Optional[float], note: Optional[str] = None,
+            requested_by: Optional[str] = None) -> dict:
     return {
         "id": uuid.uuid4().hex, "ticker": ticker, "mode": mode, "valuation_date": valuation_date,
         "status": "queued", "created_at": now_iso(), "started_at": None, "finished_at": None,
         "progress": 0, "activity": "排隊中…", "steps": steps, "ai_tasks": tasks,
         "estimate": estimate, "budget_usd": budget_usd, "cost_usd": 0.0,
         "tokens_in": 0, "tokens_out": 0, "run_id": None, "result": None, "error": None,
-        "note": note, "version": 1,
+        "note": note, "version": 1, "requested_by": requested_by,
     }
+
+
+def with_position(job: Optional[dict], active: Optional[list[dict]] = None) -> Optional[dict]:
+    """Add queue_position for a queued job: 1 + the active jobs created before it (one runs at a time)."""
+    if job is None or job.get("status") != "queued":
+        return job
+    active = store().active() if active is None else active
+    ahead = sum(1 for j in active if j["id"] != job["id"] and j["created_at"] <= job["created_at"])
+    return dict(job, queue_position=ahead + 1)
 
 
 class MemoryStore:

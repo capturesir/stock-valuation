@@ -1,7 +1,6 @@
 """SEC EDGAR: submissions JSON (works) and HTML archives (often 403/Cloudflare)."""
 from __future__ import annotations
 
-import datetime as dt
 from typing import Optional
 
 from . import httputil

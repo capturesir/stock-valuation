@@ -8,7 +8,6 @@ import pytest
 def fake_yahoo(monkeypatch):
     from backend.app.services import profile as prof
 
-    prof._cache.clear()
     calls = {"quote": 0}
     known = {"0700.HK": ("Tencent Holdings Limited", "HKD"), "BRK-B": ("Berkshire Hathaway Inc.", "USD")}
 

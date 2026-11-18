@@ -45,9 +45,6 @@ def lookup_company_industry(ticker: str, company_hint: str = "", indname_path: O
     import pandas as pd
     df = pd.read_excel(path, sheet_name="By industry", header=0)
     # columns: Company Name, Exchange:Ticker, Industry Group, ...
-    tickers_col = df.iloc[:, 1].astype(str)
-    names_col = df.iloc[:, 0].astype(str)
-    want = ticker.upper().replace(".HK", "").lstrip("0")
     aliases = {ticker.upper(), ticker.replace(".HK", ""), "SEHK:" + ticker.replace(".HK", "").zfill(4) if ticker.endswith(".HK") or ticker[-1].isdigit() else "",
                "NASDAQGS:" + ticker.upper(), "NASDAQ:" + ticker.upper()}
     aliases = {a for a in aliases if a}
@@ -66,7 +63,7 @@ def lookup_company_industry(ticker: str, company_hint: str = "", indname_path: O
     if ticker.endswith(".HK") or ticker.replace(".", "").isdigit():
         code = ticker.replace(".HK", "").zfill(4)
         hits = [h for h in hits if f"SEHK:{code.lstrip('0')}" in h["exchange_ticker"].replace("01830", "1830")
-                or f"SEHK:{code}" in h["exchange_ticker"] or f"SEHK:1830" in h["exchange_ticker"] and "Perfect Medical Health" in h["company"]]
+                or f"SEHK:{code}" in h["exchange_ticker"] or "SEHK:1830" in h["exchange_ticker"] and "Perfect Medical Health" in h["company"]]
     if ticker.upper() == "NVDA":
         hits = [h for h in hits if "NVIDIA" in h["company"].upper() and "NVDA" in h["exchange_ticker"].upper()]
     if not hits:

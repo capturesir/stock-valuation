@@ -4,11 +4,13 @@ from __future__ import annotations
 import datetime as dt
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .. import limits
+from ..auth import Principal, current_principal
 from ..db import get_db
 from ..i18n import http_error, lang_dep
 from ..models import Run, Security, WatchlistItem
@@ -36,7 +38,8 @@ def lookup(ticker: str, lang: str = Depends(lang_dep)) -> dict:
 @router.get("/stocks/{ticker}/profile", response_model=StockProfile,
             responses={404: {"description": "找不到代號；detail.suggestions 為可能的代號"}},
             summary="公司基本資料（查詢時先顯示，讓用戶核實代號）")
-def stock_profile(ticker: str, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+def stock_profile(ticker: str, request: Request, p: Principal = Depends(current_principal),
+                  db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
     from fastapi import HTTPException
 
     from src.web.services import KNOWN_SPECS
@@ -44,6 +47,8 @@ def stock_profile(ticker: str, db: Session = Depends(get_db), lang: str = Depend
     from ..i18n import msg
     from ..services import profile as prof
 
+    lim = limits.get(db)
+    limits.hit("lookup", limits.who(request, p.user.id if p.user else None), lim["lookup_per_minute"], 60)
     t = ticker_or_400(ticker)
     valued = db.scalar(select(Run.id).where(Run.ticker == t, Run.status == "done").limit(1)) is not None
     try:
@@ -51,6 +56,11 @@ def stock_profile(ticker: str, db: Session = Depends(get_db), lang: str = Depend
     except prof.NotFound as exc:
         raise HTTPException(status_code=404, detail={"code": "ticker_not_found", "error": msg("ticker_not_found", lang, ticker=t),
                                                      "suggestions": exc.suggestions})
+    except prof.Unavailable as exc:
+        secs = max(1, int(exc.retry_after + 0.999))
+        raise HTTPException(status_code=503, headers={"Retry-After": str(secs)},
+                            detail={"code": "upstream_unavailable", "retry_after": secs,
+                                    "error": msg("upstream_unavailable", lang, reason=exc.reason, seconds=secs)})
 
 
 @router.get("/stocks/{ticker}/valuations", response_model=StockValuations, summary="估值紀錄（走勢圖資料）")
@@ -73,7 +83,10 @@ def valuations(ticker: str, db: Session = Depends(get_db)) -> dict:
 
 @router.get("/stocks/{ticker}/prices", response_model=PriceSeries,
             summary="每日價格（系統累積；首次使用時自動回補全部歷史）")
-def prices(ticker: str, days: int = Query(365, ge=10, le=36500), db: Session = Depends(get_db)) -> dict:
+def prices(ticker: str, request: Request, days: int = Query(365, ge=10, le=36500),
+           p: Principal = Depends(current_principal), db: Session = Depends(get_db)) -> dict:
+    lim = limits.get(db)
+    limits.hit("prices", limits.who(request, p.user.id if p.user else None), lim["prices_per_minute"], 60)
     t = ticker_or_400(ticker)
     sec = db.get(Security, t)
     error = None

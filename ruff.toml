@@ -1,0 +1,8 @@
+# Lint gate for CI (scripts/dev.sh test runs it too). Start with errors that are bugs — syntax errors,
+# undefined names, unused imports/variables, duplicate dict keys (pyflakes). Widen the set over time.
+target-version = "py312"
+line-length = 120
+extend-exclude = ["frontend", "out", "cases", "var", "data"]
+
+[lint]
+select = ["E9", "F"]
