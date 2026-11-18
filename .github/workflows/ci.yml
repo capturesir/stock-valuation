@@ -53,7 +53,7 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           # `working-directory` does not apply to `uses:` steps; point the action at the
           # package.json that declares `packageManager`, otherwise it finds no pnpm version.
