@@ -1,36 +1,52 @@
 # Weekly dependency update PRs; CI must pass before they are merged.
-# cooldown: only propose versions published at least N days ago (supply-chain safety: a malicious or
-# broken release is usually pulled within days). It also matches pnpm's minimumReleaseAge, which refuses
-# packages younger than its threshold — without it the npm update job failed on hours-old versions.
+# - cooldown: only propose versions published at least 7 days ago (supply-chain safety: a malicious or
+#   broken release is usually pulled within days). It also matches pnpm's minimumReleaseAge, which refuses
+#   packages younger than its threshold — without it the npm update job failed on hours-old versions.
+# - minor and patch updates arrive as one grouped PR per ecosystem; a major version gets its own PR to review.
+# - base images: the runtime Python / Node must match what CI tests (Python 3.12, Node 22 LTS), so only
+#   patch updates are automatic; a Python or Node upgrade is a deliberate change made together with CI.
 version: 2
 updates:
   - package-ecosystem: pip
     directory: /
     schedule: { interval: weekly, day: monday }
-    cooldown:
-      default-days: 7
+    cooldown: { default-days: 7 }
     open-pull-requests-limit: 5
+    groups:
+      python-minor-and-patch:
+        update-types: [minor, patch]
   - package-ecosystem: pip
     directory: /backend
     schedule: { interval: weekly, day: monday }
-    cooldown:
-      default-days: 7
+    cooldown: { default-days: 7 }
     open-pull-requests-limit: 5
+    groups:
+      backend-minor-and-patch:
+        update-types: [minor, patch]
   - package-ecosystem: npm            # pnpm-lock.yaml is supported
     directory: /frontend
     schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
     open-pull-requests-limit: 5
-    cooldown:
-      default-days: 7
     groups:
-      minor-and-patch:
+      frontend-minor-and-patch:
         update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    groups:
+      github-actions:
+        patterns: ["*"]
   - package-ecosystem: docker
     directory: /backend
     schedule: { interval: weekly, day: monday }
+    ignore:
+      - dependency-name: python
+        update-types: [version-update:semver-major, version-update:semver-minor]
   - package-ecosystem: docker
     directory: /deploy
     schedule: { interval: weekly, day: monday }
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major, version-update:semver-minor]
