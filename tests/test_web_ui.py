@@ -430,14 +430,22 @@ def test_error_history_keeps_last_three_runs(client, monkeypatch, tmp_path):
         raise RuntimeError(f"{ticker} 模擬失敗")
 
     monkeypatch.setattr(jobmod, "run_ticker", fake_run)
-    for t in ("AAA", "BBB", "CCC", "DDD"):
-        client.post("/api/valuate", json={"ticker": t, "no_llm": True})
-        _wait_job_done(client, jobmod.store.active_id or "")
-        # wait until the store frees up for the next run
-        for _ in range(100):
-            if jobmod.store.active() is None:
-                break
+
+    def wait_until(cond, timeout=5.0):
+        end = time.time() + timeout
+        while time.time() < end and not cond():
             time.sleep(0.02)
+
+    # Races this test used to lose on a slow CI runner: a job left running by an earlier test made
+    # every POST answer "busy" (unchecked, so the history stayed empty), and the history entry is
+    # written in the job's `finally`, just after its status turns "error".
+    wait_until(lambda: jobmod.store.active() is None)
+    for i, t in enumerate(("AAA", "BBB", "CCC", "DDD")):
+        r = client.post("/api/valuate", json={"ticker": t, "no_llm": True})
+        assert r.status_code in (200, 202), r.text
+        _wait_job_done(client, jobmod.store.active_id or "")
+        wait_until(lambda: jobmod.store.active() is None)
+        wait_until(lambda: len(jobmod.load_history()) >= i + 1)
 
     runs = client.get("/api/errors").json()["runs"]
     assert len(runs) == 3
