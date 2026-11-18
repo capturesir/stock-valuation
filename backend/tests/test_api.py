@@ -29,8 +29,9 @@ def _install_fake_engine(monkeypatch, *, usage_events=None, slow=False, fail=Non
     calls = {}
 
     def fake_run_ticker(ticker, cfg=None, use_llm=True, valuation_date="", progress=None, should_stop=None,
-                        skip_extract=False):
-        calls.update(ticker=ticker, use_llm=use_llm, skip_extract=skip_extract, cfg=cfg)
+                        skip_extract=False, apply_adjustments=True):
+        calls.update(ticker=ticker, use_llm=use_llm, skip_extract=skip_extract, cfg=cfg,
+                     apply_adjustments=apply_adjustments)
         for key in ("quote", "fundamentals", "rf", "filings", "ai_extract", "ai_assume", "spec", "engine", "export", "state"):
             if should_stop and should_stop():
                 raise orchestrator.ValuationCancelled("stopped")
@@ -144,6 +145,7 @@ def test_valuation_job_records_progress_cost_and_history(configured, monkeypatch
     job = _wait(configured, r.json()["id"])
     assert job["status"] == "done" and job["progress"] == 100
     assert calls["use_llm"] is True and calls["skip_extract"] is True
+    assert calls["apply_adjustments"] is False     # the shared v1 adjustments file never reaches v2 (D12)
     assert calls["cfg"]["llm"]["api_key"] == "sk-test-1234567890abcd"      # decrypted server-side only
     t3 = next(s for s in job["steps"] if s["key"] == "T3")
     assert t3["status"] == "done" and t3["tokens_in"] == 9_500
@@ -311,7 +313,7 @@ def test_each_run_keeps_its_own_files(configured, monkeypatch, tmp_path):
     calls = {"n": 0}
 
     def fake_run_ticker(ticker, cfg=None, use_llm=True, valuation_date="", progress=None, should_stop=None,
-                        skip_extract=False):
+                        skip_extract=False, apply_adjustments=True):
         calls["n"] += 1
         (shared / "2026-11-18_0883.HK_FCFF.xlsx").write_text(f"excel of run {calls['n']}")
         (shared / "2026-11-18_0883.HK.json").write_text(f"json of run {calls['n']}")

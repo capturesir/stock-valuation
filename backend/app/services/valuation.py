@@ -187,6 +187,7 @@ def execute(job_id: str, payload: dict) -> None:
         result = run_ticker(
             job["ticker"], cfg=cfg, use_llm=use_llm, valuation_date=job["valuation_date"],
             progress=progress, should_stop=lambda: st.is_cancelled(job_id), skip_extract=True,
+            apply_adjustments=False,      # never the shared v1 file (D12); plans arrive in alpha.3
         )
     except ValuationCancelled:
         status, error = "cancelled", "用戶已停止估值（已完成的步驟保留）"
