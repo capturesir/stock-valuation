@@ -10,6 +10,7 @@ restated number is a new row from the newer filing.
 from __future__ import annotations
 
 import datetime as dt
+from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import func, select
@@ -254,3 +255,63 @@ def filer_for(db: Session, ticker: str) -> Optional[Filer]:
 def filing_urls(cik: str, accession: str, primary: Optional[str]) -> dict:
     return {"index_url": sec_source.filing_index_url(cik, accession),
             "document_url": sec_source.filing_document_url(cik, accession, primary) if primary else None}
+
+
+# ------------------------------------------------------------------ layer ③ standard (computed on read)
+
+def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: Optional[dt.date] = None,
+                        years: int = 10, ticker: Optional[str] = None) -> dict:
+    """Annual standardised statements from the stored filed facts.
+
+    Deterministic: the same filed facts, ruleset version, view and as_of give the same numbers, so the
+    values are computed on read rather than stored; a valuation that uses them will record the
+    ruleset version and as_of with it."""
+    from sqlalchemy import tuple_
+
+    from libs.sv_data.standard import FactRef, Split, load_ruleset, standardize, template_for_sic
+
+    from ..models import CorporateAction
+
+    rs = load_ruleset("general")
+    rows = db.execute(select(FiledFactRow).where(
+        FiledFactRow.cik == filer.cik,
+        tuple_(FiledFactRow.taxonomy, FiledFactRow.concept).in_(sorted(rs.concepts)))).scalars()
+    facts = [FactRef(id=r.id, taxonomy=r.taxonomy, concept=r.concept, unit=r.unit, value=r.value,
+                     period_start=r.period_start, period_end=r.period_end, form=r.form, accession=r.accession,
+                     filed=r.filed) for r in rows]
+    # stock splits from the accumulated market data; only those the filings confirm are applied
+    def ratio(v: float) -> Decimal:                  # stored as float (market data): 4.0 → 4, 1.5 → 1.5
+        d = Decimal(str(v))
+        return d.to_integral_value() if d == d.to_integral_value() else d.normalize()
+
+    splits = [Split(a.date, ratio(a.value)) for a in db.scalars(select(CorporateAction).where(
+        CorporateAction.ticker == (ticker or ""), CorporateAction.kind == "split"))]
+    std = standardize(facts, rs, view=view, as_of=as_of, splits=splits)
+    fys = list(reversed(std.fiscal_years))[:years]               # newest first
+    used = {v.fact.accession for v in std.values.values() if v.fact is not None}
+    primary = {a: p for a, p in db.execute(select(Filing.accession, Filing.primary_document).where(Filing.accession.in_(used)))} if used else {}
+
+    def cell(code: str, label: str) -> Optional[dict]:
+        v = std.get(code, label)
+        if v is None:
+            return None
+        out = {"value": format(v.value, "f"), "method": v.method, "rule_id": v.rule_id, "concept": v.concept,
+               "restated": v.restated, "change": v.change, "formula": v.formula, "inputs": v.inputs,
+               "raw_value": format(v.raw_value, "f") if v.raw_value is not None else None,
+               "split_factor": format(v.split_factor.normalize(), "f"), "assumed_zero": v.assumed_zero,
+               "original_value": format(v.original_value, "f") if v.original_value is not None else None,
+               "latest_value": format(v.latest_value, "f") if v.latest_value is not None else None,
+               "form": None, "accession": None, "filed": None, "index_url": None, "document_url": None}
+        if v.fact is not None:
+            out.update(form=v.fact.form, accession=v.fact.accession, filed=v.fact.filed.isoformat(),
+                       **filing_urls(filer.cik, v.fact.accession, primary.get(v.fact.accession)))
+        return out
+
+    template = template_for_sic(filer.sic)
+    return {"cik": filer.cik, "name": filer.name, "template": template, "template_applied": rs.template,
+            "ruleset": rs.name, "ruleset_version": rs.version, "currency": std.currency, "view": view,
+            "as_of": as_of.isoformat() if as_of else None,
+            "splits_applied": [{"date": sp.date.isoformat(), "ratio": format(sp.ratio.normalize(), "f")} for sp in std.splits_applied],
+            "years": [{"label": y.label, "start": y.start.isoformat(), "end": y.end.isoformat()} for y in fys],
+            "rows": [{"code": i.code, "statement": i.statement, "unit": i.unit,
+                      "cells": [cell(i.code, y.label) for y in fys]} for i in rs.items]}

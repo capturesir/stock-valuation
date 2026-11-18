@@ -196,3 +196,25 @@ def test_watchlist_shows_a_name_for_a_stock_never_valued(client):
         db.flush()
         assert company_name(db, "ONLYSEC") == "Only Sec Corp"      # SEC's list when nothing else knows it
         assert company_name(db, "NOBODY") is None
+
+
+def test_standardised_annual_statements_with_lineage(client, sec, member):
+    assert member.get(f"{API}/stocks/EXMP/statements").json()["detail"]["code"] == "statements_not_synced"
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    assert (d["template"], d["currency"], d["view"], d["ruleset"]) == ("general", "USD", "latest", "general")
+    assert [y["label"] for y in d["years"]] == ["FY2024", "FY2023"]                      # newest first
+    rows = {r["code"]: r for r in d["rows"]}
+    rev24, rev23 = rows["revenue"]["cells"]
+    assert rev24["value"] == "130497000000" and rev24["concept"] == "us-gaap:Revenues" and rev24["form"] == "10-K"
+    assert rev24["document_url"].endswith("/1234567/000123456725000010/exmp-20241231.htm")
+    # FY2023 was restated in the FY2024 10-K: latest view shows the new number, and says so
+    assert (rev23["value"], rev23["change"], rev23["original_value"]) == ("60900000000", "restated", "60922000000")
+    assert rows["eps_diluted"]["cells"][0]["value"] == "2.94"
+    assert rows["total_assets"]["cells"][0]["value"] == "111601000000" and rows["total_assets"]["cells"][1]["value"] == "65728000000"
+    assert rows["research_development"]["cells"] == [None, None]                          # not filed: empty, never guessed
+    first = member.get(f"{API}/stocks/EXMP/statements", params={"view": "original"}).json()
+    assert {r["code"]: r for r in first["rows"]}["revenue"]["cells"][1]["value"] == "60922000000"
+    then = member.get(f"{API}/stocks/EXMP/statements", params={"as_of": "2024-12-31"}).json()
+    assert [y["label"] for y in then["years"]] == ["FY2023"]                              # the FY2024 10-K was not filed yet
+    assert member.get(f"{API}/stocks/EXMP/statements", params={"view": "guess"}).status_code == 422
