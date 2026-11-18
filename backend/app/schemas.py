@@ -70,6 +70,36 @@ class PricePoint(BaseModel):
     adj_close: Optional[float] = Field(None, description="按拆股與派息調整的總回報價格（最新一日等於收市價）")
 
 
+class Suggestion(BaseModel):
+    ticker: str
+    name: Optional[str] = None
+    exchange: Optional[str] = None
+    type: Optional[str] = None
+
+
+class StockProfile(BaseModel):
+    """What the user checks before valuing: the right company, exchange and currency."""
+    ticker: str
+    name: Optional[str] = None
+    exchange: Optional[str] = None
+    currency: Optional[str] = None
+    financial_currency: Optional[str] = Field(None, description="財報貨幣（估值模型的貨幣）")
+    quote_type: Optional[str] = None
+    sector: Optional[str] = None
+    industry: Optional[str] = None
+    country: Optional[str] = None
+    market_cap: Optional[float] = None
+    price: Optional[float] = None
+    price_date: Optional[str] = None
+    week52_high: Optional[float] = None
+    week52_low: Optional[float] = None
+    website: Optional[str] = None
+    summary: Optional[str] = None
+    source: str = "Yahoo Finance"
+    has_name_spec: bool = False
+    valued: bool = False
+
+
 class Coverage(BaseModel):
     first_date: Optional[str] = None
     last_date: Optional[str] = None

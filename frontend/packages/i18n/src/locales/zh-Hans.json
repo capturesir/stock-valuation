@@ -304,5 +304,22 @@
   "theme.system": "跟随系统",
   "theme.help": "选择会保存到你的账号，在其他设备登录时沿用。",
   "market.note.adjusted_mismatch": "系统计算的总回报与来源的调整后价格不一致，需要人工复核。常见原因：来源以错误货币计算派息（例如以美元宣派、港元交易的股票），或漏计供股等公司行动。系统的总回报由未调整价格与派息自行计算。",
-  "market.note.no_source_adjusted": "来源没有调整后价格，无法核对。"
+  "market.note.no_source_adjusted": "来源没有调整后价格，无法核对。",
+  "profile.title": "公司资料",
+  "profile.source": "数据来源：{source}",
+  "profile.loading": "正在查询公司资料…",
+  "profile.name": "名称",
+  "profile.exchange": "交易所",
+  "profile.currency": "货币",
+  "profile.currencyBoth": "交易 {trade}；财报 {report}",
+  "profile.type": "类别",
+  "profile.sector": "行业",
+  "profile.country": "国家／地区",
+  "profile.price": "最新收市价",
+  "profile.range52": "52 周范围",
+  "profile.marketCap": "市值",
+  "profile.website": "网站",
+  "profile.notFoundTitle": "找不到“{ticker}”",
+  "profile.didYouMean": "你是否要找：",
+  "watchlist.added": "已加入：{ticker} {name}"
 }

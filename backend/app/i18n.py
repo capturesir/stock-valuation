@@ -12,6 +12,9 @@ DEFAULT = "zh-Hant"
 MESSAGES: dict[str, dict[str, str]] = {
     "invalid_ticker": {"zh-Hant": "「{ticker}」不是有效的股票代號。", "zh-Hans": "“{ticker}”不是有效的股票代码。",
                        "en": "“{ticker}” is not a valid ticker."},
+    "ticker_not_found": {"zh-Hant": "找不到「{ticker}」。港股輸入數字代號（例如 0700 或 0700.HK），美股輸入代號（例如 AAPL、BRK-B），A 股加 .SS／.SZ，日股加 .T。",
+                         "zh-Hans": "找不到“{ticker}”。港股输入数字代码（例如 0700 或 0700.HK），美股输入代码（例如 AAPL、BRK-B），A 股加 .SS／.SZ，日股加 .T。",
+                         "en": "“{ticker}” was not found. Hong Kong: the number (0700 or 0700.HK); US: the symbol (AAPL, BRK-B); China A-shares: add .SS/.SZ; Japan: add .T."},
     "ticker_required": {"zh-Hant": "請輸入股票代號。", "zh-Hans": "请输入股票代码。", "en": "Enter a ticker."},
     "not_found": {"zh-Hant": "找不到：{what}", "zh-Hans": "找不到：{what}", "en": "Not found: {what}"},
     "job_not_found": {"zh-Hant": "找不到此工作。", "zh-Hans": "找不到此任务。", "en": "Job not found."},

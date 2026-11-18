@@ -213,3 +213,16 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; 
 .logo-preview.dark { background: #161C25; }
 .logo-preview img { max-height: 100%; max-width: 100%; object-fit: contain; }
 @media (max-width: 767px) { .usermenu { display: none; } }
+
+/* ---- company profile (lookup first) ---- */
+.company-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 10px 20px; margin: 0; }
+.facts div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.facts dt { color: var(--sv-ink-500); font-size: var(--sv-fs-sm); }
+.facts dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.company-summary { margin: 0; line-height: 1.7; }
+.suggest { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.suggest a { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; padding: 10px 12px; min-height: var(--sv-size-touch);
+  border: 1px solid var(--sv-line-soft); border-radius: var(--sv-radius-lg); text-decoration: none; color: var(--sv-ink-900); }
+.suggest a:hover { border-color: var(--sv-primary); background: var(--sv-primary-weak); }
+.suggest span { color: var(--sv-ink-500); font-size: var(--sv-fs-md); }

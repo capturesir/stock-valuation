@@ -262,6 +262,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 公司基本資料（查詢時先顯示，讓用戶核實代號） */
+        get: operations["stock_profile_api_v1_stocks__ticker__profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stocks/{ticker}/valuations": {
         parameters: {
             query?: never;
@@ -1201,6 +1218,62 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * StockProfile
+         * @description What the user checks before valuing: the right company, exchange and currency.
+         */
+        StockProfile: {
+            /** Ticker */
+            ticker: string;
+            /** Name */
+            name?: string | null;
+            /** Exchange */
+            exchange?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /**
+             * Financial Currency
+             * @description 財報貨幣（估值模型的貨幣）
+             */
+            financial_currency?: string | null;
+            /** Quote Type */
+            quote_type?: string | null;
+            /** Sector */
+            sector?: string | null;
+            /** Industry */
+            industry?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Market Cap */
+            market_cap?: number | null;
+            /** Price */
+            price?: number | null;
+            /** Price Date */
+            price_date?: string | null;
+            /** Week52 High */
+            week52_high?: number | null;
+            /** Week52 Low */
+            week52_low?: number | null;
+            /** Website */
+            website?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /**
+             * Source
+             * @default Yahoo Finance
+             */
+            source: string;
+            /**
+             * Has Name Spec
+             * @default false
+             */
+            has_name_spec: boolean;
+            /**
+             * Valued
+             * @default false
+             */
+            valued: boolean;
+        };
         /** StockValuations */
         StockValuations: {
             /** Ticker */
@@ -1887,6 +1960,47 @@ export interface operations {
                         [key: string]: unknown;
                     };
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stock_profile_api_v1_stocks__ticker__profile_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockProfile"];
+                };
+            };
+            /** @description 找不到代號；detail.suggestions 為可能的代號 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

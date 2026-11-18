@@ -304,5 +304,22 @@
   "theme.system": "跟隨系統",
   "theme.help": "選擇會保存到你的帳號，在其他裝置登入時沿用。",
   "market.note.adjusted_mismatch": "系統計算的總回報與來源的調整後價格不一致，需要人工覆核。常見原因：來源以錯誤貨幣計算派息（例如以美元宣派、港元交易的股票），或漏計供股等公司行動。系統的總回報由未調整價格與派息自行計算。",
-  "market.note.no_source_adjusted": "來源沒有調整後價格，無法核對。"
+  "market.note.no_source_adjusted": "來源沒有調整後價格，無法核對。",
+  "profile.title": "公司資料",
+  "profile.source": "資料來源：{source}",
+  "profile.loading": "正在查詢公司資料…",
+  "profile.name": "名稱",
+  "profile.exchange": "交易所",
+  "profile.currency": "貨幣",
+  "profile.currencyBoth": "交易 {trade}；財報 {report}",
+  "profile.type": "類別",
+  "profile.sector": "行業",
+  "profile.country": "國家／地區",
+  "profile.price": "最新收市價",
+  "profile.range52": "52 週範圍",
+  "profile.marketCap": "市值",
+  "profile.website": "網站",
+  "profile.notFoundTitle": "找不到「{ticker}」",
+  "profile.didYouMean": "你是否要找：",
+  "watchlist.added": "已加入：{ticker} {name}"
 }

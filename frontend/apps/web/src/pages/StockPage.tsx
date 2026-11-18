@@ -1,9 +1,10 @@
-import type { RunOut } from "@sv/api-client";
+import { ApiError, type RunOut } from "@sv/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Link, NavLink, useParams } from "react-router-dom";
+import { Link, NavLink, useNavigate, useParams } from "react-router-dom";
 import { Refresh } from "../components/Icons";
 import { rememberTicker } from "../components/Layout";
+import { CompanyCard, TickerNotFound } from "../components/CompanyCard";
 import { RunDrawer } from "../components/RunDrawer";
 import { TrendChart, type Range } from "../components/TrendChart";
 import { api } from "../lib/api";
@@ -22,24 +23,45 @@ export function StockPage() {
   const [drawer, setDrawer] = useState(false);
   const [range, setRange] = useState<Range>("year");
   const qc = useQueryClient();
-  const vals = useQuery({ queryKey: ["valuations", ticker], queryFn: () => api.valuations(ticker), enabled: !!ticker });
+  const profile = useQuery({ queryKey: ["profile", ticker], queryFn: () => api.profile(ticker), enabled: !!ticker,
+                              staleTime: 10 * 60e3, retry: false });
+  const notFound = profile.error instanceof ApiError && profile.error.code === "ticker_not_found";
+  const vals = useQuery({ queryKey: ["valuations", ticker], queryFn: () => api.valuations(ticker), enabled: !!ticker && !notFound });
   const prices = useQuery({ queryKey: ["prices", ticker], queryFn: () => api.prices(ticker, 400), enabled: !!ticker, staleTime: 3600e3, retry: false });
   const wl = useQuery({ queryKey: ["watchlist"], queryFn: api.watchlist });
   const add = useMutation({ mutationFn: () => api.addToWatchlist(ticker), onSuccess: () => void qc.invalidateQueries({ queryKey: ["watchlist"] }) });
-  useEffect(() => { if (ticker) rememberTicker(ticker); }, [ticker]);
+  const nav = useNavigate();
+  // 700 -> 0700.HK: show and bookmark the ticker the backend resolved
+  useEffect(() => {
+    const resolved = profile.data?.ticker;
+    if (resolved && resolved !== ticker) nav(`/stock/${encodeURIComponent(resolved)}${tab === "overview" ? "" : `/${tab}`}`, { replace: true });
+  }, [profile.data?.ticker, ticker, tab, nav]);
+  useEffect(() => { if (ticker && !notFound) rememberTicker(ticker); }, [ticker, notFound]);
 
   const v = vals.data, latest = v?.latest, prev = v?.previous, ccy = v?.currency ?? latest?.trading_ccy;
   const gap = latest?.composite_value != null && latest.price ? latest.composite_value / latest.price - 1 : null;
   const inList = wl.data?.some((w) => w.ticker === ticker);
+
+  if (notFound) {
+    return (
+      <main className="main">
+        <span className="muted"><Link to="/" style={{ color: "inherit" }}>{t("nav.watchlist")}</Link> / {ticker}</span>
+        <TickerNotFound ticker={ticker} error={profile.error} />
+        <footer className="foot">{t("app.disclaimer")}</footer>
+      </main>
+    );
+  }
 
   return (
     <main className="main">
       <section className="pagehead" aria-label={ticker}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span className="muted"><Link to="/" style={{ color: "inherit" }}>{t("nav.watchlist")}</Link> / {ticker}</span>
-          <h1>{v?.company ?? ticker}</h1>
+          <h1>{profile.data?.name ?? v?.company ?? ticker}</h1>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span className="tag neutral">{ticker}</span>{ccy && <span className="tag neutral">{ccy}</span>}
+            <span className="tag neutral">{ticker}</span>
+            {profile.data?.exchange && <span className="tag neutral">{profile.data.exchange}</span>}
+            {(ccy ?? profile.data?.currency) && <span className="tag neutral">{ccy ?? profile.data?.currency}</span>}
             <span className="tag primary">{t("stock.method.dcf")}</span>
           </div>
         </div>
@@ -61,6 +83,8 @@ export function StockPage() {
         {TABS.map((k) => <NavLink key={k} to={`/stock/${ticker}/${k}`} className={tab === k ? "active" : ""} end>{t(`stock.tab.${k}`)}</NavLink>)}
       </nav>
 
+      {tab === "overview" && profile.isLoading && <p className="muted">{t("profile.loading")}</p>}
+      {tab === "overview" && profile.data && !latest && <CompanyCard p={profile.data} />}
       {vals.isLoading && <p className="muted">{t("common.loading")}</p>}
       {vals.error && <div className="banner err" role="alert">{t("common.error", { message: (vals.error as Error).message })}</div>}
       {v && !latest && tab !== "history" && (

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..i18n import http_error, lang_dep
 from ..models import Run, Security, WatchlistItem
-from ..schemas import PriceSeries, StockValuations
+from ..schemas import PriceSeries, StockProfile, StockValuations
 from ..services import market
 from .common import iso, run_out, ticker_or_400
 
@@ -31,6 +31,26 @@ def lookup(ticker: str, lang: str = Depends(lang_dep)) -> dict:
     if not res.get("ok"):
         raise http_error(404, "not_found", lang, what=t)
     return res
+
+
+@router.get("/stocks/{ticker}/profile", response_model=StockProfile,
+            responses={404: {"description": "找不到代號；detail.suggestions 為可能的代號"}},
+            summary="公司基本資料（查詢時先顯示，讓用戶核實代號）")
+def stock_profile(ticker: str, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+    from fastapi import HTTPException
+
+    from src.web.services import KNOWN_SPECS
+
+    from ..i18n import msg
+    from ..services import profile as prof
+
+    t = ticker_or_400(ticker)
+    valued = db.scalar(select(Run.id).where(Run.ticker == t, Run.status == "done").limit(1)) is not None
+    try:
+        return prof.profile(db, t, has_name_spec=t in KNOWN_SPECS, valued=valued)
+    except prof.NotFound as exc:
+        raise HTTPException(status_code=404, detail={"code": "ticker_not_found", "error": msg("ticker_not_found", lang, ticker=t),
+                                                     "suggestions": exc.suggestions})
 
 
 @router.get("/stocks/{ticker}/valuations", response_model=StockValuations, summary="估值紀錄（走勢圖資料）")

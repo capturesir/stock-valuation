@@ -29,6 +29,9 @@ export type AuthStatus = S["AuthStatus"];
 export type AdminUserIn = S["AdminUserIn"];
 export type AdminUserUpdate = S["AdminUserUpdate"];
 export type BrandingOut = S["BrandingOut"];
+export type StockProfile = S["StockProfile"];
+/** In the 404 body of /stocks/{ticker}/profile (detail.suggestions); not a response model, so typed here. */
+export interface Suggestion { ticker: string; name?: string | null; exchange?: string | null; type?: string | null }
 export type SecurityOut = S["SecurityOut"];
 export type MarketStatus = S["MarketStatus"];
 export type SyncResult = S["SyncResult"];
@@ -46,7 +49,8 @@ export interface ClientConfig {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, public code: string, message: string) {
+  /** detail: the full error body, e.g. { suggestions } for ticker_not_found */
+  constructor(public status: number, public code: string, message: string, public detail?: Record<string, unknown>) {
     super(message);
   }
 }
@@ -76,7 +80,7 @@ export function createClient(cfg: ClientConfig = {}) {
     if (!res.ok) {
       const d = data?.detail;
       const msg = typeof d === "string" ? d : d?.error ?? (Array.isArray(d) ? d.map((x: { msg: string }) => x.msg).join("; ") : res.statusText);
-      throw new ApiError(res.status, d?.code ?? "http_" + res.status, msg);
+      throw new ApiError(res.status, d?.code ?? "http_" + res.status, msg, d && typeof d === "object" && !Array.isArray(d) ? d : undefined);
     }
     return data as T;
   }
@@ -119,6 +123,7 @@ export function createClient(cfg: ClientConfig = {}) {
     /** absolute URL for an <img> (branding URLs from the API are root-relative) */
     assetUrl: (path: string) => (cfg.baseUrl ?? "").replace(/\/$/, "") + path,
     lookup: (ticker: string) => req<Record<string, unknown>>("GET", `/stocks/${enc(ticker)}/lookup`),
+    profile: (ticker: string) => req<StockProfile>("GET", `/stocks/${enc(ticker)}/profile`),
     valuations: (ticker: string) => req<StockValuations>("GET", `/stocks/${enc(ticker)}/valuations`),
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),
     excelUrl: (runId: string) => `${base}/runs/${enc(runId)}/excel`,

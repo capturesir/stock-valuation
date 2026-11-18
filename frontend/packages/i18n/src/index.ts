@@ -96,6 +96,13 @@ export function createFormat(locale: Locale) {
       const p = (x: number) => String(x).padStart(2, "0");
       return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
     },
+    /** market cap and other large amounts: HK$3.39萬億 · US$3.39T (locale-aware compact notation) */
+    compact(v: number | null | undefined, ccy?: string | null): string {
+      if (v == null || !Number.isFinite(v)) return "—";
+      const c = (ccy ?? "").toUpperCase();
+      const s = new Intl.NumberFormat(tag, { notation: "compact", maximumFractionDigits: 2 }).format(Math.abs(v));
+      return `${v < 0 ? MINUS : ""}${SYMBOLS[c] ?? (c ? c + " " : "")}${s}`;
+    },
     duration(seconds: number): string {
       const m = Math.floor(seconds / 60), s = Math.floor(seconds % 60);
       return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;

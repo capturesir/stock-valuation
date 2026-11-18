@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Plus } from "../components/Icons";
+import { TickerNotFound } from "../components/CompanyCard";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 
@@ -21,7 +22,7 @@ export function WatchlistPage() {
   const list = useQuery({ queryKey: ["watchlist"], queryFn: api.watchlist });
   const usage = useQuery({ queryKey: ["usage"], queryFn: () => api.usage() });
   const add = useMutation({
-    mutationFn: (tk: string) => api.addToWatchlist(tk),
+    mutationFn: async (tk: string) => { const p = await api.profile(tk); const w = await api.addToWatchlist(p.ticker); return { ...w, company: w.company ?? p.name }; },
     onSuccess: () => { setTicker(""); void qc.invalidateQueries({ queryKey: ["watchlist"] }); },
   });
   const remove = useMutation({
@@ -46,7 +47,10 @@ export function WatchlistPage() {
           <button className="btn primary" type="submit" disabled={add.isPending}><Plus size={16} />{t("common.add")}</button>
         </form>
       </div>
-      {add.error && <div className="banner err" role="alert">{add.error instanceof ApiError ? add.error.message : String(add.error)}</div>}
+      {add.error && (add.error instanceof ApiError && add.error.code === "ticker_not_found"
+        ? <TickerNotFound ticker={ticker.trim().toUpperCase()} error={add.error} />
+        : <div className="banner err" role="alert">{add.error instanceof ApiError ? add.error.message : String(add.error)}</div>)}
+      {add.data && !add.error && <div className="banner info" role="status">{t("watchlist.added", { ticker: add.data.ticker, name: add.data.company ?? "" })}</div>}
 
       <div className="row">
         <section className="card col-main" aria-labelledby="alerts-h">
