@@ -23,7 +23,7 @@ def get_sources(_: Principal = Depends(require_admin), db: Session = Depends(get
 
 @router.put("/admin/data-sources", response_model=DataSourcesOut, summary="修改數據來源設定（管理員）")
 def put_sources(body: DataSourcesIn, _: Principal = Depends(require_admin), db: Session = Depends(get_db)) -> dict:
-    return statements.set_data_sources(db, body.sec_contact)
+    return statements.set_data_sources(db, body.sec_organisation, body.sec_email)
 
 
 @router.post("/admin/statements/sync/{ticker}", response_model=StatementsSyncResult,

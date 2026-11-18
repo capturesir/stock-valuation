@@ -3925,6 +3925,58 @@
    },
    "DataSourcesIn": {
     "properties": {
+     "sec_organisation": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sec Organisation",
+      "description": "SEC 要求的機構名稱，例如 \"Example Research\"；與電郵同時空白＝清除"
+     },
+     "sec_email": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sec Email",
+      "description": "SEC 要求的聯絡電郵"
+     }
+    },
+    "type": "object",
+    "title": "DataSourcesIn"
+   },
+   "DataSourcesOut": {
+    "properties": {
+     "sec_organisation": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sec Organisation"
+     },
+     "sec_email": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sec Email"
+     },
      "sec_contact": {
       "anyOf": [
        {
@@ -3935,24 +3987,7 @@
        }
       ],
       "title": "Sec Contact",
-      "description": "SEC User-Agent：機構名稱＋電郵，例如 \"Example Research admin@example.com\"；空白＝清除"
-     }
-    },
-    "type": "object",
-    "title": "DataSourcesIn"
-   },
-   "DataSourcesOut": {
-    "properties": {
-     "sec_contact": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Sec Contact"
+      "description": "實際送給 SEC 的 User-Agent（機構名稱＋電郵）"
      },
      "sec_ready": {
       "type": "boolean",

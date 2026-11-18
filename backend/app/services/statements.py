@@ -38,20 +38,37 @@ def _chunks(rows: list[dict]):
 
 # ------------------------------------------------------------------ settings
 
+def _split(contact: Optional[str]) -> tuple[Optional[str], Optional[str]]:
+    """An older single-string contact ("Org name a@b.com") → (organisation, email)."""
+    m = sec_source.EMAIL.search(contact or "")
+    if not m:
+        return (" ".join((contact or "").split()) or None), None
+    return (" ".join(sec_source.EMAIL.sub(" ", contact).split()) or None), m.group(0)
+
+
 def data_sources(db: Session) -> dict:
     row = db.get(Setting, KEY)
     value = dict(row.value) if row else {}
-    contact = value.get("sec_contact") or None
-    return {"sec_contact": contact, "sec_ready": sec_source.valid_contact(contact)}
+    org, email = value.get("sec_organisation"), value.get("sec_email")
+    if not (org or email) and value.get("sec_contact"):
+        org, email = _split(value["sec_contact"])
+    contact = f"{org} {email}" if org and email else None
+    return {"sec_organisation": org or None, "sec_email": email or None, "sec_contact": contact,
+            "sec_ready": sec_source.valid_contact(contact)}
 
 
-def set_data_sources(db: Session, sec_contact: Optional[str]) -> dict:
-    contact = " ".join((sec_contact or "").split()) or None
-    if contact is not None and not sec_source.valid_contact(contact):
-        raise AppError("sec_contact_invalid")
+def set_data_sources(db: Session, organisation: Optional[str], email: Optional[str]) -> dict:
+    """SEC asks for both an organisation name and an e-mail; both empty clears the setting."""
+    org = " ".join((organisation or "").split()) or None
+    mail = (email or "").strip() or None
+    if org or mail:
+        if not org or len(org) > 120 or "@" in org:
+            raise AppError("sec_organisation_invalid")
+        if not mail or len(mail) > 254 or not sec_source.EMAIL.fullmatch(mail):
+            raise AppError("email_invalid")
     row = db.get(Setting, KEY)
-    value = dict(row.value) if row else {}
-    value["sec_contact"] = contact
+    value = {k: v for k, v in (dict(row.value) if row else {}).items() if k != "sec_contact"}
+    value.update(sec_organisation=org, sec_email=mail)
     if row is None:
         db.add(Setting(key=KEY, value=value))
     else:

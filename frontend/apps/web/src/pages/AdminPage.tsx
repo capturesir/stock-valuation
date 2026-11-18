@@ -209,12 +209,13 @@ function DataSources() {
   const { t } = useI18n();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["data-sources"], queryFn: api.dataSources });
-  const [contact, setContact] = useState("");
+  const [org, setOrg] = useState("");
+  const [email, setEmail] = useState("");
   const [ticker, setTicker] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
   const [result, setResult] = useState<StatementsSyncResult | null>(null);
-  useEffect(() => { if (q.data) setContact(q.data.sec_contact ?? ""); }, [q.data]);
-  const save = useMutation({ mutationFn: () => api.saveDataSources(contact.trim() || null),
+  useEffect(() => { if (q.data) { setOrg(q.data.sec_organisation ?? ""); setEmail(q.data.sec_email ?? ""); } }, [q.data]);
+  const save = useMutation({ mutationFn: () => api.saveDataSources({ sec_organisation: org.trim() || null, sec_email: email.trim() || null }),
                              onSuccess: (d) => { qc.setQueryData(["data-sources"], d); setMsg({ kind: "ok", text: t("common.saved") }); },
                              onError: (e) => setMsg({ kind: "err", text: errText(e) }) });
   const sync = useMutation({ mutationFn: () => api.syncStatements(ticker.trim()),
@@ -225,9 +226,11 @@ function DataSources() {
       <h2 id="sources-h">{t("admin.sec.sources")}</h2>
       <p className="muted" style={{ margin: 0 }}>{t("admin.sources.intro")}</p>
       <form className="fields" onSubmit={(e: FormEvent) => { e.preventDefault(); save.mutate(); }}>
-        <label className="field" style={{ flex: "1 1 320px" }}>{t("admin.sources.secContact")}
-          <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Example Research admin@example.com" autoComplete="off" />
-          <small>{t("admin.sources.secContactHelp")}</small>
+        <label className="field" style={{ flex: "1 1 220px" }}>{t("admin.sources.secOrganisation")}
+          <input value={org} onChange={(e) => setOrg(e.target.value)} placeholder="Example Research" autoComplete="organization" maxLength={120} />
+        </label>
+        <label className="field" style={{ flex: "1 1 220px" }}>{t("admin.sources.secEmail")}
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" autoComplete="email" maxLength={254} />
         </label>
         <div style={{ alignSelf: "flex-end" }}><button className="btn primary" type="submit">{t("common.save")}</button></div>
       </form>
@@ -240,6 +243,7 @@ function DataSources() {
             {sync.isPending ? t("admin.sources.syncing") : t("admin.sources.sync")}</button>
         </div>
       </form>
+      <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.secContactHelp")}</p>
       {q.data && !q.data.sec_ready && <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.needContact")}</p>}
       {result && <div role="status" className="banner info">
         {t(result.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {

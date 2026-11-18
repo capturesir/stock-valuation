@@ -38,6 +38,7 @@ export interface Suggestion { ticker: string; name?: string | null; exchange?: s
 export type SecurityOut = S["SecurityOut"];
 export type MarketStatus = S["MarketStatus"];
 export type SyncResult = S["SyncResult"];
+export type DataSourcesIn = S["DataSourcesIn"];
 export type DataSourcesOut = S["DataSourcesOut"];
 export type StatementsSyncResult = S["StatementsSyncResult"];
 export type FilerOut = S["FilerOut"];
@@ -128,7 +129,7 @@ export function createClient(cfg: ClientConfig = {}) {
     syncSecurity: (ticker: string, full = false) => req<SyncResult>("POST", `/admin/market/sync/${enc(ticker)}${q({ full: full ? "true" : undefined })}`),
     updateAllMarket: () => req<{ started: boolean }>("POST", "/admin/market/update-all"),
     dataSources: () => req<DataSourcesOut>("GET", "/admin/data-sources"),
-    saveDataSources: (sec_contact: string | null) => req<DataSourcesOut>("PUT", "/admin/data-sources", { sec_contact }),
+    saveDataSources: (body: DataSourcesIn) => req<DataSourcesOut>("PUT", "/admin/data-sources", body),
     syncStatements: (ticker: string, force = false) =>
       req<StatementsSyncResult>("POST", `/admin/statements/sync/${enc(ticker)}${q({ force: force ? "true" : undefined })}`),
     filer: (ticker: string) => req<FilerOut>("GET", `/stocks/${enc(ticker)}/filer`),
