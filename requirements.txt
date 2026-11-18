@@ -1,24 +1,24 @@
 # Python 3.11+ recommended (tested on 3.13)
-yfinance>=1.0
+yfinance>=1.8.0
 requests>=2.32
 # Explicit CA bundle for the local Mac/python.org 3.10 case where cert.pem is
 # missing; src/fetch/httputil.py and src/llm/client.py prefer certifi.
 certifi>=2023.7
-pandas>=2.0
-openpyxl>=3.1
-PyYAML>=6.0
+pandas>=3.1.1
+openpyxl>=3.1.5
+PyYAML>=6.0.3
 beautifulsoup4>=4.12
-lxml>=5.0
+lxml>=6.1.3
 # Optional: parse Damodaran .xls (betaGlobal.xls industry table; needed for the
 # full industry beta table used by generic specs — falls back to the hand-
 # transcribed subset in src/engine/method_a.py when missing)
-xlrd>=2.0
+xlrd>=2.0.2
 
 # Web UI (CLI is unchanged; these are only needed for the local interface and tests)
 fastapi>=0.115
 uvicorn>=0.32
 httpx>=0.27
-pytest>=8.0
+pytest>=9.2.0
 
 # Optional but recommended: validate B-compatible signals.json (manual fallback if missing)
-jsonschema>=4.18
+jsonschema>=4.26.0

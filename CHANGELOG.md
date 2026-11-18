@@ -78,6 +78,12 @@
 - 設定頁移除「API 令牌」欄位（改為登入）。
 - 介面不再自動跟隨作業系統的深色設定（之前沒有切換選項，深色系統只能看到深色介面）；需要時選「跟隨系統」。
 
+### 依賴更新
+- Python 依賴下限：pandas ≥3.1.1、yfinance ≥1.8.0、pytest ≥9.2.0、lxml ≥6.1.3、argon2-cffi ≥25.1.0、openpyxl ≥3.1.5、
+  jsonschema ≥4.26.0、PyYAML ≥6.0.3、xlrd ≥2.0.2（在獨立虛擬環境測試全部測試，並以真實數據估值 NVDA、0883.HK、7203.T）。
+- GitHub Actions：checkout、setup-python、setup-node v7，pnpm/action-setup v6，CodeQL v4。
+- **redis 客戶端維持 5.x**：工作佇列 arq（最新 0.28）要求 redis-py < 6；Dependabot 已設定在 arq 支援之前不再提出 redis 6 以上的升級。
+
 ### 修正
 - v1 測試 `test_error_history_keeps_last_three_runs` 在較慢的 CI 機器上偶發失敗（前一個測試的估值未結束、錯誤紀錄在狀態轉為失敗之後才寫入）；改為等候佇列空閒與紀錄寫入，並檢查每次請求被接受。
 - NVDA 規格的 `row_sources` 寫了兩次，後一次蓋掉了現金流量表的來源網址。

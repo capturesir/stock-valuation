@@ -20,6 +20,10 @@ updates:
     schedule: { interval: weekly, day: monday }
     cooldown: { default-days: 7 }
     open-pull-requests-limit: 5
+    ignore:
+      # arq (the job queue) pins redis-py below 6; lift this when arq supports newer clients
+      - dependency-name: redis
+        versions: [">=6"]
     groups:
       backend-minor-and-patch:
         update-types: [minor, patch]
