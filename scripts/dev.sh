@@ -54,7 +54,7 @@ port_free() {
 case "${1:-up}" in
   up)
     deps; db_up; port_free 8000; port_free 5173
-    "$BIN/uvicorn" backend.app.main:app --port 8000 --reload --reload-dir backend --reload-dir src &
+    "$BIN/uvicorn" backend.app.main:app --port 8000 --reload --reload-dir backend --reload-dir src --reload-dir libs &
     # on Ctrl+C or any exit, stop everything this script started (API, Vite) — not just the script
     trap 'trap - INT TERM EXIT; kill 0 2>/dev/null' INT TERM EXIT
     for _ in $(seq 1 30); do curl -sf localhost:8000/api/v1/health >/dev/null && break; sleep 1; done
