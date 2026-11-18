@@ -188,6 +188,7 @@ function Market() {
                     {s.last_error ? <span className="tag bad" title={s.last_error}>{t("admin.market.error")}</span>
                       : c?.status === "ok" ? <span className="tag ok">{t("admin.market.ok")}</span>
                       : c?.status === "warn" ? <span className="tag warn" title={note}>{t("admin.market.warn", { pct: f.pct(c.max_deviation ?? 0, 1, false) })}</span>
+                      : c?.status === "explained" ? <span className="tag ok" title={note}>{t("admin.market.explained", { pct: f.pct(c.max_deviation ?? 0, 1, false) })}</span>
                       : <span className="muted">—</span>}
                   </td>
                   <td>{s.updated_at ? f.datetime(s.updated_at) : "—"}</td>

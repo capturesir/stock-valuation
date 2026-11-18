@@ -42,6 +42,9 @@ HOSTS = {"finance.yahoo.com": "yahoo", "sec.gov": "sec", "asianbondsonline.adb.o
          "tradingeconomics.com": "tradingeconomics", "stern.nyu.edu": "damodaran", "hkexnews.hk": "hkex",
          "hkex.com.hk": "hkex"}
 FAILURE_STATUS = {0, 429, 500, 502, 503, 504}
+# yfinance raises these when a symbol does not exist or has no prices: the source answered, so like
+# an HTTP 404 they are not a failure of the source and must not open its breaker
+NOT_FAILURES = {"YFTzMissingError", "YFPricesMissingError", "YFTickerMissingError"}
 
 
 class ProviderUnavailable(RuntimeError):
@@ -113,8 +116,8 @@ def call(provider: str):
     acquire(provider)
     try:
         yield
-    except Exception:
-        record(provider, False)
+    except Exception as exc:
+        record(provider, type(exc).__name__ in NOT_FAILURES)
         raise
     record(provider, True)
 
