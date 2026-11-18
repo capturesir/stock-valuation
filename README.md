@@ -1,7 +1,7 @@
 # 可攜式、可換模型的股票估值系統（A 組 FCFF 框架）
 
-- 版本：2.0.0-alpha.1（v2 預覽版；v1.1 功能照常可用）
-- 日期：2026-11-17（亞洲／澳門時間，UTC+8）
+- 版本：2.0.0-alpha.2（v2 預覽版；v1.1 功能照常可用）
+- 日期：2026-11-18（亞洲／澳門時間，UTC+8）
 - 語言：繁體中文（介面另支援简体中文、English）
 - 倉庫：[https://github.com/capturesir/stock-valuation](https://github.com/capturesir/stock-valuation)
 - 本系統把既有 A 組 FCFF 框架（方法 A 折現率、五情境、可驗證 Excel、B 組相容訊號檔）打包成可在 **Windows、macOS 與 Linux** 本機運行、並改接其他大語言模型（含本地 OpenAI 相容伺服器）的程式集。
@@ -22,7 +22,8 @@ docker compose up -d --build
 | [`docs/architecture.md`](docs/architecture.md) | 技術架構與理由、API 一覽、多語言、安全 |
 | [`docs/design-system.html`](docs/design-system.html) | 設計規範（顏色、字體、元件、圖表、跨平台） |
 | [`docs/versioning.md`](docs/versioning.md) | 版本規則、發佈步驟、資料庫遷移 |
-| [`docs/系統改進計劃-v2.md`](docs/系統改進計劃-v2.md) | 改進計劃與路線圖 |
+| [`docs/決策紀錄與路線圖-v2.1.md`](docs/決策紀錄與路線圖-v2.1.md) | 擁有者決定（D1–D12）與路線圖 |
+| [`docs/系統改進計劃-v2.md`](docs/系統改進計劃-v2.md) | 改進計劃（v2.0 初版） |
 | [`CHANGELOG.md`](CHANGELOG.md) | 更新日誌 |
 
 以下為 v1 的說明，v1 的命令列與網頁在 v2 開發期間照常可用。

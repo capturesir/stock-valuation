@@ -26,8 +26,8 @@
 
 ```bash
 # 1. 確認全部測試通過
-python -m pytest -q                       # v1 引擎（143 項）
-python -m pytest backend/tests -q         # v2 API（21 項）
+python -m pytest -q                       # v1 引擎
+python -m pytest backend/tests -q         # v2 API（需要 PostgreSQL，見 scripts/dev.sh）
 cd frontend && pnpm typecheck && pnpm test && pnpm build && cd ..
 
 # 2. API 有變動時重新產生合約與前端型別
@@ -36,10 +36,11 @@ cd frontend && pnpm gen:api && cd ..
 # 3. 改版本號（會自動加入 CHANGELOG 空白段落）
 python scripts/bump_version.py 2.0.0-alpha.2
 
-# 4. 填寫 CHANGELOG.md，然後提交並打標籤
-git add -A && git commit -m "release: v2.0.0-alpha.2"
-git tag -a v2.0.0-alpha.2 -m "v2.0.0-alpha.2"
-git push && git push --tags
+# 4. 填寫 CHANGELOG.md，在 release/… 分支提交並開 PR；CI 全綠合併後，在 main 的合併提交上打標籤
+git checkout -b release/v2.0.0-alpha.2 && git commit -am "release: v2.0.0-alpha.2" && git push -u origin HEAD
+# （PR 合併後）
+git checkout main && git pull
+git tag -a v2.0.0-alpha.2 -m "v2.0.0-alpha.2" && git push origin v2.0.0-alpha.2
 
 # 5. 部署
 docker compose up -d --build
