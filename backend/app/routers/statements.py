@@ -165,7 +165,10 @@ def export(ticker: str, format: Literal["xlsx", "csv"] = "xlsx", view: Literal["
     f = _filer_or_404(db, ticker, lang)
     t = ticker_or_400(ticker)
     data = {"ticker": t, **statements.standard_statements(db, f, view=view, years=years, ticker=t, period=period)}
-    stem = f"{t}_{period}_{dt.date.today().isoformat()}"
+    import re
+
+    # the download name only: request input never becomes part of a filesystem path
+    stem = f"{re.sub(r'[^A-Za-z0-9._-]', '_', t)}_{period}_{dt.date.today().isoformat()}"
     if format == "csv":
         return Response(statements_export.to_csv(data, lang), media_type="text/csv; charset=utf-8",
                         headers={"Content-Disposition": f'attachment; filename="{stem}.csv"'})
@@ -174,8 +177,8 @@ def export(ticker: str, format: Literal["xlsx", "csv"] = "xlsx", view: Literal["
     from starlette.background import BackgroundTask
 
     tmp = Path(tempfile.mkdtemp(prefix="sv-export-"))
-    out = tmp / f"{stem}.xlsx"
+    out = tmp / "statements.xlsx"
     statements_export.to_xlsx(data, lang, out)
     branding.stamp_run_files(db, [str(out)])
-    return FileResponse(out, filename=out.name, background=BackgroundTask(shutil.rmtree, tmp, ignore_errors=True),
+    return FileResponse(out, filename=f"{stem}.xlsx", background=BackgroundTask(shutil.rmtree, tmp, ignore_errors=True),
                         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

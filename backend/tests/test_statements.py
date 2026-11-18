@@ -414,7 +414,7 @@ def test_export_excel_and_csv(client, sec, member):
     assert lines[1].startswith("Item,code,Unit,FY2024 (2024-12-31),FY2023 (2023-12-31)")
     assert "Revenue,revenue,USD,130497000000,60900000000" in lines
     r = member.get(f"{API}/stocks/EXMP/statements/export", params={"format": "xlsx"})
-    assert r.status_code == 200
+    assert r.status_code == 200 and 'filename="EXMP_annual_' in r.headers["content-disposition"]
     import io
     wb = load_workbook(io.BytesIO(r.content))
     assert wb.sheetnames == ["標準化財報", "比率", "出處", "檢查"]
