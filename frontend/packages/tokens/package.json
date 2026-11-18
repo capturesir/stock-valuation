@@ -1,16 +1,21 @@
 {
   "name": "@sv/tokens",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-alpha.2",
   "private": true,
   "type": "module",
   "description": "估值工作台設計 token（唯一來源）",
   "main": "dist/tokens.js",
   "types": "dist/tokens.d.ts",
   "exports": {
-    ".": { "types": "./dist/tokens.d.ts", "default": "./dist/tokens.js" },
+    ".": {
+      "types": "./dist/tokens.d.ts",
+      "default": "./dist/tokens.js"
+    },
     "./tokens.css": "./dist/tokens.css",
     "./tokens.wxss": "./dist/tokens.wxss",
     "./tokens.json": "./tokens.json"
   },
-  "scripts": { "build": "node build.mjs" }
+  "scripts": {
+    "build": "node build.mjs"
+  }
 }

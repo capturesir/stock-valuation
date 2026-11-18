@@ -1,4 +1,4 @@
-# 安裝說明（v2.0.0-alpha.1）
+# 安裝說明（v2.0.0-alpha.2）
 
 兩種方式：
 
@@ -212,9 +212,9 @@ cd frontend && pnpm typecheck && pnpm test && pnpm build
 
 ## E. 這個版本的驗證範圍
 
-- ✅ 後端 21 項測試、v1 的 143 項測試全部通過。（2.0.0-alpha.2 起後端測試改在 PostgreSQL 上執行。）
+- ✅ v2 API 75 項測試、v1 的 165 項測試全部通過（另 2 項略過），全部在 PostgreSQL 16 上執行（CI 每個 PR 都跑，另含資料庫遷移升級／回退／再升級）。
 - ✅ 在 PostgreSQL 16 上執行資料庫遷移，並跑過主要 API 流程。
 - ✅ Redis＋獨立 arq worker＋API 三個程序串連，SSE 進度串流正常。
 - ✅ 前端型別檢查與正式建置通過；以 Chrome 實測桌面、手機、English、简体中文畫面，主控台沒有錯誤。
 - ✅ `docker compose config` 驗證兩個 compose 檔。
-- ⚠️ **Docker 映像未在開發環境實際建置**：開發環境無法連到 Docker Hub。第一次在你的電腦執行 `docker compose up --build` 時如有錯誤，請把 `docker compose logs` 的輸出交給我。
+- ✅ Docker 映像由 CI 在每個 PR 建置。
