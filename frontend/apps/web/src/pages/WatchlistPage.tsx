@@ -97,7 +97,7 @@ export function WatchlistPage() {
                   const gap = l?.composite_value != null && l.price ? l.composite_value / l.price - 1 : null;
                   return (
                     <tr key={e.ticker}>
-                      <td><Link className="name" to={`/stock/${e.ticker}`}><strong>{e.company ?? e.ticker}</strong><span>{e.ticker}</span></Link></td>
+                      <td><Link className="name" to={`/stock/${e.ticker}`}><strong>{e.company ?? e.ticker}</strong>{e.company && <span>{e.ticker}</span>}</Link></td>
                       <td>{f.money(l?.price, l?.trading_ccy)}</td>
                       <td><strong>{f.value(l?.composite_value)}</strong></td>
                       <td className={gap == null ? "" : gap >= 0 ? "pos" : "neg"}>{f.pct(gap)}</td>

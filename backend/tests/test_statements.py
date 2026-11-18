@@ -178,3 +178,21 @@ def test_large_company_is_inserted_in_safe_batches(client, sec):
     r = client.post(f"{API}/admin/statements/sync/EXMP")
     assert r.status_code == 200, r.text
     assert r.json()["facts_total"] == 9 + 6000
+
+
+def test_watchlist_shows_a_name_for_a_stock_never_valued(client):
+    """Owner's report: BRK-B added before any valuation showed its ticker twice. A name now comes from
+    the security master (daily prices), the cached profile, or SEC's ticker list, and is remembered."""
+    from backend.app.models import SecTicker, WatchlistItem
+    from backend.app.routers.watchlist import company_name
+
+    r = client.post(f"{API}/watchlist", json={"ticker": "EXMP"})
+    assert r.status_code == 201
+    rows = {w["ticker"]: w for w in client.get(f"{API}/watchlist").json()}
+    assert rows["EXMP"]["company"] == "EXMP Inc."                 # from the security master (fake market source)
+    with _db() as db:
+        assert db.scalar(select(WatchlistItem.company).where(WatchlistItem.ticker == "EXMP")) == "EXMP Inc."
+        db.add(SecTicker(ticker="ONLYSEC", cik="0000000009", title="Only Sec Corp"))
+        db.flush()
+        assert company_name(db, "ONLYSEC") == "Only Sec Corp"      # SEC's list when nothing else knows it
+        assert company_name(db, "NOBODY") is None
