@@ -1,18 +1,27 @@
 # Weekly dependency update PRs; CI must pass before they are merged.
+# cooldown: only propose versions published at least N days ago (supply-chain safety: a malicious or
+# broken release is usually pulled within days). It also matches pnpm's minimumReleaseAge, which refuses
+# packages younger than its threshold — without it the npm update job failed on hours-old versions.
 version: 2
 updates:
   - package-ecosystem: pip
     directory: /
     schedule: { interval: weekly, day: monday }
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
   - package-ecosystem: pip
     directory: /backend
     schedule: { interval: weekly, day: monday }
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
   - package-ecosystem: npm            # pnpm-lock.yaml is supported
     directory: /frontend
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     groups:
       minor-and-patch:
         update-types: [minor, patch]
