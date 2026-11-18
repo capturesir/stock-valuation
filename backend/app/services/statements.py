@@ -218,9 +218,12 @@ def sync_sec(db: Session, ticker: str, force: bool = False, light: bool = False)
     try:
         out = _sync_sec(db, c, ticker, cik, force, light)
         db.commit()                      # visible to whoever waited on the lock
-        return out
     finally:
         store_.delete(lock)
+    # second source for the checks layer: weekly, or right after new filings
+    if refresh_yahoo(db, ticker, force=bool(out["filings_added"] or out["facts_added"] or force)):
+        db.commit()
+    return out
 
 
 def _sync_sec(db: Session, c: sec_source.SecClient, ticker: str, cik: str, force: bool, light: bool) -> dict:
@@ -281,6 +284,78 @@ def _sync_sec(db: Session, c: sec_source.SecClient, ticker: str, cik: str, force
             "unchanged": unchanged and not force, "facts_skipped": skip_facts,
             "duplicates": parsed.duplicates if parsed else 0, "conflicts": parsed.conflicts if parsed else 0,
             "skipped": parsed.skipped if parsed else 0}
+
+
+# ------------------------------------------------------------------ second source for checks: Yahoo
+
+YAHOO_MAX_AGE = dt.timedelta(days=7)
+
+
+def _yahoo_annual(ticker: str) -> Optional[dict]:
+    """Yahoo's annual income statement, balance sheet and cash flow (unofficial; used only to cross-check).
+    Replaced in tests. Paced and circuit-broken like every other Yahoo call."""
+    import math
+
+    from src.fetch import guard
+
+    with guard.call("yahoo"):
+        import yfinance as yf
+
+        T = yf.Ticker(ticker)
+        annual: dict[str, dict[str, float]] = {}
+        for attr in ("income_stmt", "balance_sheet", "cashflow"):
+            df = getattr(T, attr)
+            if df is None or len(df) == 0:
+                continue
+            for c in df.columns:
+                day = str(c.date()) if hasattr(c, "date") else str(c)[:10]
+                row = annual.setdefault(day, {})
+                for name, v in df[c].items():
+                    if v is not None and not (isinstance(v, float) and math.isnan(v)):
+                        row[str(name)] = float(v)
+    return {"ticker": ticker, "source": "Yahoo Finance via yfinance", "annual": annual} if annual else None
+
+
+def refresh_yahoo(db: Session, ticker: str, force: bool = False) -> bool:
+    """Keep Yahoo's annual figures as a raw document (source "yahoo"), at most weekly. Never raises."""
+    import json as _json
+    import logging
+
+    last = db.scalar(select(RawDocumentRow).where(RawDocumentRow.source == "yahoo", RawDocumentRow.kind == "annual_financials",
+                                                  RawDocumentRow.key == ticker).order_by(RawDocumentRow.last_checked_at.desc()).limit(1))
+    if last is not None and not force and dt.datetime.now(dt.timezone.utc) - last.last_checked_at < YAHOO_MAX_AGE:
+        return False
+    try:
+        data = _yahoo_annual(ticker)
+    except Exception as exc:
+        logging.getLogger("sv.statements").info("Yahoo cross-check data for %s unavailable: %s", ticker, exc)
+        return False
+    if not data:
+        return False
+    body = _json.dumps(data, sort_keys=True, ensure_ascii=False).encode()
+    keep(db, RawDocument("yahoo", "annual_financials", ticker, f"https://finance.yahoo.com/quote/{ticker}/financials", body))
+    return True
+
+
+def yahoo_figures(db: Session, ticker: str) -> tuple[Optional[dict], Optional[dt.datetime]]:
+    """The latest stored Yahoo annual figures as {period end: {row: Decimal}}, and when they were fetched."""
+    import json as _json
+
+    row = db.scalar(select(RawDocumentRow).where(RawDocumentRow.source == "yahoo", RawDocumentRow.kind == "annual_financials",
+                                                 RawDocumentRow.key == ticker).order_by(RawDocumentRow.last_checked_at.desc()).limit(1))
+    if row is None:
+        return None, None
+    try:
+        data = _json.loads(store().read(row.path))
+    except (OSError, ValueError):
+        return None, None
+    out = {}
+    for day, values in (data.get("annual") or {}).items():
+        try:
+            out[dt.date.fromisoformat(day[:10])] = {k: Decimal(str(v)) for k, v in values.items() if v is not None}
+        except ValueError:
+            continue
+    return out, row.last_checked_at
 
 
 # ------------------------------------------------------------------ background and daily
@@ -453,8 +528,26 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
                         for sign, f in v.parts if f is not None]
         return out
 
+    from libs.sv_data.checks import grades, load_checks, run_checks
+
+    cs = load_checks()
+    yahoo, yahoo_at = yahoo_figures(db, ticker or "")
+    results = run_checks(std, cs, external={"yahoo": yahoo} if yahoo is not None else None)
+    shown = {y.label for y in fys}
+    grade = grades(results)
+    summary: dict[str, dict[str, int]] = {}
+    for r in results:
+        if r.period in shown:
+            summary.setdefault(r.period, {"pass": 0, "fail": 0, "skip": 0})[r.status] += 1
+    checks = {"checkset": cs.name, "version": cs.version,
+              "yahoo_fetched_at": yahoo_at.isoformat(timespec="seconds") if yahoo_at else None,
+              "grades": {k: v for k, v in grade.items() if k in shown}, "summary": summary,
+              "failures": [{"rule_id": r.rule_id, "period": r.period, "severity": r.severity, "values": r.values,
+                            "difference": format(r.difference.quantize(Decimal("0.0001")), "f") if r.difference is not None else None}
+                           for r in results if r.status == "fail" and r.period in shown]}
+
     template = template_for_sic(filer.sic)
-    return {"cik": filer.cik, "name": filer.name, "template": template, "template_applied": rs.template,
+    return {"cik": filer.cik, "name": filer.name, "template": template, "template_applied": rs.template, "checks": checks,
             "ruleset": rs.name, "ruleset_version": rs.version, "currency": std.currency, "view": view,
             "as_of": as_of.isoformat() if as_of else None,
             "splits_applied": [{"date": sp.date.isoformat(), "ratio": format(sp.ratio.normalize(), "f")} for sp in std.splits_applied],

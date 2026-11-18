@@ -323,3 +323,37 @@ def test_quarterly_statements_with_derived_q4_and_ttm(client, sec, member):
     assert cells["TTM"]["value"] == str(34000000000 + 35082000000 + 31415000000 + 40000000000) and cells["TTM"]["method"] == "ttm"
     annual = member.get(f"{API}/stocks/EXMP/statements").json()
     assert [y["label"] for y in annual["years"]] == ["TTM", "FY2024", "FY2023"]  # TTM leads the annual view too
+
+
+# ------------------------------------------------------------------ step 5: checks layer
+
+def test_checks_and_grades_with_a_yahoo_cross_check(client, sec, member, monkeypatch):
+    from backend.app.models import RawDocumentRow
+    from backend.app.services import statements
+
+    yahoo = {"ticker": "EXMP", "annual": {"2024-12-31": {"Total Revenue": 130497000000.0, "Total Assets": 111601000000.0},
+                                          "2023-12-31": {"Total Revenue": 61000000000.0}}}       # 0.16 % off: within 1 %
+    monkeypatch.setattr(statements, "_yahoo_annual", lambda t: yahoo)
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    with _db() as db:
+        assert db.scalar(select(func.count()).select_from(RawDocumentRow).where(RawDocumentRow.source == "yahoo")) == 1
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    c = d["checks"]
+    assert c["checkset"] == "general" and c["yahoo_fetched_at"]
+    assert c["grades"] == {"FY2024": "A", "FY2023": "A"} and c["failures"] == []
+    assert c["summary"]["FY2024"]["pass"] >= 2                 # Yahoo revenue and total assets agree
+    # Yahoo disagrees by 5 %: a warning, grade B — the SEC number is still the one shown
+    yahoo["annual"]["2024-12-31"]["Total Revenue"] = 124000000000.0
+    with _db() as db:
+        statements.refresh_yahoo(db, "EXMP", force=True)
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    f = d["checks"]["failures"]
+    assert d["checks"]["grades"]["FY2024"] == "B"
+    assert [(x["rule_id"], x["period"], x["severity"], x["values"]["item"]) for x in f] == [("yahoo_matches", "FY2024", "warning", "revenue")]
+    assert {r["code"]: r for r in d["rows"]}["revenue"]["cells"][0]["value"] == "130497000000"
+
+
+def test_checks_without_a_second_source(client, sec, member):
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    c = member.get(f"{API}/stocks/EXMP/statements").json()["checks"]
+    assert c["yahoo_fetched_at"] is None and all(g in ("A", "B", "C") for g in c["grades"].values())

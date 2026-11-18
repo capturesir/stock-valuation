@@ -19,6 +19,7 @@ const ORDER: Record<StdRow["statement"], string[]> = {
 const TOTALS = new Set(["gross_profit", "operating_income", "net_income_parent", "total_assets", "total_liabilities", "total_equity",
                         "liabilities_and_equity", "cfo", "free_cash_flow"]);
 const STATEMENTS: StdRow["statement"][] = ["income", "balance", "cash_flow"];
+const GRADE_TAG: Record<string, string> = { A: "ok", B: "warn", C: "bad" };
 
 type Picked = { code: string; year: number } | null;
 
@@ -42,6 +43,7 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
   if (q.error) return <div role="alert" className="banner err">{(q.error as Error).message}</div>;
   if (!d) return null;
   if (!d.years.length) return <div className="banner info">{t("std.noYears")}</div>;
+  const grades: Record<string, string> = d.checks.grades ?? {};
 
   return (
     <section className="card" aria-labelledby="std-h" style={{ gap: 12 }}>
@@ -80,7 +82,8 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
                 <thead><tr>
                   <th scope="col" className="l">{t("std.col.item")}</th>
                   {d.years.map((y) => <th key={y.label} scope="col" className={y.kind === "ttm" ? "ttm" : ""} title={`${y.start} – ${y.end}`}>
-                    {y.kind === "ttm" ? t("std.ttm") : y.label}<br /><span className="muted small">{y.end}</span></th>)}
+                    {y.kind === "ttm" ? t("std.ttm") : y.label}<br /><span className="muted small">{y.end}</span>
+                    {grades[y.label] && <><br /><span className={`tag ${GRADE_TAG[grades[y.label]]}`} title={t(`check.grade.${grades[y.label]}`)}>{grades[y.label]}</span></>}</th>)}
                 </tr></thead>
                 <tbody>
                   {rows.map((r) => (
@@ -110,7 +113,43 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
           </Fragment>
         );
       })}
+      <Checks d={d} />
     </section>
+  );
+}
+
+function Checks({ d }: { d: Std }) {
+  const { t, f } = useI18n();
+  const c = d.checks;
+  const failures = c.failures ?? [];
+  const fmt = (v: unknown) => (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v) ? groupDigits(v) : String(v));
+  return (
+    <div style={{ borderTop: "1px solid var(--sv-line-faint)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+      <h3 style={{ margin: 0 }}>{t("check.title")}</h3>
+      <span className="muted small">{t("check.intro", { version: c.version })}{" "}
+        {c.yahoo_fetched_at ? t("check.yahoo", { at: f.datetime(c.yahoo_fetched_at) }) : t("check.noYahoo")}</span>
+      {failures.length === 0 ? <span>{t("check.allPassed")}</span> : (
+        <div className="tbl-wrap">
+          <table className="tbl" style={{ minWidth: 640 }}>
+            <thead><tr><th scope="col" className="l">{t("check.col.period")}</th><th scope="col" className="l">{t("check.col.check")}</th>
+              <th scope="col" className="l">{t("check.col.values")}</th><th scope="col">{t("check.col.diff")}</th></tr></thead>
+            <tbody>
+              {failures.map((x, i) => (
+                <tr key={i}>
+                  <td className="l">{x.period === "TTM" ? t("std.ttm") : x.period}</td>
+                  <td className="l" style={{ whiteSpace: "normal" }}>
+                    <span className={`tag ${x.severity === "error" ? "bad" : x.severity === "warning" ? "warn" : "neutral"}`}>{t(`check.severity.${x.severity}`)}</span>{" "}
+                    {t(`check.${x.rule_id}`)}{typeof x.values?.item === "string" ? `（${t(`std.item.${x.values.item}`)}）` : ""}</td>
+                  <td className="l" style={{ whiteSpace: "normal" }}>
+                    {Object.entries(x.values ?? {}).filter(([k]) => k !== "item").map(([k, v]) => `${t(`check.value.${k}`)} ${fmt(v)}`).join(" · ")}</td>
+                  <td>{x.difference != null ? f.pct(Number(x.difference), 2, false) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 

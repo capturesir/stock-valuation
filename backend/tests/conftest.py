@@ -60,6 +60,8 @@ def fake_market(monkeypatch):
     monkeypatch.setattr(market_jobs, "INLINE", True)
     from src.fetch import damodaran
     monkeypatch.setattr(damodaran, "refresh_erp", lambda timeout=25: {"ok": False, "error": "offline in tests"})
+    from backend.app.services import statements
+    monkeypatch.setattr(statements, "_yahoo_annual", lambda ticker: None)      # the cross-check source, offline
     yield src
     market.set_source(old)
 

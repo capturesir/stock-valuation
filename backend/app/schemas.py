@@ -572,12 +572,30 @@ class StdRow(BaseModel):
     cells: list[Optional[StdCell]] = Field(description="與 years 一一對應；沒有數字時為 null")
 
 
+class CheckFailure(BaseModel):
+    rule_id: str
+    period: str
+    severity: Literal["error", "warning", "info"]
+    values: dict = Field(default_factory=dict, description="比較的數字（精確字串）")
+    difference: Optional[str] = Field(None, description="相對差異（0.0074 = 0.74%）")
+
+
+class StatementChecks(BaseModel):
+    checkset: str
+    version: str
+    yahoo_fetched_at: Optional[str] = Field(None, description="交叉核對用的 Yahoo 數字取得時間；沒有則不做跨來源檢查")
+    grades: dict[str, Literal["A", "B", "C"]] = Field(default_factory=dict, description="各期數據品質：A 全部通過、B 有警告、C 有錯誤")
+    summary: dict[str, dict[str, int]] = Field(default_factory=dict, description="各期 pass／fail／skip 數目")
+    failures: list[CheckFailure] = Field(default_factory=list)
+
+
 class StandardStatements(BaseModel):
     ticker: str
     cik: str
     name: Optional[str] = None
     template: Literal["general", "bank", "insurance"] = Field(description="按 SIC 判斷的行業模板")
     template_applied: str = Field(description="實際套用的模板；銀行與保險模板推出前為 general")
+    checks: StatementChecks
     ruleset: str
     ruleset_version: str
     currency: Optional[str] = None

@@ -1,0 +1,119 @@
+# Check rules for standardised statements — general (non-financial) companies (roadmap §3.6).
+#
+# Data, like the mapping rules: every change bumps `version`, and each result records the rule id.
+#
+# Per rule:
+#   id        stable identifier (the frontend dictionary has check.<id>)
+#   kind      equal | le | ratio | sign | jump | quarters_sum | continuity | cross_source
+#   severity  error | warning | info   (errors give grade C, warnings grade B; info does not change the grade)
+#   tolerance relative, e.g. 0.005 = 0.5 %
+#
+# Operands computed by the chart's own formula are skipped in "equal" checks: comparing a formula with
+# the items it was computed from proves nothing. Values derived from year-to-date filings are checked.
+
+checks: general
+version: "2026.11.1"
+
+rules:
+  # ---------------------------------------------------------------- reconciliation (勾稽)
+  - id: balance_total
+    kind: equal
+    severity: error
+    left: total_assets
+    right: liabilities_and_equity
+    tolerance: 0.005
+
+  - id: balance_parts
+    kind: equal
+    severity: error
+    left: total_assets
+    right: total_liabilities + total_equity
+    tolerance: 0.005
+
+  - id: gross_profit
+    kind: equal
+    severity: warning
+    left: gross_profit
+    right: revenue - cost_of_revenue
+    tolerance: 0.005
+
+  - id: net_income_split
+    kind: equal
+    severity: warning
+    left: net_income
+    right: net_income_parent + net_income_nci
+    tolerance: 0.005
+
+  - id: current_assets_within_total
+    kind: le
+    severity: error
+    left: current_assets
+    right: total_assets
+
+  - id: current_liabilities_within_total
+    kind: le
+    severity: error
+    left: current_liabilities
+    right: total_liabilities
+
+  # ---------------------------------------------------------------- per share
+  - id: eps_diluted
+    kind: ratio
+    severity: warning
+    item: eps_diluted
+    numerator: net_income_parent
+    denominator: shares_diluted_weighted
+    tolerance: 0.03            # preferred dividends and two-class methods explain small gaps
+
+  # ---------------------------------------------------------------- signs and units
+  - id: revenue_not_negative
+    kind: sign
+    severity: error
+    item: revenue
+  - id: total_assets_positive
+    kind: sign
+    severity: error
+    item: total_assets
+    strict: true
+  - id: cost_of_revenue_not_negative
+    kind: sign
+    severity: warning
+    item: cost_of_revenue
+  - id: capex_not_negative
+    kind: sign
+    severity: warning
+    item: capex
+
+  - id: revenue_jump
+    kind: jump
+    severity: warning
+    item: revenue
+    factor: 20                 # 20× up or down from the previous period: probably a unit error
+  - id: total_assets_jump
+    kind: jump
+    severity: warning
+    item: total_assets
+    factor: 20
+
+  # ---------------------------------------------------------------- periods
+  - id: quarters_add_up
+    kind: quarters_sum
+    severity: warning
+    items: [revenue, net_income_parent, cfo]
+    tolerance: 0.005
+
+  - id: no_missing_years
+    kind: continuity
+    severity: info
+
+  # ---------------------------------------------------------------- second source (unofficial)
+  - id: yahoo_matches
+    kind: cross_source
+    severity: warning
+    source: yahoo
+    tolerance: 0.01
+    items:
+      revenue: [Total Revenue, Operating Revenue]
+      net_income_parent: [Net Income, Net Income Common Stockholders]
+      total_assets: [Total Assets]
+      cfo: [Operating Cash Flow]
