@@ -174,10 +174,15 @@ function Market() {
         <table className="tbl" style={{ minWidth: 720 }}>
           <thead><tr><th scope="col">{t("admin.market.ticker")}</th><th scope="col" className="l">{t("admin.users.name")}</th>
             <th scope="col">{t("admin.market.range")}</th><th scope="col">{t("admin.market.bars")}</th>
-            <th scope="col" className="l">{t("admin.market.check")}</th><th scope="col">{t("admin.market.updated")}</th></tr></thead>
+            <th scope="col" className="l">{t("admin.market.check")}</th><th scope="col" className="l">{t("admin.market.completeness")}</th>
+            <th scope="col">{t("admin.market.updated")}</th></tr></thead>
           <tbody>
             {(secs.data ?? []).map((s) => {
               const c = (s.checks as { total_return?: { status: string; max_deviation?: number; note_code?: string; note?: string } } | null)?.total_return;
+              const comp = (s.checks as { completeness?: { status: string; missing?: number; sessions_behind?: number; segments?: [string, string, number][];
+                                                        checked_at?: string } } | null)?.completeness;
+              const divs = (s.checks as { dividends?: { status: string; difference_3y: number } } | null)?.dividends;
+              const segs = (comp?.segments ?? []).map(([a, b, n]) => (a === b ? a : `${a} – ${b}`) + ` (${n})`).join("\n");
               const note = c?.note_code ? t(`market.note.${c.note_code}`) : c?.note;
               return (
                 <tr key={s.ticker}>
@@ -191,6 +196,15 @@ function Market() {
                       : c?.status === "warn" ? <span className="tag warn" title={note}>{t("admin.market.warn", { pct: f.pct(c.max_deviation ?? 0, 1, false) })}</span>
                       : c?.status === "explained" ? <span className="tag ok" title={note}>{t("admin.market.explained", { pct: f.pct(c.max_deviation ?? 0, 1, false) })}</span>
                       : <span className="muted">—</span>}
+                  </td>
+                  <td className="l">
+                    {!comp ? <span className="muted">—</span>
+                      : comp.status === "complete" ? <span className="tag ok">{t("admin.market.complete")}</span>
+                      : comp.status === "stale" ? <span className="tag warn">{t("admin.market.stale", { n: comp.sessions_behind ?? 0 })}</span>
+                      : comp.status === "source_missing" ? <span className="tag neutral" title={segs}>{t("admin.market.sourceMissing", { n: comp.missing ?? 0 })}</span>
+                      : <span className="muted small">{t("admin.market.noCalendar")}</span>}
+                    {divs && <> <span className={`tag ${divs.status === "ok" ? "ok" : "warn"}`} title={t("admin.market.dividendsHint")}>
+                      {t(divs.status === "ok" ? "admin.market.dividendsOk" : "admin.market.dividendsWarn", { pct: f.pct(divs.difference_3y, 1, false) })}</span></>}
                   </td>
                   <td>{s.updated_at ? f.datetime(s.updated_at) : "—"}</td>
                 </tr>

@@ -397,7 +397,8 @@ def _run_background(ticker: str) -> None:
         with session() as db:
             sync_sec(db, ticker)
     except Exception as exc:  # the error is on the filer (last_error) or the ticker is not an SEC filer
-        logging.getLogger("sv.statements").warning("background statements sync of %s failed: %s", ticker, exc)
+        safe = "".join(ch for ch in ticker if ch.isalnum() or ch in ".-=^")     # never let input forge log lines
+        logging.getLogger("sv.statements").warning("background statements sync of %s failed: %s", safe, type(exc).__name__)
         _remember_failure(ticker, exc)
     finally:
         kv().delete(_pending_key(ticker))

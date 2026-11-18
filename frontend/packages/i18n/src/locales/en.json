@@ -284,7 +284,7 @@
   "admin.brand.none": "Default icon",
   "settings.adminOnly": "The AI connection, budgets and price table are shared by everyone; only administrators can change them.",
   "admin.sec.market": "Market data",
-  "admin.market.intro": "Every ticker and FX pair ever used accumulates daily prices, dividends and splits. Prices are stored unadjusted; total return is computed here and checked against the source.",
+  "admin.market.intro": "Every ticker and FX pair ever used accumulates daily prices, dividends and splits, is checked for gaps against its exchange calendar (gaps are re-read; days the source lacks are marked, never filled) and is fully re-read monthly. Prices are stored unadjusted; total return is computed here and checked against the source.",
   "admin.market.schedule": "Daily update: {times} ({tz}) · next {next}",
   "admin.market.off": "Daily update is off",
   "admin.market.lastRun": "Last update {at}: {ok} synced, {failed} failed",
@@ -626,5 +626,13 @@
   "std.export.csv": "Export CSV",
   "std.ratioInputs": "Inputs",
   "std.ratioAvg": "(end {end}, a year earlier {ago}, averaged)",
-  "std.taxRate": "tax rate {rate}"
+  "std.taxRate": "tax rate {rate}",
+  "admin.market.completeness": "Completeness",
+  "admin.market.complete": "Complete",
+  "admin.market.stale": "{n} sessions behind",
+  "admin.market.sourceMissing": "{n} days missing at source",
+  "admin.market.noCalendar": "No calendar",
+  "admin.market.dividendsOk": "Dividends match SEC",
+  "admin.market.dividendsWarn": "Dividends differ from SEC by {pct}",
+  "admin.market.dividendsHint": "Dividends per share over the last three fiscal years, compared with SEC filings (split-adjusted)"
 }

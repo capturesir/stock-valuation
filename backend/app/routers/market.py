@@ -64,6 +64,26 @@ def sync_one(ticker: str, full: bool = False, _: Principal = Depends(require_adm
         raise http_error(502, "upstream", lang, detail=exc)
 
 
+@router.post("/admin/market/check/{ticker}", summary="立即檢查一隻證券的完整性：按交易日曆找缺口並重抓；full=true 先重讀全部歷史（管理員）")
+def check_one(ticker: str, full: bool = False, _: Principal = Depends(require_admin), db: Session = Depends(get_db),
+              lang: str = Depends(lang_dep)) -> dict:
+    from ..services import completeness
+
+    t = ticker_or_400(ticker)
+    if db.get(Security, t) is None:
+        raise http_error(404, "not_found", lang, what=t)
+    try:
+        out = completeness.reread(db, t) if full else completeness.check(db, t)
+        d = completeness.dividend_check(db, t)
+        if d is not None:
+            sec = db.get(Security, t)
+            sec.checks = dict(sec.checks or {}, dividends=d)
+        return out
+    except Exception as exc:
+        db.commit()
+        raise http_error(502, "upstream", lang, detail=exc)
+
+
 @router.post("/admin/market/update-all", status_code=202, summary="立即執行每日更新（背景；管理員）")
 def update_all(_: Principal = Depends(require_admin)) -> dict:
     return {"started": scheduler.run_in_background()}

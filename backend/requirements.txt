@@ -10,3 +10,6 @@ psycopg[binary]>=3.3.8,<4
 argon2-cffi>=25.1.0
 python-multipart>=0.0.33
 Pillow>=13.0.0
+# alpha.4: exchange trading calendars (market-data completeness) and SLSQP (portfolio optimizer)
+exchange-calendars>=4.13
+scipy>=1.16
