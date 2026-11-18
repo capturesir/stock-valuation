@@ -760,6 +760,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/statements/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 財報數據狀態：是否已取得、是否正在取得、是否 SEC 申報公司 */
+        get: operations["fetch_status_api_v1_stocks__ticker__statements_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/statements/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 取得一隻美股的財報數據（任何已登入用戶；背景執行；近 6 小時內已取得則不重複） */
+        post: operations["fetch_api_v1_stocks__ticker__statements_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -926,6 +960,13 @@ export interface components {
             sec_contact?: string | null;
             /** Sec Ready */
             sec_ready: boolean;
+            /**
+             * Statements Last Run
+             * @description 上次每日檢查新申報的結果（只在 GET 回傳）
+             */
+            statements_last_run?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** FiledConceptOut */
         FiledConceptOut: {
@@ -1570,6 +1611,37 @@ export interface components {
             years: components["schemas"]["StdYear"][];
             /** Rows */
             rows: components["schemas"]["StdRow"][];
+        };
+        /** StatementsStatus */
+        StatementsStatus: {
+            /** Ticker */
+            ticker: string;
+            /**
+             * Sec Ready
+             * @description 管理員已設定 SEC 聯絡資料
+             */
+            sec_ready: boolean;
+            /**
+             * Us Filer
+             * @description 是否在 SEC 代號清單中；清單未載入時為 null
+             */
+            us_filer?: boolean | null;
+            /** Synced */
+            synced: boolean;
+            /** Synced At */
+            synced_at?: string | null;
+            /**
+             * Pending
+             * @description 正在背景取得
+             */
+            pending: boolean;
+            /**
+             * Facts
+             * @default 0
+             */
+            facts: number;
+            /** Last Error */
+            last_error?: string | null;
         };
         /** StatementsSyncResult */
         StatementsSyncResult: {
@@ -3663,6 +3735,81 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StandardStatements"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_status_api_v1_stocks__ticker__statements_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementsStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_api_v1_stocks__ticker__statements_fetch_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 正在取得，或近 6 小時內已取得 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementsStatus"];
+                };
+            };
+            /** @description 已開始在背景取得 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

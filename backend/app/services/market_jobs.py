@@ -26,10 +26,15 @@ def _run(ticker: str) -> None:
 
 
 def submit_sync(ticker: str) -> None:
+    submit_call(_run, ticker)
+
+
+def submit_call(fn, *args) -> None:
+    """Run ``fn(*args)`` on the single background thread (inline in tests). ``fn`` handles its own errors."""
     global _pool
     if INLINE:
-        _run(ticker)
+        fn(*args)
         return
     if _pool is None:
         _pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="market-sync")
-    _pool.submit(_run, ticker)
+    _pool.submit(fn, *args)

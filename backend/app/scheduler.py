@@ -1,4 +1,4 @@
-"""Daily market-data update (roadmap v2.1 §4).
+"""Daily market-data update (roadmap v2.1 §4), plus the SEC new-filing check for statements.
 
 Runs at APP_MARKET_UPDATE_TIMES (default 06:30 and 17:30, in APP_TIMEZONE = Asia/Macau): after the
 US close (16:00 New York) and after the Hong Kong close (16:10). With Redis the arq worker runs it
@@ -69,6 +69,11 @@ def run_once() -> dict:
     from .services import market
 
     summary = market.update_all(session)
+    try:  # SEC statements: new filings since the last check (one small request per company)
+        from .services import statements
+        summary["statements"] = statements.update_all(session)
+    except Exception as exc:
+        summary["statements"] = {"error": f"{type(exc).__name__}: {exc}"}
     try:  # Method A's monthly ERP rides along with the daily job
         from src.fetch import damodaran
         r = damodaran.refresh_erp()

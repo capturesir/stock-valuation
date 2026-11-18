@@ -3631,6 +3631,157 @@
      }
     }
    }
+  },
+  "/api/v1/stocks/{ticker}/statements/status": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "財報數據狀態：是否已取得、是否正在取得、是否 SEC 申報公司",
+    "operationId": "fetch_status_api_v1_stocks__ticker__statements_status_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatementsStatus"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/statements/fetch": {
+   "post": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "取得一隻美股的財報數據（任何已登入用戶；背景執行；近 6 小時內已取得則不重複）",
+    "operationId": "fetch_api_v1_stocks__ticker__statements_fetch_post",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "正在取得，或近 6 小時內已取得",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatementsStatus"
+        }
+       }
+      }
+     },
+     "202": {
+      "description": "已開始在背景取得"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -4109,6 +4260,19 @@
      "sec_ready": {
       "type": "boolean",
       "title": "Sec Ready"
+     },
+     "statements_last_run": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Statements Last Run",
+      "description": "上次每日檢查新申報的結果（只在 GET 回傳）"
      }
     },
     "type": "object",
@@ -6134,6 +6298,75 @@
      "rows"
     ],
     "title": "StandardStatements"
+   },
+   "StatementsStatus": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "sec_ready": {
+      "type": "boolean",
+      "title": "Sec Ready",
+      "description": "管理員已設定 SEC 聯絡資料"
+     },
+     "us_filer": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Us Filer",
+      "description": "是否在 SEC 代號清單中；清單未載入時為 null"
+     },
+     "synced": {
+      "type": "boolean",
+      "title": "Synced"
+     },
+     "synced_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Synced At"
+     },
+     "pending": {
+      "type": "boolean",
+      "title": "Pending",
+      "description": "正在背景取得"
+     },
+     "facts": {
+      "type": "integer",
+      "title": "Facts",
+      "default": 0
+     },
+     "last_error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Error"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "sec_ready",
+     "synced",
+     "pending"
+    ],
+    "title": "StatementsStatus"
    },
    "StatementsSyncResult": {
     "properties": {

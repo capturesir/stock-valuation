@@ -368,8 +368,6 @@
   "admin.ops.note": "连续 5 次失败（429、5xx、网络错误）会暂停该数据源 60 秒，期间改为显示已保存的数据；SEC 规定每秒不超过 10 次。",
   "filed.resync": "重新获取",
   "filed.none.title": "尚未获取 {ticker} 的财报数据",
-  "filed.none.admin": "美股财报直接取自 SEC。按下方按钮获取这家公司的全部申报数字（第一次可能需要数十秒）。",
-  "filed.none.member": "美股财报直接取自 SEC，目前由管理员在“系统管理 → 数据来源与财报”获取。美股以外的财报来源在后续版本加入。",
   "filed.fye": "财年结束 {mmdd}",
   "filed.counts": "{filings} 份申报 · {facts} 个数字",
   "filed.synced": "更新于 {at}",
@@ -474,5 +472,15 @@
   "std.item.free_cash_flow": "自由现金流",
   "std.splits": "已按股份拆分调整每股数字与股数，让各年度可以比较：{list}。",
   "std.split": "{date} 一拆 {ratio}",
-  "std.splitAdjusted": "申报原值 {raw}；申报后的股份拆分累计 ×{factor}，已调整。"
+  "std.splitAdjusted": "申报原值 {raw}；申报后的股份拆分累计 ×{factor}，已调整。",
+  "filed.none.noContact": "管理员尚未设置 SEC 联系资料，暂时不能获取美股财报。",
+  "filed.none.noContactAdmin": "请先在“系统管理 → 数据来源与财报”填写 SEC 联系资料，之后所有用户打开美股的财报分页都会自动获取。",
+  "filed.none.notUs": "{ticker} 不是 SEC 申报公司。美股以外的财报来源在后续版本加入。",
+  "filed.none.fetching": "正在从 SEC 获取 {ticker} 的财报数据……第一次可能需要数十秒，完成后会自动显示。",
+  "filed.none.ready": "美股财报直接取自 SEC。按下方按钮获取。",
+  "filed.err.sec_not_filer": "{ticker} 不是 SEC 申报公司。",
+  "filed.err.upstream": "SEC 暂时无法响应，请稍后再试。",
+  "filed.err.sec_contact_missing": "尚未设置 SEC 联系资料。",
+  "admin.sources.daily": "每日检查新申报：上次 {at}，检查 {checked} 家，更新 {updated} 家，失败 {failed} 家。",
+  "admin.sources.dailyNone": "每日检查新申报：与市场数据同时执行，尚未执行过。"
 }

@@ -45,6 +45,7 @@ export type FilerOut = S["FilerOut"];
 export type FiledConceptOut = S["FiledConceptOut"];
 export type FiledFactOut = S["FiledFactOut"];
 export type StandardStatements = S["StandardStatements"];
+export type StatementsStatus = S["StatementsStatus"];
 export type StdRow = S["StdRow"];
 export type StdCell = S["StdCell"];
 
@@ -136,6 +137,8 @@ export function createClient(cfg: ClientConfig = {}) {
     syncStatements: (ticker: string, force = false) =>
       req<StatementsSyncResult>("POST", `/admin/statements/sync/${enc(ticker)}${q({ force: force ? "true" : undefined })}`),
     filer: (ticker: string) => req<FilerOut>("GET", `/stocks/${enc(ticker)}/filer`),
+    statementsStatus: (ticker: string) => req<StatementsStatus>("GET", `/stocks/${enc(ticker)}/statements/status`),
+    fetchStatements: (ticker: string) => req<StatementsStatus>("POST", `/stocks/${enc(ticker)}/statements/fetch`),
     filedConcepts: (ticker: string) => req<FiledConceptOut[]>("GET", `/stocks/${enc(ticker)}/filed-concepts`),
     standardStatements: (ticker: string, view: "latest" | "original" = "latest", years = 10) =>
       req<StandardStatements>("GET", `/stocks/${enc(ticker)}/statements${q({ view, years })}`),

@@ -368,8 +368,6 @@
   "admin.ops.note": "Five failures in a row (429, 5xx, network) pause a source for 60 s and stored data is shown meanwhile; SEC allows at most 10 requests per second.",
   "filed.resync": "Fetch again",
   "filed.none.title": "No statement data for {ticker} yet",
-  "filed.none.admin": "US statements come straight from the SEC. Use the button below to fetch every number this company has filed (the first time can take a few dozen seconds).",
-  "filed.none.member": "US statements come straight from the SEC; for now an administrator fetches them under Admin → Data sources and statements. Sources outside the US come in a later version.",
   "filed.fye": "fiscal year ends {mmdd}",
   "filed.counts": "{filings} filings · {facts} numbers",
   "filed.synced": "updated {at}",
@@ -474,5 +472,15 @@
   "std.item.free_cash_flow": "Free cash flow",
   "std.splits": "Per-share figures and share counts are adjusted for stock splits so years compare: {list}.",
   "std.split": "{date} {ratio}-for-1",
-  "std.splitAdjusted": "Filed as {raw}; adjusted for stock splits after filing (×{factor} in total)."
+  "std.splitAdjusted": "Filed as {raw}; adjusted for stock splits after filing (×{factor} in total).",
+  "filed.none.noContact": "An administrator has not set the SEC contact yet, so US statements cannot be fetched.",
+  "filed.none.noContactAdmin": "Set the SEC contact under Admin → Data sources and statements; after that, statements are fetched automatically when anyone opens a US stock.",
+  "filed.none.notUs": "{ticker} does not file with the SEC. Statement sources outside the US come in a later version.",
+  "filed.none.fetching": "Fetching {ticker}'s statements from the SEC… the first time can take a few dozen seconds; they appear here when done.",
+  "filed.none.ready": "US statements come straight from the SEC. Use the button below to fetch them.",
+  "filed.err.sec_not_filer": "{ticker} does not file with the SEC.",
+  "filed.err.upstream": "The SEC is not responding right now; try again later.",
+  "filed.err.sec_contact_missing": "The SEC contact is not set.",
+  "admin.sources.daily": "Daily new-filing check: last run {at}, {checked} checked, {updated} updated, {failed} failed.",
+  "admin.sources.dailyNone": "Daily new-filing check: runs with the market-data update; not run yet."
 }
