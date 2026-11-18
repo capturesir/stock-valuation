@@ -2,7 +2,7 @@
 -r ../requirements.txt
 sqlalchemy>=2.0,<3
 alembic>=1.13,<2
-arq>=0.26,<1
+arq>=0.28.0,<1
 redis>=5,<6   # arq (job queue) requires redis-py < 6; see .github/dependabot.yml
 cryptography>=42
 psycopg[binary]>=3.2,<4
