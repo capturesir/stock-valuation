@@ -436,3 +436,71 @@ class LimitsOut(BaseModel):
 class OpsStatus(BaseModel):
     providers: dict
     queue: dict
+
+
+# ---------------------------------------------------------------- statement data (alpha.3)
+
+class DataSourcesIn(BaseModel):
+    sec_contact: Optional[str] = Field(None, description="SEC User-Agent：機構名稱＋電郵，例如 \"Example Research admin@example.com\"；空白＝清除")
+
+
+class DataSourcesOut(BaseModel):
+    sec_contact: Optional[str] = None
+    sec_ready: bool
+
+
+class StatementsSyncResult(BaseModel):
+    ticker: str
+    cik: str
+    name: Optional[str] = None
+    filings_added: int
+    facts_added: int
+    facts_total: int
+    has_xbrl: bool
+    unchanged: bool
+    duplicates: int = 0
+    conflicts: int = 0
+    skipped: int = 0
+
+
+class FilerOut(BaseModel):
+    cik: str
+    name: Optional[str] = None
+    entity_type: Optional[str] = None
+    sic: Optional[str] = None
+    sic_description: Optional[str] = None
+    fiscal_year_end: Optional[str] = None
+    category: Optional[str] = None
+    tickers: list[str] = []
+    exchanges: list[str] = []
+    filings: int
+    facts: int
+    synced_at: Optional[str] = None
+    last_error: Optional[str] = None
+
+
+class FiledConceptOut(BaseModel):
+    taxonomy: str
+    concept: str
+    label: Optional[str] = None
+    units: list[str]
+    facts: int
+    first_end: str
+    last_end: str
+
+
+class FiledFactOut(BaseModel):
+    taxonomy: str
+    concept: str
+    unit: str
+    value: str = Field(description="申報原值，精確十進位字串（不經浮點數）")
+    period_start: Optional[str] = None
+    period_end: str
+    fy: Optional[int] = None
+    fp: Optional[str] = None
+    form: str
+    accession: str
+    filed: str
+    frame: Optional[str] = None
+    index_url: str
+    document_url: Optional[str] = None

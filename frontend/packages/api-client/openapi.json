@@ -3,7 +3,7 @@
  "info": {
   "title": "估值工作台 API",
   "description": "股票估值系統 v2 後端。所有前端共用此 API。本系統產出不構成投資建議。",
-  "version": "2.0.0-alpha.1"
+  "version": "2.0.0-alpha.2"
  },
  "paths": {
   "/api/v1/health": {
@@ -3012,6 +3012,508 @@
      }
     }
    }
+  },
+  "/api/v1/admin/data-sources": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "數據來源設定：SEC 聯絡資料（管理員）",
+    "operationId": "get_sources_api_v1_admin_data_sources_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DataSourcesOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "put": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "修改數據來源設定（管理員）",
+    "operationId": "put_sources_api_v1_admin_data_sources_put",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DataSourcesIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DataSourcesOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/admin/statements/sync/{ticker}": {
+   "post": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "從 SEC 取得一隻美股的申報清單與全部 XBRL 數字（force=true 重新讀取舊頁並重新解析；管理員）",
+    "operationId": "sync_api_v1_admin_statements_sync__ticker__post",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "force",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Force"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatementsSyncResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/filer": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "SEC 申報公司資料與已累積的申報數量",
+    "operationId": "filer_api_v1_stocks__ticker__filer_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/FilerOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/filed-concepts": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "申報原貌：公司申報過的全部科目，附筆數與期間",
+    "operationId": "concepts_api_v1_stocks__ticker__filed_concepts_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/FiledConceptOut"
+         },
+         "title": "Response Concepts Api V1 Stocks  Ticker  Filed Concepts Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/filed-facts": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "申報原貌：一個科目的每個申報數字，附申報文件連結（重編時同一期間有多筆）",
+    "operationId": "facts_api_v1_stocks__ticker__filed_facts_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "concept",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "maxLength": 200,
+       "title": "Concept"
+      }
+     },
+     {
+      "name": "taxonomy",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "maxLength": 24,
+       "default": "us-gaap",
+       "title": "Taxonomy"
+      }
+     },
+     {
+      "name": "unit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 40
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Unit"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 5000,
+       "minimum": 1,
+       "default": 500,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/FiledFactOut"
+         },
+         "title": "Response Facts Api V1 Stocks  Ticker  Filed Facts Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -3420,6 +3922,336 @@
     },
     "type": "object",
     "title": "Coverage"
+   },
+   "DataSourcesIn": {
+    "properties": {
+     "sec_contact": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sec Contact",
+      "description": "SEC User-Agent：機構名稱＋電郵，例如 \"Example Research admin@example.com\"；空白＝清除"
+     }
+    },
+    "type": "object",
+    "title": "DataSourcesIn"
+   },
+   "DataSourcesOut": {
+    "properties": {
+     "sec_contact": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sec Contact"
+     },
+     "sec_ready": {
+      "type": "boolean",
+      "title": "Sec Ready"
+     }
+    },
+    "type": "object",
+    "required": [
+     "sec_ready"
+    ],
+    "title": "DataSourcesOut"
+   },
+   "FiledConceptOut": {
+    "properties": {
+     "taxonomy": {
+      "type": "string",
+      "title": "Taxonomy"
+     },
+     "concept": {
+      "type": "string",
+      "title": "Concept"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     },
+     "units": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Units"
+     },
+     "facts": {
+      "type": "integer",
+      "title": "Facts"
+     },
+     "first_end": {
+      "type": "string",
+      "title": "First End"
+     },
+     "last_end": {
+      "type": "string",
+      "title": "Last End"
+     }
+    },
+    "type": "object",
+    "required": [
+     "taxonomy",
+     "concept",
+     "units",
+     "facts",
+     "first_end",
+     "last_end"
+    ],
+    "title": "FiledConceptOut"
+   },
+   "FiledFactOut": {
+    "properties": {
+     "taxonomy": {
+      "type": "string",
+      "title": "Taxonomy"
+     },
+     "concept": {
+      "type": "string",
+      "title": "Concept"
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit"
+     },
+     "value": {
+      "type": "string",
+      "title": "Value",
+      "description": "申報原值，精確十進位字串（不經浮點數）"
+     },
+     "period_start": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Period Start"
+     },
+     "period_end": {
+      "type": "string",
+      "title": "Period End"
+     },
+     "fy": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fy"
+     },
+     "fp": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fp"
+     },
+     "form": {
+      "type": "string",
+      "title": "Form"
+     },
+     "accession": {
+      "type": "string",
+      "title": "Accession"
+     },
+     "filed": {
+      "type": "string",
+      "title": "Filed"
+     },
+     "frame": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Frame"
+     },
+     "index_url": {
+      "type": "string",
+      "title": "Index Url"
+     },
+     "document_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Document Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "taxonomy",
+     "concept",
+     "unit",
+     "value",
+     "period_end",
+     "form",
+     "accession",
+     "filed",
+     "index_url"
+    ],
+    "title": "FiledFactOut"
+   },
+   "FilerOut": {
+    "properties": {
+     "cik": {
+      "type": "string",
+      "title": "Cik"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "entity_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Entity Type"
+     },
+     "sic": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sic"
+     },
+     "sic_description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sic Description"
+     },
+     "fiscal_year_end": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fiscal Year End"
+     },
+     "category": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "tickers": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Tickers",
+      "default": []
+     },
+     "exchanges": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Exchanges",
+      "default": []
+     },
+     "filings": {
+      "type": "integer",
+      "title": "Filings"
+     },
+     "facts": {
+      "type": "integer",
+      "title": "Facts"
+     },
+     "synced_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Synced At"
+     },
+     "last_error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Error"
+     }
+    },
+    "type": "object",
+    "required": [
+     "cik",
+     "filings",
+     "facts"
+    ],
+    "title": "FilerOut"
    },
    "HTTPValidationError": {
     "properties": {
@@ -5038,6 +5870,75 @@
      "tracked"
     ],
     "title": "SecurityOut"
+   },
+   "StatementsSyncResult": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "cik": {
+      "type": "string",
+      "title": "Cik"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "filings_added": {
+      "type": "integer",
+      "title": "Filings Added"
+     },
+     "facts_added": {
+      "type": "integer",
+      "title": "Facts Added"
+     },
+     "facts_total": {
+      "type": "integer",
+      "title": "Facts Total"
+     },
+     "has_xbrl": {
+      "type": "boolean",
+      "title": "Has Xbrl"
+     },
+     "unchanged": {
+      "type": "boolean",
+      "title": "Unchanged"
+     },
+     "duplicates": {
+      "type": "integer",
+      "title": "Duplicates",
+      "default": 0
+     },
+     "conflicts": {
+      "type": "integer",
+      "title": "Conflicts",
+      "default": 0
+     },
+     "skipped": {
+      "type": "integer",
+      "title": "Skipped",
+      "default": 0
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "cik",
+     "filings_added",
+     "facts_added",
+     "facts_total",
+     "has_xbrl",
+     "unchanged"
+    ],
+    "title": "StatementsSyncResult"
    },
    "StockProfile": {
     "properties": {

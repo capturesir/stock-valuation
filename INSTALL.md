@@ -52,10 +52,11 @@ docker compose exec api python -m backend.app.cli create-user --email you@exampl
 ### A3. 開始使用
 
 0. **新增其他用戶：** 管理員在右上角「系統管理」新增用戶，可設為「管理員」或「一般用戶」；同一頁可設定系統名稱與 Logo。每個用戶有自己的觀察名單；估值紀錄、市場與財報數據全系統共享。
-1. **（可選）設定 AI（管理員）：** 右上角「AI 與費用」→ 選服務商 → 貼上你的 API 金鑰 →「測試連線」→「保存」。不設定也能估值，系統會使用規則後備。
-2. **加入股票：** 在「觀察名單」輸入代號（例如 `0883.HK`、`NVDA`）。
-3. **估值：** 打開股票 →「重新估值」→ 查看 AI 工作清單與預估費用 →「開始估值」。
-4. 以前用 v1 做過的估值（`out/` 資料夾）會在第一次啟動時自動匯入，走勢圖從第一天起就有歷史。
+1. **（美股財報，管理員）設定 SEC 聯絡資料：** 「系統管理」→「數據來源與財報」→ 填寫機構名稱與電郵（SEC 要求，例如 `Example Research you@example.com`，只會發送給 SEC）→「保存」，然後輸入代號（例如 `NVDA`）→「取得財報數據」。
+2. **（可選）設定 AI（管理員）：** 右上角「AI 與費用」→ 選服務商 → 貼上你的 API 金鑰 →「測試連線」→「保存」。不設定也能估值，系統會使用規則後備。
+3. **加入股票：** 在「觀察名單」輸入代號（例如 `0883.HK`、`NVDA`）。
+4. **估值：** 打開股票 →「重新估值」→ 查看 AI 工作清單與預估費用 →「開始估值」。
+5. 以前用 v1 做過的估值（`out/` 資料夾）會在第一次啟動時自動匯入，走勢圖從第一天起就有歷史。
 
 ### A4. 在手機上使用（PWA）
 
@@ -82,6 +83,9 @@ docker compose exec -T db pg_dump -U valuation valuation > backup-$(date +%F).sq
 
 # 備份 Excel 與估值檔（outputs 資料卷）
 docker run --rm -v stock-valuation_outputs:/data -v "$PWD":/backup alpine tar czf /backup/outputs-$(date +%F).tgz -C /data .
+
+# 備份系統資料（appdata 資料卷：Logo、每次估值的存檔、SEC 原始文件）
+docker run --rm -v stock-valuation_appdata:/data -v "$PWD":/backup alpine tar czf /backup/appdata-$(date +%F).tgz -C /data .
 
 # 還原資料庫
 docker compose exec -T db psql -U valuation valuation < backup-2026-11-17.sql

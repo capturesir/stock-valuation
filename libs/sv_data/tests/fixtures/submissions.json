@@ -1,0 +1,14 @@
+{"cik":"1234567","entityType":"operating","sic":"3674","sicDescription":"Semiconductors & Related Devices",
+ "name":"EXAMPLE CORP","tickers":["EXMP"],"exchanges":["Nasdaq"],"fiscalYearEnd":"1231",
+ "category":"Large accelerated filer","stateOfIncorporation":"DE",
+ "filings":{"recent":{
+   "accessionNumber":["0001234567-25-000010","0001234567-24-000020","0001234567-24-000005"],
+   "filingDate":["2025-02-20","2024-11-01","2024-02-21"],
+   "reportDate":["2024-12-31","2024-09-30","2023-12-31"],
+   "acceptanceDateTime":["2025-02-20T16:05:00.000Z","2024-11-01T16:10:00.000Z","2024-02-21T16:00:00.000Z"],
+   "form":["10-K","10-Q","10-K"],
+   "primaryDocument":["exmp-20241231.htm","exmp-20240930.htm","exmp-20231231.htm"],
+   "primaryDocDescription":["10-K","10-Q","10-K"],
+   "items":["","",""],
+   "isXBRL":[1,1,1],"isInlineXBRL":[1,1,1]},
+  "files":[{"name":"CIK0001234567-submissions-001.json","filingCount":1,"filingFrom":"2009-01-01","filingTo":"2009-12-31"}]}}

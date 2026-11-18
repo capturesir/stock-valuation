@@ -19,6 +19,7 @@ RUN pip install -r backend/requirements.txt
 # application: engine, backend, prompts, reference data, built-in specs and v1 outputs
 COPY VERSION ./
 COPY src ./src
+COPY libs ./libs
 COPY backend ./backend
 COPY prompts ./prompts
 COPY data ./data
