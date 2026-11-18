@@ -25,8 +25,9 @@ type Picked = { code: string; year: number } | null;
 export function StandardStatements({ ticker, onShowFiled }: { ticker: string; onShowFiled: (concept: string) => void }) {
   const { t, locale } = useI18n();
   const [view, setView] = useState<"latest" | "original">("latest");
+  const [period, setPeriod] = useState<"annual" | "quarterly">("annual");
   const [picked, setPicked] = useState<Picked>(null);
-  const q = useQuery({ queryKey: ["std", ticker, view], queryFn: () => api.standardStatements(ticker, view) });
+  const q = useQuery({ queryKey: ["std", ticker, view, period], queryFn: () => api.standardStatements(ticker, view, period) });
   const d = q.data;
   const millions = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const millionsShares = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
@@ -49,10 +50,17 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
           <h2 id="std-h">{t("std.title")}</h2>
           <span className="muted small">{t("std.subtitle", { ccy: d.currency ?? "—", ruleset: d.ruleset, version: d.ruleset_version })}</span>
         </div>
-        <div className="seg" role="group" aria-label={t("std.view")}>
-          {(["latest", "original"] as const).map((v) => (
-            <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} title={t(`std.view.${v}.hint`)}>{t(`std.view.${v}`)}</button>
-          ))}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="seg" role="group" aria-label={t("std.period")}>
+            {(["annual", "quarterly"] as const).map((v) => (
+              <button key={v} type="button" aria-pressed={period === v} onClick={() => { setPeriod(v); setPicked(null); }}>{t(`std.period.${v}`)}</button>
+            ))}
+          </div>
+          <div className="seg" role="group" aria-label={t("std.view")}>
+            {(["latest", "original"] as const).map((v) => (
+              <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} title={t(`std.view.${v}.hint`)}>{t(`std.view.${v}`)}</button>
+            ))}
+          </div>
         </div>
       </div>
       {d.template !== "general" && <div className="banner warn" role="note">{t(`std.template.${d.template}`)}</div>}
@@ -71,20 +79,22 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
               <table className="tbl std" style={{ minWidth: 160 + d.years.length * 110 }}>
                 <thead><tr>
                   <th scope="col" className="l">{t("std.col.item")}</th>
-                  {d.years.map((y) => <th key={y.label} scope="col" title={`${y.start} – ${y.end}`}>{y.label}<br /><span className="muted small">{y.end}</span></th>)}
+                  {d.years.map((y) => <th key={y.label} scope="col" className={y.kind === "ttm" ? "ttm" : ""} title={`${y.start} – ${y.end}`}>
+                    {y.kind === "ttm" ? t("std.ttm") : y.label}<br /><span className="muted small">{y.end}</span></th>)}
                 </tr></thead>
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.code} className={TOTALS.has(r.code) ? "total" : ""}>
                       <th scope="row" className="l">{t(`std.item.${r.code}`)}</th>
                       {r.cells.map((c, i) => (
-                        <td key={i}>
+                        <td key={i} className={d.years[i].kind === "ttm" ? "ttm" : ""}>
                           {c ? (
                             <button type="button" className={`cell${picked?.code === r.code && picked.year === i ? " active" : ""}`}
                                     onClick={() => setPicked(picked?.code === r.code && picked.year === i ? null : { code: r.code, year: i })}
                                     aria-label={`${t(`std.item.${r.code}`)} ${d.years[i].label}`}>
                               {show(r, c)}
                               {c.method === "formula" && <sup className="muted" title={t("std.mark.formula")}>ƒ</sup>}
+                              {c.method === "derived" && <sup className="muted" title={t("std.mark.derived")}>Δ</sup>}
                               {c.change === "restated" && <sup className="mark-r" title={t("std.mark.restated")}>R</sup>}
                               {(c.split_factor !== "1" || c.change === "split_adjusted") && <sup className="muted" title={t("std.mark.split_adjusted")}>S</sup>}
                             </button>
@@ -114,12 +124,27 @@ function Lineage({ d, row, year, view, onShowFiled }: { d: Std; row: StdRow; yea
   const label = (code: string) => t(`std.item.${code}`);
   return (
     <div className="banner info" role="region" aria-label={t("std.lineage")} style={{ flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
-      <strong>{label(row.code)} · {y.label}（{y.start} – {y.end}）</strong>
+      <strong>{label(row.code)} · {y.kind === "ttm" ? t("std.ttm") : y.label}（{y.start} – {y.end}）</strong>
       <span>{t("std.exact")}：<strong>{groupDigits(c.value)}</strong> {unit}</span>
       {c.split_factor !== "1" && c.raw_value != null && (
         <span>{t("std.splitAdjusted", { raw: groupDigits(c.raw_value), factor: c.split_factor })}</span>
       )}
-      {c.method === "concept" ? (
+      {(c.method === "derived" || c.method === "ttm") && (
+        <span>{c.method === "derived" ? t("std.from.derived", { rule: c.rule_id, concept: c.concept ?? "" })
+          : (c.parts ?? []).length ? t("std.from.ttmPerShare", { rule: c.rule_id })
+          : t("std.from.ttmSum", { quarters: (c.inputs ?? []).join("、") })}
+          {(c.parts ?? []).length > 0 && (
+            <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+              {(c.parts ?? []).map((p, k) => (
+                <li key={k}>{p.sign > 0 ? "＋" : "−"} {groupDigits(p.value)}（{p.period_start ? `${p.period_start} – ${p.period_end}` : p.period_end}，{p.form}，{p.filed}）{" "}
+                  <a href={p.document_url ?? p.index_url ?? "#"} target="_blank" rel="noreferrer">{t("std.secDoc")}</a></li>
+              ))}
+              {c.method === "derived" && (c.inputs ?? []).length > 0 && <li>− {t("std.minusQuarters", { quarters: (c.inputs ?? []).join("、") })}</li>}
+            </ul>
+          )}
+        </span>
+      )}
+      {c.method === "derived" || c.method === "ttm" ? null : c.method === "concept" ? (
         <span>{t("std.from.concept", { concept: c.concept ?? "", rule: c.rule_id })}
           {c.form && <> · {t("std.from.filing", { form: c.form, filed: c.filed ?? "" })}</>}
           {(c.document_url || c.index_url) && <> · <a href={c.document_url ?? c.index_url ?? "#"} target="_blank" rel="noreferrer">{t("std.secDoc")}</a></>}

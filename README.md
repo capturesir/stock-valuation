@@ -1,6 +1,6 @@
 # 可攜式、可換模型的股票估值系統（A 組 FCFF 框架）
 
-- 版本：2.0.0-alpha.2（v2 預覽版；v1.1 功能照常可用）；2.0.0-alpha.3 開發中：美股財報已可從 SEC 取得並逐筆累積，標準化年度財報（附每個數字的出處）已可查看
+- 版本：2.0.0-alpha.2（v2 預覽版；v1.1 功能照常可用）；2.0.0-alpha.3 開發中：美股財報已可從 SEC 取得並逐筆累積，標準化年度及季度財報（含近十二個月，附每個數字的出處）已可查看
 - 日期：2026-11-18（亞洲／澳門時間，UTC+8）
 - 語言：繁體中文（介面另支援简体中文、English）
 - 倉庫：[https://github.com/capturesir/stock-valuation](https://github.com/capturesir/stock-valuation)

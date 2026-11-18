@@ -185,3 +185,62 @@ def test_a_market_split_the_filings_do_not_show_is_ignored():
 def test_template_from_sic():
     assert template_for_sic("6331") == "insurance" and template_for_sic("6021") == "bank"
     assert template_for_sic("3674") == "general" and template_for_sic(None) == "general" and template_for_sic("x") == "general"
+
+
+# ------------------------------------------------------------------ quarters and TTM (alpha.3 step 4)
+
+def _year_of_10qs():
+    """FY2024 (calendar). Revenue: three-month values in each 10-Q; cash from operations: year to date only,
+    as in real 10-Qs; EPS: three-month and year to date. FY2025 Q1 filed too (the year in progress)."""
+    f, Q = [], [(D(2024, 1, 1), D(2024, 3, 31), D(2024, 5, 1)), (D(2024, 4, 1), D(2024, 6, 30), D(2024, 8, 1)),
+                (D(2024, 7, 1), D(2024, 9, 30), D(2024, 11, 1))]
+    rev, cfo_ytd, eps = [100, 110, 120], [30, 70, 100], ["1.00", "1.10", "1.20"]
+    for (s, e, filed), r, c, ep in zip(Q, rev, cfo_ytd, eps):
+        f += [fact("Revenues", r, s, e, filed, form="10-Q"),
+              fact("NetCashProvidedByUsedInOperatingActivities", c, D(2024, 1, 1), e, filed, form="10-Q"),
+              fact("EarningsPerShareDiluted", ep, s, e, filed, form="10-Q", unit="USD/shares"),
+              fact("Assets", 1000 + r, None, e, filed, form="10-Q")]
+    f += [fact("EarningsPerShareDiluted", "3.30", D(2024, 1, 1), D(2024, 9, 30), D(2024, 11, 1), form="10-Q", unit="USD/shares"),
+          fact("Revenues", 460, *FY24, D(2025, 2, 20)), fact("NetCashProvidedByUsedInOperatingActivities", 150, *FY24, D(2025, 2, 20)),
+          fact("EarningsPerShareDiluted", "4.60", *FY24, D(2025, 2, 20), unit="USD/shares"),
+          fact("Assets", 1200, None, D(2024, 12, 31), D(2025, 2, 20)),
+          # FY2025 Q1 (year in progress), with the prior-year comparative
+          fact("Revenues", 140, D(2025, 1, 1), D(2025, 3, 31), D(2025, 5, 1), form="10-Q"),
+          fact("NetCashProvidedByUsedInOperatingActivities", 45, D(2025, 1, 1), D(2025, 3, 31), D(2025, 5, 1), form="10-Q"),
+          fact("EarningsPerShareDiluted", "1.40", D(2025, 1, 1), D(2025, 3, 31), D(2025, 5, 1), form="10-Q", unit="USD/shares"),
+          fact("EarningsPerShareDiluted", "1.00", D(2024, 1, 1), D(2024, 3, 31), D(2025, 5, 1), form="10-Q", unit="USD/shares"),
+          fact("Assets", 1300, None, D(2025, 3, 31), D(2025, 5, 1), form="10-Q")]
+    return f
+
+
+def test_quarters_direct_derived_and_q4():
+    s = standardize(_year_of_10qs(), load_ruleset("general"))
+    assert [q.label for q in s.quarters] == ["FY2024 Q1", "FY2024 Q2", "FY2024 Q3", "FY2024 Q4", "FY2025 Q1"]
+    q4 = s.quarters[3]
+    assert (q4.start, q4.end, q4.prev_end) == (D(2024, 10, 1), D(2024, 12, 31), D(2024, 9, 30))
+    assert [s.get("revenue", q.label).value for q in s.quarters] == [100, 110, 120, 130, 140]
+    assert [s.get("revenue", q.label).method for q in s.quarters] == ["concept", "concept", "concept", "derived", "concept"]
+    # cash flow is filed year to date: quarters 2–4 are derived (70−30, 100−70, 150−100)
+    cfo = [s.get("cfo", q.label) for q in s.quarters]
+    assert [c.value for c in cfo] == [30, 40, 30, 50, 45] and cfo[1].method == "derived"
+    assert [(sign, f.period_end) for sign, f in cfo[1].parts] == [(1, D(2024, 6, 30)), (-1, D(2024, 3, 31))]
+    assert s.get("eps_diluted", "FY2024 Q4") is None          # per share: never derived by subtraction
+    assert s.get("total_assets", "FY2024 Q2").value == 1110 and s.get("total_assets", "FY2024 Q4").value == 1200
+
+
+def test_trailing_twelve_months():
+    s = standardize(_year_of_10qs(), load_ruleset("general"))
+    assert (s.ttm.start, s.ttm.end) == (D(2024, 4, 1), D(2025, 3, 31))
+    rev = s.get("revenue", "TTM")
+    assert rev.value == 110 + 120 + 130 + 140 and rev.method == "ttm" and rev.inputs[-1] == "FY2025 Q1"
+    assert s.get("cfo", "TTM").value == 40 + 30 + 50 + 45
+    assert s.get("free_cash_flow", "TTM") is None                  # no capex filed
+    eps = s.get("eps_diluted", "TTM")
+    assert eps.value == Decimal("4.60") + Decimal("1.40") - Decimal("1.00")   # FY + YTD − prior-year YTD
+    assert s.get("total_assets", "TTM").value == 1300               # as at the latest quarter end
+
+
+def test_ttm_needs_four_consecutive_quarters():
+    facts = [f for f in _year_of_10qs() if f.form != "10-Q" or f.period_end.year == 2025]
+    s = standardize(facts, load_ruleset("general"))
+    assert s.ttm is None and s.get("revenue", "TTM") is None
