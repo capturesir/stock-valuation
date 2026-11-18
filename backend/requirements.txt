@@ -8,5 +8,5 @@ cryptography>=42
 psycopg[binary]>=3.2,<4
 # accounts, uploads and branding (2.0.0-alpha.2)
 argon2-cffi>=25.1.0
-python-multipart>=0.0.9
+python-multipart>=0.0.33
 Pillow>=10.0
