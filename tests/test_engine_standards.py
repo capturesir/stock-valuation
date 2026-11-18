@@ -63,3 +63,54 @@ def test_rows_take_a_per_year_tax_path():
     assert [r["tax_rate"] for r in rows] == [0.28, 0.265, 0.25]
     spec.pop("tax_rates")
     assert {r["tax_rate"] for r in _make_rows(spec, spec["growths"], spec["margins"])} == {0.25}
+
+
+def test_second_same_day_run_still_verifies(tmp_path):
+    # a built-in spec's calc is named after its fixed review date; the run-date copy from an earlier
+    # run used to be picked as "the dated copy" and every second run failed verification
+    import json as _json
+    import shutil
+    from pathlib import Path
+
+    from src.engine.verify_fcff import verify
+
+    src = Path(__file__).resolve().parents[1] / "out" / "2026-11-11_NVDA" / "2026-11-11_NVDA.json"
+    folder = tmp_path / "2026-11-18_NVDA"
+    folder.mkdir()
+    dated = folder / "2026-11-11_NVDA.json"
+    shutil.copy(src, dated)
+    shutil.copy(src, folder / "NVDA_latest.json")
+    stale = _json.loads(src.read_text(encoding="utf-8"))
+    stale["price"] = stale["price"] + 1            # left behind by the previous run
+    (folder / "2026-11-18_NVDA.json").write_text(_json.dumps(stale), encoding="utf-8")
+    _, _, errs = verify(str(dated))
+    assert "dated copy differs from _latest" not in errs
+
+
+def test_hkd_risk_free_rate_is_net_of_the_hong_kong_default_spread(monkeypatch):
+    # owner decision S9: HKD like every other non-Aaa local currency
+    monkeypatch.setattr(rf, "hk_10y", lambda cfg=None: {"ok": True, "value": 0.03686, "source": "ADB", "url": "u",
+                                                        "data_date": "2026-11-17", "basis": "香港 10 年期 3.686%"})
+    r = rf.for_currency("HKD")
+    assert r["value"] == pytest.approx(0.03686 - MA.DEFAULT_SPREAD["HK"]) and r["gross_yield"] == pytest.approx(0.03686)
+    assert "違約息差" in r["basis"]
+
+
+def test_static_scenario_uses_maintenance_capex(tmp_path, monkeypatch):
+    # owner decision S8: zero growth needs no growth investment, so capex = D&A in the static case
+    import json as _json
+    from pathlib import Path
+
+    from src.pipeline import generic_spec as G
+    from src.pipeline.model_builder import build_and_run
+
+    monkeypatch.setattr(G, "_fx_rate", lambda a, b: 1.15 if a != b else 1.0)
+    monkeypatch.setattr(G, "damodaran_betas", lambda: {"Oil/Gas (Production and Exploration)": (0.9855, 0.7464)})
+    fund = _json.loads((Path(__file__).parent / "fixtures" / "yahoo_fundamentals_0883HK.json").read_text(encoding="utf-8"))
+    snap = {"ticker": "0883.HK", "company_name": "CNOOC", "price": 22.72, "price_date": "2026-11-11", "price_url": "",
+            "valuation_date": "2026-11-11", "ib_compare": {}, "data_gaps": [], "assumption_source": "rules_fallback",
+            "rf": {"value": 0.03684, "basis": "t", "source": "t", "url": "", "data_date": "2026-11-11"}}
+    spec = G.build_generic_spec(snap, fund, {}, use_llm=False)
+    out = build_and_run(spec, str(tmp_path))["json"]
+    static = next(s for s in out["scenarios"] if s["name"] == "靜態")
+    assert static["capex_pcts"] == spec["da_pcts"] and "Capex＝D&A" in static["changes"]

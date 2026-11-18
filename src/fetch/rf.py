@@ -125,7 +125,8 @@ def _investing(url: str) -> dict:
 # Method A: Rf is the 10-year government yield of the MODEL currency (the currency the cash flows
 # are forecast in), not of the listing. For sovereigns below Aaa, Damodaran's local-currency
 # practice subtracts the rating-based default spread, so default risk enters once, through the CRP.
-# HKD keeps the existing hk_10y() path (the built-in 1830.HK spec is calibrated on it).
+# HKD too (Hong Kong Aa3), owner decision S9 2026-11-18. USD stays the gross UST yield: the
+# Damodaran implied ERP is measured against it, so netting the US spread would need the ERP adjusted.
 
 ADB_PAGE = {"CNY": "china", "JPY": "japan", "KRW": "korea", "SGD": "singapore"}
 TE_PAGE = {"CNY": "china", "JPY": "japan", "KRW": "south-korea", "TWD": "taiwan", "SGD": "singapore"}
@@ -147,7 +148,13 @@ def for_currency(currency: str, cfg: Optional[dict] = None) -> dict:
     if ccy == "USD":
         return dict(ust_10y(), currency="USD")
     if ccy == "HKD":
-        return dict(hk_10y(cfg), currency="HKD")
+        hk = hk_10y(cfg)
+        if not hk.get("ok"):
+            return dict(hk, currency="HKD")
+        spread = MA.DEFAULT_SPREAD["HK"]
+        gross = float(hk["value"])
+        return dict(hk, currency="HKD", value=gross - spread, gross_yield=gross, default_spread=spread,
+                    basis=f"{hk['basis']} 減 Damodaran HK 違約息差 {spread:.2%}（方法 A 本幣做法）＝ {gross - spread:.3%}")
     if ccy not in ADB_PAGE and ccy not in TE_PAGE:
         return {"ok": False, "currency": ccy, "error": f"未支援 {ccy} 的本幣 10 年期政府債券孳息"}
     attempts = []

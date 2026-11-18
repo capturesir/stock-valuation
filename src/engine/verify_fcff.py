@@ -94,13 +94,21 @@ def verify(path):
         b = d["base_year"]["fy2026_split_used"]
         chk("FY2026 split", b["dram"] + b["nand_and_other"], d["base_year"]["revenue"])
         chk("first year growth", d["projections"][0]["revenue_growth"], d["projections"][0]["revenue"] / d["base_year"]["revenue"] - 1)
-    # dated copy identical (same folder as the file, then CALC)
+    # dated copy identical to _latest. When ``path`` is the dated file just saved, compare it with the
+    # _latest written by the same save. (Comparing with "the newest dated file in the folder" failed
+    # every second same-day run of a built-in spec: its calc carries a fixed review date, and the
+    # run-date copy left by the previous run sorted after it.)
     folder = os.path.dirname(os.path.abspath(path))
-    dated_all = sorted(glob.glob(os.path.join(folder, f"20??-??-??_{d['ticker']}.json")))
-    if not dated_all:
-        dated_all = sorted(glob.glob(os.path.join(CALC, f"20??-??-??_{d['ticker']}.json")))
-    if not dated_all or open(dated_all[-1], "rb").read() != open(path, "rb").read():
-        errs.append("dated copy differs from _latest")
+    latest = os.path.join(folder, f"{d['ticker']}_latest.json")
+    if not os.path.basename(path).endswith("_latest.json") and os.path.exists(latest):
+        if open(latest, "rb").read() != open(path, "rb").read():
+            errs.append("dated copy differs from _latest")
+    else:
+        dated_all = sorted(glob.glob(os.path.join(folder, f"20??-??-??_{d['ticker']}.json")))
+        if not dated_all:
+            dated_all = sorted(glob.glob(os.path.join(CALC, f"20??-??-??_{d['ticker']}.json")))
+        if not dated_all or open(dated_all[-1], "rb").read() != open(path, "rb").read():
+            errs.append("dated copy differs from _latest")
     return d, fair, errs
 
 if __name__ == "__main__":

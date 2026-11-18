@@ -256,7 +256,10 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     # static: g=0, terminal 0, delta nwc 0; optionally keep stub revenue
     g0 = [0.0] * len(spec["growths"])
     sp_static = dict(spec)
-    fv_static, _ = fair_custom(g0, spec["margins"], 0.0, zero_dnwc=True)
+    # Zero growth needs no growth investment: maintenance capex = D&A (steady state; the engine's
+    # value-driver terminal already implies the same at g = 0). Owner decision S8, 2026-11-18.
+    maint_capex = list(spec["da_pcts"])
+    fv_static, _ = fair_custom(g0, spec["margins"], 0.0, zero_dnwc=True, capex_pcts=maint_capex)
 
     floor_pct = spec["capex_floor_pct"]
     floor_cpx = [floor_pct] * len(spec["growths"])
@@ -269,8 +272,8 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
         # while the 9% floor uses the sustainable ratio, so the "floor" can print
         # above the static case. Say so instead of letting the reader guess.
         floor_note = (
-            f"9%靜態（{fv_9:.2f}）高於靜態（{fv_static:.2f}）：靜態情境沿用歷史資本開支路徑，"
-            "9%地板用可持續比例，兩者的 capex 假設不同，不是計算錯誤。"
+            f"9%靜態（{fv_9:.2f}）高於靜態（{fv_static:.2f}）：靜態情境以基準 WACC 折現、Capex＝D&A，"
+            "9%地板以固定 9% 折現並用地板 Capex 比例；兩者假設不同，不是計算錯誤。"
         )
 
     wacc_v = disc["wacc"]["value"]
@@ -316,8 +319,8 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
          "changes": f"首 {4} 個完整預測年增長 {spec.get('bull_g_delta', 0.03):+.0%}、EBIT 利潤率 {spec.get('bull_m_delta', 0.02):+.0%}；終值 g={g_term_bull:.2%}",
          "growths": g_bull, "margins": m_bull, "terminal_g": g_term_bull},
         {"name": "靜態", "fair_value": fv_static,
-         "changes": "預測期營收增長＝0、終值 g＝0；WACC／利潤率／再投資比率／橋接同基準；ΔNWC＝0",
-         "growths": g0, "margins": spec["margins"], "terminal_g": 0.0},
+         "changes": "預測期營收增長＝0、終值 g＝0；ΔNWC＝0；Capex＝D&A（零增長只需維持性投資）；WACC／利潤率／橋接同基準",
+         "growths": g0, "margins": spec["margins"], "terminal_g": 0.0, "capex_pcts": maint_capex},
         {"name": "9%靜態", "fair_value": fv_9,
          "changes": (f"估值地板：增長＝0、終值 g＝0、折現固定 9%；Capex＝{floor_pct:.2%}×營收；"
                      f"股數＝{sh_floor:.3f}m（基準 {SH:.3f}m；原股數對照 9%靜態={fv_9_base:.4f}）；ΔNWC＝0"),

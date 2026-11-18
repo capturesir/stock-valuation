@@ -2,8 +2,9 @@
 Single source of the market inputs shared by every DCFF model (house *_fcff_dcf.py and coverage_fcff_dcf.py).
 
 Rule (coverage/wacc_review.md §採用；README_daily_build.md「折現率方法 A」):
-  Rf   = spot 10-year government yield of the MODEL currency on the valuation date (USD: UST 10y; JPY/KRW: local 10y minus the
-         Damodaran rating-based default spread of that country, Damodaran's local-currency practice; default risk then enters via CRP).
+  Rf   = spot 10-year government yield of the MODEL currency on the valuation date (USD: UST 10y; HKD/CNY/JPY/KRW/TWD: local 10y
+         minus the Damodaran rating-based default spread of that country, Damodaran's local-currency practice; default risk then
+         enters via CRP. HKD added 2026-11-18, owner decision S9).
   ERP  = Damodaran implied ERP published for the month of the valuation date (same month as Rf; Damodaran computes it against the
          UST 10y of the month start) – refreshed monthly (ERP / ERP_DATE / ERP_RF below).
   CRP  = Damodaran country risk premium (rating-based, latest update: January / July file). US-based names: 0 (ERP is the US ERP).

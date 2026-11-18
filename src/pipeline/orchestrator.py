@@ -92,8 +92,8 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     builtin = ticker in ("NVDA", "1830.HK")
     model_ccy = (info.get("financialCurrency") or snap.get("currency_yahoo") or "").upper()
     if builtin or not model_ccy:
-        # built-in specs are calibrated on these; unchanged
-        rfd = rfmod.hk_10y(cfg) if ticker.endswith(".HK") else rfmod.ust_10y()
+        # built-in specs: 1830.HK is in HKD (net of the HK default spread, S9), NVDA in USD
+        rfd = rfmod.for_currency("HKD", cfg) if ticker.endswith(".HK") else rfmod.ust_10y()
     else:
         # Method A: Rf of the MODEL currency (the statements' currency), not of the listing —
         # CNY cash flows discounted at a HKD or USD rate mix two inflation regimes
