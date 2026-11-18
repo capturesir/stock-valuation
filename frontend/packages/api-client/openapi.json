@@ -4161,6 +4161,52 @@
     ],
     "title": "BrandingOut"
    },
+   "CheckFailure": {
+    "properties": {
+     "rule_id": {
+      "type": "string",
+      "title": "Rule Id"
+     },
+     "period": {
+      "type": "string",
+      "title": "Period"
+     },
+     "severity": {
+      "type": "string",
+      "enum": [
+       "error",
+       "warning",
+       "info"
+      ],
+      "title": "Severity"
+     },
+     "values": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Values",
+      "description": "比較的數字（精確字串）"
+     },
+     "difference": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Difference",
+      "description": "相對差異（0.0074 = 0.74%）"
+     }
+    },
+    "type": "object",
+    "required": [
+     "rule_id",
+     "period",
+     "severity"
+    ],
+    "title": "CheckFailure"
+   },
    "Coverage": {
     "properties": {
      "first_date": {
@@ -6237,6 +6283,9 @@
       "title": "Template Applied",
       "description": "實際套用的模板；銀行與保險模板推出前為 general"
      },
+     "checks": {
+      "$ref": "#/components/schemas/StatementChecks"
+     },
      "ruleset": {
       "type": "string",
       "title": "Ruleset"
@@ -6314,6 +6363,7 @@
      "cik",
      "template",
      "template_applied",
+     "checks",
      "ruleset",
      "ruleset_version",
      "view",
@@ -6321,6 +6371,67 @@
      "rows"
     ],
     "title": "StandardStatements"
+   },
+   "StatementChecks": {
+    "properties": {
+     "checkset": {
+      "type": "string",
+      "title": "Checkset"
+     },
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "yahoo_fetched_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Yahoo Fetched At",
+      "description": "交叉核對用的 Yahoo 數字取得時間；沒有則不做跨來源檢查"
+     },
+     "grades": {
+      "additionalProperties": {
+       "type": "string",
+       "enum": [
+        "A",
+        "B",
+        "C"
+       ]
+      },
+      "type": "object",
+      "title": "Grades",
+      "description": "各期數據品質：A 全部通過、B 有警告、C 有錯誤"
+     },
+     "summary": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "type": "integer"
+       },
+       "type": "object"
+      },
+      "type": "object",
+      "title": "Summary",
+      "description": "各期 pass／fail／skip 數目"
+     },
+     "failures": {
+      "items": {
+       "$ref": "#/components/schemas/CheckFailure"
+      },
+      "type": "array",
+      "title": "Failures"
+     }
+    },
+    "type": "object",
+    "required": [
+     "checkset",
+     "version"
+    ],
+    "title": "StatementChecks"
    },
    "StatementsStatus": {
     "properties": {

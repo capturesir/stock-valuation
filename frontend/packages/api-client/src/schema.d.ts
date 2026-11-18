@@ -920,6 +920,30 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** CheckFailure */
+        CheckFailure: {
+            /** Rule Id */
+            rule_id: string;
+            /** Period */
+            period: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "error" | "warning" | "info";
+            /**
+             * Values
+             * @description 比較的數字（精確字串）
+             */
+            values?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Difference
+             * @description 相對差異（0.0074 = 0.74%）
+             */
+            difference?: string | null;
+        };
         /** Coverage */
         Coverage: {
             /** First Date */
@@ -1587,6 +1611,7 @@ export interface components {
              * @description 實際套用的模板；銀行與保險模板推出前為 general
              */
             template_applied: string;
+            checks: components["schemas"]["StatementChecks"];
             /** Ruleset */
             ruleset: string;
             /** Ruleset Version */
@@ -1617,6 +1642,36 @@ export interface components {
             years: components["schemas"]["StdYear"][];
             /** Rows */
             rows: components["schemas"]["StdRow"][];
+        };
+        /** StatementChecks */
+        StatementChecks: {
+            /** Checkset */
+            checkset: string;
+            /** Version */
+            version: string;
+            /**
+             * Yahoo Fetched At
+             * @description 交叉核對用的 Yahoo 數字取得時間；沒有則不做跨來源檢查
+             */
+            yahoo_fetched_at?: string | null;
+            /**
+             * Grades
+             * @description 各期數據品質：A 全部通過、B 有警告、C 有錯誤
+             */
+            grades?: {
+                [key: string]: "A" | "B" | "C";
+            };
+            /**
+             * Summary
+             * @description 各期 pass／fail／skip 數目
+             */
+            summary?: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            };
+            /** Failures */
+            failures?: components["schemas"]["CheckFailure"][];
         };
         /** StatementsStatus */
         StatementsStatus: {
