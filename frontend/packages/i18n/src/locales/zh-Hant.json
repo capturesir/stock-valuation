@@ -368,8 +368,6 @@
   "admin.ops.note": "連續 5 次失敗（429、5xx、網絡錯誤）會暫停該數據源 60 秒，期間改為顯示已保存的數據；SEC 規定每秒不超過 10 次。",
   "filed.resync": "重新取得",
   "filed.none.title": "尚未取得 {ticker} 的財報數據",
-  "filed.none.admin": "美股財報直接取自 SEC。按下方按鈕取得這家公司的全部申報數字（第一次可能需要數十秒）。",
-  "filed.none.member": "美股財報直接取自 SEC，目前由管理員在「系統管理 → 數據來源與財報」取得。美股以外的財報來源在後續版本加入。",
   "filed.fye": "財年結束 {mmdd}",
   "filed.counts": "{filings} 份申報 · {facts} 個數字",
   "filed.synced": "更新於 {at}",
@@ -474,5 +472,15 @@
   "std.item.free_cash_flow": "自由現金流",
   "std.splits": "已按股份分拆調整每股數字與股數，讓各年度可以比較：{list}。",
   "std.split": "{date} 一拆 {ratio}",
-  "std.splitAdjusted": "申報原值 {raw}；申報後的股份分拆累計 ×{factor}，已調整。"
+  "std.splitAdjusted": "申報原值 {raw}；申報後的股份分拆累計 ×{factor}，已調整。",
+  "filed.none.noContact": "管理員尚未設定 SEC 聯絡資料，暫時不能取得美股財報。",
+  "filed.none.noContactAdmin": "請先在「系統管理 → 數據來源與財報」填寫 SEC 聯絡資料，之後所有用戶打開美股的財報分頁都會自動取得。",
+  "filed.none.notUs": "{ticker} 不是 SEC 申報公司。美股以外的財報來源在後續版本加入。",
+  "filed.none.fetching": "正在從 SEC 取得 {ticker} 的財報數據……第一次可能需要數十秒，完成後會自動顯示。",
+  "filed.none.ready": "美股財報直接取自 SEC。按下方按鈕取得。",
+  "filed.err.sec_not_filer": "{ticker} 不是 SEC 申報公司。",
+  "filed.err.upstream": "SEC 暫時無法回應，請稍後再試。",
+  "filed.err.sec_contact_missing": "尚未設定 SEC 聯絡資料。",
+  "admin.sources.daily": "每日檢查新申報：上次 {at}，檢查 {checked} 家，更新 {updated} 家，失敗 {failed} 家。",
+  "admin.sources.dailyNone": "每日檢查新申報：與市場數據同時執行，尚未執行過。"
 }

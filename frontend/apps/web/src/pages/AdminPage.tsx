@@ -206,7 +206,7 @@ function Market() {
 }
 
 function DataSources() {
-  const { t } = useI18n();
+  const { t, f } = useI18n();
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["data-sources"], queryFn: api.dataSources });
   const [org, setOrg] = useState("");
@@ -254,6 +254,11 @@ function DataSources() {
         </div>
       </form>
       {q.data && !ready && <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.needContact")}</p>}
+      {q.data && ready && <p className="small muted" style={{ margin: 0 }}>{(() => {
+        const r = q.data.statements_last_run as { finished_at?: string; checked?: number; updated?: unknown[]; failed?: unknown[] } | null | undefined;
+        return r?.finished_at ? t("admin.sources.daily", { at: f.datetime(r.finished_at), checked: r.checked ?? 0, updated: r.updated?.length ?? 0, failed: r.failed?.length ?? 0 })
+          : t("admin.sources.dailyNone");
+      })()}</p>}
       {result && <div role="status" className="banner info">
         <span style={{ flex: "1 1 240px" }}>
           {t(result.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {

@@ -45,7 +45,7 @@ def sec(client, monkeypatch):
     fake = FakeSec()
     monkeypatch.setattr(statements, "_http", fake)
     r = client.put(f"{API}/admin/data-sources", json=SOURCES)
-    assert r.status_code == 200 and r.json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True}
+    assert r.status_code == 200 and r.json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True, "statements_last_run": None}
     return fake
 
 
@@ -55,7 +55,7 @@ def _db():
 
 
 def test_data_sources_are_admin_only_and_validated(client, member):
-    empty = {"sec_organisation": None, "sec_email": None, "sec_contact": None, "sec_ready": False}
+    empty = {"sec_organisation": None, "sec_email": None, "sec_contact": None, "sec_ready": False, "statements_last_run": None}
     assert member.get(f"{API}/admin/data-sources").status_code == 403
     assert member.put(f"{API}/admin/data-sources", json=SOURCES).status_code == 403
     assert client.get(f"{API}/admin/data-sources").json() == empty
@@ -68,7 +68,7 @@ def test_data_sources_are_admin_only_and_validated(client, member):
     r = client.post(f"{API}/admin/statements/sync/EXMP")
     assert r.status_code == 400 and r.json()["detail"]["code"] == "sec_contact_missing"
     r = client.put(f"{API}/admin/data-sources", json={"sec_organisation": "  Example   Research ", "sec_email": " admin@example.com "})
-    assert r.json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True}          # spaces tidied
+    assert r.json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True, "statements_last_run": None}          # spaces tidied
     assert client.put(f"{API}/admin/data-sources", json={"sec_organisation": "", "sec_email": ""}).json() == empty
 
 
@@ -78,7 +78,7 @@ def test_an_older_single_string_contact_is_read_as_two_fields(client):
     with _db() as db:
         db.add(Setting(key="data_sources", value={"sec_contact": CONTACT}))
         db.commit()
-    assert client.get(f"{API}/admin/data-sources").json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True}
+    assert client.get(f"{API}/admin/data-sources").json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True, "statements_last_run": None}
 
 
 def test_sync_stores_raw_documents_filings_and_every_fact(client, sec, tmp_path):
@@ -218,3 +218,80 @@ def test_standardised_annual_statements_with_lineage(client, sec, member):
     then = member.get(f"{API}/stocks/EXMP/statements", params={"as_of": "2024-12-31"}).json()
     assert [y["label"] for y in then["years"]] == ["FY2023"]                              # the FY2024 10-K was not filed yet
     assert member.get(f"{API}/stocks/EXMP/statements", params={"view": "guess"}).status_code == 422
+
+
+# ------------------------------------------------------------------ step 3: everyone can fetch, daily check
+
+def test_any_user_can_fetch_once_the_sec_contact_is_set(client, member, monkeypatch):
+    from backend.app.services import statements
+
+    fake = FakeSec()
+    monkeypatch.setattr(statements, "_http", fake)
+    r = member.post(f"{API}/stocks/EXMP/statements/fetch")
+    assert r.status_code == 400 and r.json()["detail"]["code"] == "sec_contact_missing"
+    client.put(f"{API}/admin/data-sources", json=SOURCES)
+    st = member.get(f"{API}/stocks/EXMP/statements/status").json()
+    assert (st["sec_ready"], st["us_filer"], st["synced"], st["pending"]) == (True, None, False, False)
+    r = member.post(f"{API}/stocks/EXMP/statements/fetch")
+    assert r.status_code == 202, r.text                      # runs in the background (inline in tests)
+    st = member.get(f"{API}/stocks/EXMP/statements/status").json()
+    assert (st["us_filer"], st["synced"], st["facts"], st["pending"]) == (True, True, 9, False)
+    calls = len(fake.calls)
+    r = member.post(f"{API}/stocks/EXMP/statements/fetch")
+    assert r.status_code == 200 and len(fake.calls) == calls  # fetched within 6 hours: not repeated
+    r = member.post(f"{API}/stocks/0700.HK/statements/fetch")
+    assert r.status_code == 400 and r.json()["detail"]["code"] == "sec_not_filer"
+
+
+def test_a_failed_background_fetch_is_reported_in_the_status(client, sec, member):
+    sec.routes[sec_source.SUBMISSIONS_URL.format(name=f"CIK{CIK}.json")] = (503, b"busy")
+    assert member.post(f"{API}/stocks/EXMP/statements/fetch").status_code == 202
+    st = member.get(f"{API}/stocks/EXMP/statements/status").json()
+    assert not st["synced"] and st["last_error"]
+
+
+def test_adding_a_us_stock_to_the_watchlist_fetches_its_statements(client, sec):
+    from backend.app.db import session
+    from backend.app.services import statements
+
+    with session() as db:                                    # SEC's ticker list is known (e.g. from an earlier fetch)
+        c = statements.client(db)
+        statements.refresh_tickers(db, c)
+    assert client.post(f"{API}/watchlist", json={"ticker": "EXMP"}).status_code == 201
+    st = client.get(f"{API}/stocks/EXMP/statements/status").json()
+    assert st["synced"] and st["facts"] == 9
+    client.post(f"{API}/watchlist", json={"ticker": "0700.HK"})       # not an SEC filer: nothing is sent
+    assert not any("0700" in u for u in sec.calls)
+
+
+def test_daily_check_downloads_facts_only_after_a_new_filing(client, sec):
+    from backend.app.db import session
+    from backend.app.services import statements
+
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    sec.calls.clear()
+    s = statements.update_all(session)
+    assert s["checked"] == 1 and s["updated"] == [] and s["failed"] == []
+    assert not any("companyfacts" in u for u in sec.calls)            # no new filing: one small request only
+    # a new 10-Q appears in the filing list
+    sub = json.loads((FIX / "submissions.json").read_text())
+    recent = sub["filings"]["recent"]
+    for k, v in {"accessionNumber": "0001234567-25-000030", "filingDate": "2025-05-01", "reportDate": "2025-03-31",
+                 "acceptanceDateTime": "2025-05-01T16:00:00.000Z", "form": "10-Q", "primaryDocument": "exmp-20250331.htm",
+                 "primaryDocDescription": "10-Q", "items": "", "isXBRL": 1, "isInlineXBRL": 1}.items():
+        recent[k].insert(0, v)
+    sec.routes[sec_source.SUBMISSIONS_URL.format(name=f"CIK{CIK}.json")] = (200, json.dumps(sub).encode())
+    sec.calls.clear()
+    s = statements.update_all(session)
+    assert s["updated"] == [{"ticker": "EXMP", "filings_added": 1, "facts_added": 0}]
+    assert any("companyfacts" in u for u in sec.calls)
+    with session() as db:
+        from backend.app.models import Setting
+        assert db.get(Setting, "statements_status").value["checked"] == 1
+
+
+def test_daily_check_is_skipped_without_a_sec_contact(client):
+    from backend.app.db import session
+    from backend.app.services import statements
+
+    assert statements.update_all(session)["skipped"] == "sec_contact_missing"

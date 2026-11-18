@@ -188,12 +188,42 @@ def _save_facts(db: Session, cik: str, parsed, raw_id: int) -> int:
     return len(rows)
 
 
-def sync_sec(db: Session, ticker: str, force: bool = False) -> dict:
+FACTS_MAX_AGE = dt.timedelta(days=7)      # light syncs re-read companyfacts at least weekly
+LOCK_TTL = 600
+
+
+def sync_sec(db: Session, ticker: str, force: bool = False, light: bool = False) -> dict:
     """Fetch submissions and companyfacts for one US ticker and store layers ① and ②.
 
-    ``force`` re-reads older submission pages and re-parses unchanged companyfacts."""
+    ``force`` re-reads older submission pages and re-parses unchanged companyfacts.
+    ``light`` (the daily check) reads the filing list and downloads companyfacts only when there is a new
+    filing or the stored copy is older than FACTS_MAX_AGE: one small request per company on most days.
+    One sync per company at a time across all processes; a second caller waits and reports what was stored."""
+    from src.infra.kv import kv
+
     c = client(db)
     cik = resolve_cik(db, c, ticker)
+    store_ = kv()
+    lock = f"lk:stmt:{cik}"
+    if not store_.set(lock, "1", ttl=LOCK_TTL, nx=True):
+        import time as _t
+        deadline = _t.monotonic() + 120
+        while store_.get(lock) and _t.monotonic() < deadline:
+            _t.sleep(0.25)
+        db.expire_all()
+        filer = db.get(Filer, cik)
+        return {"ticker": ticker, "cik": cik, "name": filer.name if filer else None, "filings_added": 0, "facts_added": 0,
+                "facts_total": filer.facts if filer else 0, "has_xbrl": bool(filer and filer.facts_document_id),
+                "unchanged": True, "joined": True}
+    try:
+        out = _sync_sec(db, c, ticker, cik, force, light)
+        db.commit()                      # visible to whoever waited on the lock
+        return out
+    finally:
+        store_.delete(lock)
+
+
+def _sync_sec(db: Session, c: sec_source.SecClient, ticker: str, cik: str, force: bool, light: bool) -> dict:
     filer = db.get(Filer, cik)
     try:
         sub_doc = _fetch(c.submissions, cik)
@@ -217,20 +247,28 @@ def sync_sec(db: Session, ticker: str, force: bool = False) -> dict:
             loaded.append(page)
         filer.pages_loaded = loaded
 
-        try:
-            facts_doc = _fetch(c.companyfacts, cik)
-        except SourceNotFound:          # files with the SEC but has no XBRL financial data
-            facts_doc = None
-        facts_added, unchanged, parsed = 0, False, None
-        if facts_doc is not None:
-            raw, _ = keep(db, facts_doc)
-            unchanged = filer.facts_document_id == raw.id
-            if not unchanged or force:
-                parsed = parse_companyfacts(facts_doc.content)
-                facts_added = _save_facts(db, cik, parsed, raw.id)
-            filer.facts_document_id = raw.id
+        now = dt.datetime.now(dt.timezone.utc)
+        stored = db.get(RawDocumentRow, filer.facts_document_id) if filer.facts_document_id else None
+        skip_facts = (light and not force and filings_added == 0 and stored is not None
+                      and now - stored.last_checked_at < FACTS_MAX_AGE)
+        facts_doc, facts_added, unchanged, parsed = None, 0, True, None
+        has_xbrl = stored is not None
+        if not skip_facts:
+            try:
+                facts_doc = _fetch(c.companyfacts, cik)
+            except SourceNotFound:          # files with the SEC but has no XBRL financial data
+                facts_doc = None
+            has_xbrl = facts_doc is not None
+            unchanged = False
+            if facts_doc is not None:
+                raw, _ = keep(db, facts_doc)
+                unchanged = filer.facts_document_id == raw.id
+                if not unchanged or force:
+                    parsed = parse_companyfacts(facts_doc.content)
+                    facts_added = _save_facts(db, cik, parsed, raw.id)
+                filer.facts_document_id = raw.id
         filer.facts = db.scalar(select(func.count()).select_from(FiledFactRow).where(FiledFactRow.cik == cik)) or 0
-        filer.synced_at, filer.last_error = dt.datetime.now(dt.timezone.utc), None
+        filer.synced_at, filer.last_error = now, None
         db.flush()
     except SourceNotFound as exc:
         raise AppError("sec_not_filer", ticker=ticker) from exc
@@ -239,10 +277,109 @@ def sync_sec(db: Session, ticker: str, force: bool = False) -> dict:
             filer.last_error = f"{type(exc).__name__}: {exc}"[:500]
         raise
     return {"ticker": ticker, "cik": cik, "name": filer.name, "filings_added": filings_added,
-            "facts_added": facts_added, "facts_total": filer.facts, "has_xbrl": facts_doc is not None,
-            "unchanged": unchanged and not force,
+            "facts_added": facts_added, "facts_total": filer.facts, "has_xbrl": has_xbrl,
+            "unchanged": unchanged and not force, "facts_skipped": skip_facts,
             "duplicates": parsed.duplicates if parsed else 0, "conflicts": parsed.conflicts if parsed else 0,
             "skipped": parsed.skipped if parsed else 0}
+
+
+# ------------------------------------------------------------------ background and daily
+
+PENDING_TTL = 600
+STATUS_KEY = "statements_status"
+
+
+def _pending_key(ticker: str) -> str:
+    return f"stmt:pending:{ticker}"
+
+
+def is_pending(ticker: str) -> bool:
+    from src.infra.kv import kv
+    return kv().get(_pending_key(ticker)) is not None
+
+
+def submit(ticker: str) -> bool:
+    """Fetch one ticker's statements in the background (the same single worker thread as market syncs).
+    False when one is already pending for that ticker."""
+    from src.infra.kv import kv
+
+    from . import market_jobs
+
+    if not kv().set(_pending_key(ticker), "1", ttl=PENDING_TTL, nx=True):
+        return False
+    market_jobs.submit_call(_run_background, ticker)
+    return True
+
+
+def _run_background(ticker: str) -> None:
+    import logging
+
+    from src.infra.kv import kv
+
+    from ..db import session
+
+    try:
+        with session() as db:
+            sync_sec(db, ticker)
+    except Exception as exc:  # the error is on the filer (last_error) or the ticker is not an SEC filer
+        logging.getLogger("sv.statements").warning("background statements sync of %s failed: %s", ticker, exc)
+        _remember_failure(ticker, exc)
+    finally:
+        kv().delete(_pending_key(ticker))
+
+
+def _remember_failure(ticker: str, exc: Exception) -> None:
+    """A ticker that is not an SEC filer has no filer row to carry the error; keep it briefly for the status."""
+    from src.infra.kv import kv
+
+    code = exc.code if isinstance(exc, AppError) else "upstream"
+    kv().set(f"stmt:failed:{ticker}", code, ttl=PENDING_TTL)
+
+
+def last_failure(ticker: str) -> Optional[str]:
+    from src.infra.kv import kv
+    return kv().get(f"stmt:failed:{ticker}")
+
+
+def known_us_filer(db: Session, ticker: str) -> Optional[bool]:
+    """True/False from SEC's ticker list without any network call; None when the list was never loaded."""
+    if db.scalar(select(SecTicker.ticker).limit(1)) is None:
+        return None
+    return db.get(SecTicker, ticker) is not None
+
+
+def update_all(session_factory) -> dict:
+    """The daily check: every company with statements, in its own transaction (one failure doesn't stop the rest)."""
+    started = dt.datetime.now(dt.timezone.utc)
+    with session_factory() as db:
+        if not data_sources(db)["sec_ready"]:
+            return {"skipped": "sec_contact_missing", "started_at": started.isoformat(timespec="seconds")}
+        work = [(f.cik, (f.tickers or [None])[0]) for f in db.scalars(select(Filer).where(Filer.synced_at.is_not(None)))]
+        tickers = {cik: db.scalar(select(SecTicker.ticker).where(SecTicker.cik == cik).order_by(SecTicker.ticker).limit(1))
+                   for cik, _ in work}
+    checked, updated, failed = 0, [], []
+    for cik, first in work:
+        t = first or tickers.get(cik)
+        if not t:
+            continue
+        try:
+            with session_factory() as db:
+                r = sync_sec(db, t, light=True)
+            checked += 1
+            if r["filings_added"] or r["facts_added"]:
+                updated.append({"ticker": t, "filings_added": r["filings_added"], "facts_added": r["facts_added"]})
+        except Exception as exc:
+            failed.append({"ticker": t, "error": f"{type(exc).__name__}: {exc}"[:300]})
+    summary = {"started_at": started.isoformat(timespec="seconds"),
+               "finished_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+               "checked": checked, "updated": updated, "failed": failed}
+    with session_factory() as db:
+        row = db.get(Setting, STATUS_KEY)
+        if row is None:
+            db.add(Setting(key=STATUS_KEY, value=summary))
+        else:
+            row.value = summary
+    return summary
 
 
 # ------------------------------------------------------------------ reading

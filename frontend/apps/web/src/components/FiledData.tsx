@@ -1,4 +1,4 @@
-import { ApiError, type FiledConceptOut, type FiledFactOut } from "@sv/api-client";
+import { type FiledConceptOut, type FiledFactOut, type StatementsSyncResult } from "@sv/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
@@ -29,15 +29,38 @@ export function FiledData({ ticker }: { ticker: string }) {
   const { t, f } = useI18n();
   const isAdmin = useIsAdmin();
   const qc = useQueryClient();
-  const filer = useQuery({ queryKey: ["filer", ticker], queryFn: () => api.filer(ticker), retry: false });
-  const notSynced = filer.error instanceof ApiError && filer.error.code === "statements_not_synced";
+  const status = useQuery({ queryKey: ["stmt-status", ticker], queryFn: () => api.statementsStatus(ticker),
+                            refetchInterval: (q) => (q.state.data?.pending ? 2000 : false) });
+  const st = status.data;
+  const filer = useQuery({ queryKey: ["filer", ticker], queryFn: () => api.filer(ticker), retry: false, enabled: !!st?.synced });
   const concepts = useQuery({ queryKey: ["filed-concepts", ticker], queryFn: () => api.filedConcepts(ticker), enabled: !!filer.data });
+  const refreshAll = () => {
+    for (const k of ["stmt-status", "filer", "filed-concepts", "filed-facts", "std"]) void qc.invalidateQueries({ queryKey: [k, ticker] });
+  };
+  // admins force a full re-read; everyone else asks for a fetch (not repeated within 6 hours)
   const sync = useMutation({
-    mutationFn: () => api.syncStatements(ticker),
-    onSuccess: () => {
-      for (const k of ["filer", "filed-concepts", "filed-facts", "std"]) void qc.invalidateQueries({ queryKey: [k, ticker] });
+    mutationFn: async (): Promise<StatementsSyncResult | null> => {
+      if (isAdmin) return api.syncStatements(ticker);
+      await api.fetchStatements(ticker);
+      return null;
     },
+    onSettled: refreshAll,
   });
+  const fetchNow = useMutation({ mutationFn: () => api.fetchStatements(ticker), onSettled: refreshAll });
+  const [autoTried, setAutoTried] = useState(false);
+  // open the tab → fetch automatically when this US stock has no statements yet
+  useEffect(() => {
+    if (!st || autoTried || st.synced || st.pending || !st.sec_ready || st.us_filer === false) return;
+    setAutoTried(true);
+    fetchNow.mutate();
+  }, [st, autoTried, fetchNow]);
+  // a background fetch finished: load what it stored
+  const [wasPending, setWasPending] = useState(false);
+  useEffect(() => {
+    if (st?.pending) setWasPending(true);
+    else if (wasPending) { setWasPending(false); refreshAll(); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [st?.pending]);
   const [picked, setPicked] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState<"standard" | "filed">("standard");
@@ -48,20 +71,27 @@ export function FiledData({ ticker }: { ticker: string }) {
     setPicked(conceptKey(first));
   }, [concepts.data, picked]);
 
-  const syncButton = isAdmin && (
-    <button className="btn secondary small" type="button" disabled={sync.isPending} onClick={() => sync.mutate()}>
-      {sync.isPending ? t("admin.sources.syncing") : t(filer.data ? "filed.resync" : "admin.sources.sync")}</button>
+  const syncButton = st?.sec_ready && (
+    <button className="btn secondary small" type="button" disabled={sync.isPending || st.pending} onClick={() => sync.mutate()}>
+      {sync.isPending || st.pending ? t("admin.sources.syncing") : t(filer.data ? "filed.resync" : "admin.sources.sync")}</button>
   );
-  const syncError = sync.error && <div role="alert" className="banner err">{(sync.error as Error).message}</div>;
+  const errText = (e: unknown) => (e as Error | null)?.message;
+  const syncError = (sync.error || fetchNow.error) && <div role="alert" className="banner err">{errText(sync.error ?? fetchNow.error)}</div>;
+  const lastError = (code?: string | null) => (code && /^[a-z_]+$/.test(code) ? t(`filed.err.${code}`, { ticker }) : code);
 
-  if (filer.isLoading) return <p className="muted">{t("common.loading")}</p>;
-  if (notSynced || !filer.data) {
+  if (status.isLoading || (st?.synced && filer.isLoading)) return <p className="muted">{t("common.loading")}</p>;
+  if (status.error) return <div role="alert" className="banner err">{errText(status.error)}</div>;
+  if (!st?.synced || !filer.data) {
+    const working = st?.pending || fetchNow.isPending || sync.isPending;
     return (
       <section className="card" aria-labelledby="filed-none-h">
         <h2 id="filed-none-h">{t("filed.none.title", { ticker })}</h2>
-        <p className="muted" style={{ margin: 0 }}>{t(isAdmin ? "filed.none.admin" : "filed.none.member")}</p>
-        {filer.error && !notSynced && <div role="alert" className="banner err">{(filer.error as Error).message}</div>}
-        {syncButton && <div>{syncButton}</div>}
+        {!st?.sec_ready ? <p className="muted" style={{ margin: 0 }}>{t(isAdmin ? "filed.none.noContactAdmin" : "filed.none.noContact")}</p>
+          : st.us_filer === false ? <p className="muted" style={{ margin: 0 }}>{t("filed.none.notUs", { ticker })}</p>
+          : working ? <p role="status" style={{ margin: 0 }}>{t("filed.none.fetching", { ticker })}</p>
+          : <p className="muted" style={{ margin: 0 }}>{t("filed.none.ready")}</p>}
+        {!working && st?.last_error && <div role="alert" className="banner err">{lastError(st.last_error)}</div>}
+        {st?.sec_ready && st.us_filer !== false && !working && <div>{syncButton}</div>}
         {syncError}
       </section>
     );

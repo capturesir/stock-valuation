@@ -450,6 +450,7 @@ class DataSourcesOut(BaseModel):
     sec_email: Optional[str] = None
     sec_contact: Optional[str] = Field(None, description="實際送給 SEC 的 User-Agent（機構名稱＋電郵）")
     sec_ready: bool
+    statements_last_run: Optional[dict] = Field(None, description="上次每日檢查新申報的結果（只在 GET 回傳）")
 
 
 class StatementsSyncResult(BaseModel):
@@ -507,6 +508,17 @@ class FiledFactOut(BaseModel):
     frame: Optional[str] = None
     index_url: str
     document_url: Optional[str] = None
+
+
+class StatementsStatus(BaseModel):
+    ticker: str
+    sec_ready: bool = Field(description="管理員已設定 SEC 聯絡資料")
+    us_filer: Optional[bool] = Field(None, description="是否在 SEC 代號清單中；清單未載入時為 null")
+    synced: bool
+    synced_at: Optional[str] = None
+    pending: bool = Field(description="正在背景取得")
+    facts: int = 0
+    last_error: Optional[str] = None
 
 
 class StdYear(BaseModel):

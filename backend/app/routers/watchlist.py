@@ -33,6 +33,18 @@ def company_name(db: Session, ticker: str) -> str | None:
     return name or None
 
 
+def _fetch_statements(db: Session, ticker: str) -> None:
+    """A US stock added to a watchlist gets its SEC statements in the background (no network call here)."""
+    from ..services import statements
+
+    if not statements.data_sources(db)["sec_ready"] or statements.known_us_filer(db, ticker) is not True:
+        return
+    f = statements.filer_for(db, ticker)
+    if f is None or f.synced_at is None:
+        db.commit()
+        statements.submit(ticker)
+
+
 def _entry(db: Session, w: WatchlistItem) -> dict:
     latest = db.scalars(select(Run).where(Run.ticker == w.ticker, Run.status == "done")
                         .order_by(Run.run_at.desc()).limit(1)).first()
@@ -69,6 +81,7 @@ def add(body: WatchlistIn, user: User = Depends(require_user), db: Session = Dep
         if sec.backfilled_at is None:
             db.commit()                      # the background sync runs in its own transaction
             market_jobs.submit_sync(t)
+        _fetch_statements(db, t)
     return _entry(db, w)
 
 
