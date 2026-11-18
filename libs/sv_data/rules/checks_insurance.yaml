@@ -1,0 +1,28 @@
+# Check rules for the insurance chart (same format as checks_general.yaml).
+
+checks: insurance
+version: "2026.11.1"
+
+rules:
+  - {id: balance_total, kind: equal, severity: error, left: total_assets, right: liabilities_and_equity, tolerance: 0.005}
+  - {id: balance_parts, kind: equal, severity: error, left: total_assets, right: total_liabilities + total_equity, tolerance: 0.005}
+  # some insurers (e.g. Berkshire) book investment gains outside revenue, so this does not hold everywhere: a note only
+  - {id: insurance_pretax, kind: equal, severity: info, left: pretax_income, right: revenue - total_benefits_and_expenses, tolerance: 0.005}
+  - {id: net_income_split, kind: equal, severity: warning, left: net_income, right: net_income_parent + net_income_nci, tolerance: 0.005}
+  - {id: premiums_within_revenue, kind: le, severity: warning, left: premiums_earned, right: revenue}
+  - {id: eps_diluted, kind: ratio, severity: warning, item: eps_diluted, numerator: net_income_common, denominator: shares_diluted_weighted, tolerance: 0.03}
+  - {id: total_assets_positive, kind: sign, severity: error, item: total_assets, strict: true}
+  - {id: premiums_not_negative, kind: sign, severity: error, item: premiums_earned}
+  - {id: revenue_jump, kind: jump, severity: warning, item: revenue, factor: 20}
+  - {id: total_assets_jump, kind: jump, severity: warning, item: total_assets, factor: 20}
+  - {id: quarters_add_up, kind: quarters_sum, severity: warning, items: [revenue, net_income_parent], tolerance: 0.005}
+  - {id: no_missing_years, kind: continuity, severity: info}
+  - id: yahoo_matches
+    kind: cross_source
+    severity: warning
+    source: yahoo
+    tolerance: 0.01
+    items:
+      # not revenue: Yahoo's insurer revenue leaves out some investment and derivative gains (MetLife FY2022–25: 1.2–2.0 % lower)
+      net_income_parent: [Net Income, Net Income Common Stockholders]
+      total_assets: [Total Assets]

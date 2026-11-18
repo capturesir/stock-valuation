@@ -1,0 +1,454 @@
+# SV standard chart of accounts — banks and lenders (SIC 6000–6199) — and the mapping rules from filed XBRL concepts.
+# Same format and rules as general.yaml (see that file for the field reference). Items shared with the
+# general chart (tax, net income, per share, totals, cash flows) use the same concepts.
+# Concepts were chosen from what JPMorgan Chase actually file (companyfacts, FY2025 10-K).
+
+ruleset: bank
+version: 2026.11.1
+template: bank
+display:
+  income:
+  - interest_income
+  - interest_expense
+  - net_interest_income
+  - noninterest_income
+  - revenue
+  - provision_credit_losses
+  - noninterest_expense
+  - pretax_income
+  - income_tax
+  - net_income
+  - net_income_nci
+  - net_income_parent
+  - preferred_dividends
+  - net_income_common
+  - eps_basic
+  - eps_diluted
+  - shares_basic_weighted
+  - shares_diluted_weighted
+  balance:
+  - cash_and_due
+  - deposits_with_banks
+  - securities_afs
+  - securities_htm
+  - loans_gross
+  - loan_allowance
+  - loans_net
+  - goodwill
+  - total_assets
+  - deposits
+  - short_term_borrowings
+  - long_term_debt
+  - total_liabilities
+  - preferred_equity
+  - common_equity
+  - equity_parent
+  - equity_nci
+  - total_equity
+  - liabilities_and_equity
+  - shares_outstanding
+  cash_flow:
+  - cfo
+  - cfi
+  - dividends_paid
+  - share_repurchases
+  - cff
+totals:
+- net_interest_income
+- revenue
+- net_income_parent
+- total_assets
+- total_liabilities
+- total_equity
+- liabilities_and_equity
+- cfo
+items:
+- code: interest_income
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: interest_income.1
+    sources:
+    - us-gaap:InterestAndDividendIncomeOperating
+    - us-gaap:InterestIncomeOperating
+    - us-gaap:InterestAndDividendIncomeSecurities
+- code: interest_expense
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: interest_expense.1
+    sources:
+    - us-gaap:InterestExpense
+    - us-gaap:InterestExpenseOperating
+- code: net_interest_income
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: net_interest_income.1
+    sources:
+    - us-gaap:InterestIncomeExpenseNet
+    formula: interest_income - interest_expense
+- code: noninterest_income
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: noninterest_income.1
+    sources:
+    - us-gaap:NoninterestIncome
+- code: revenue
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: revenue.1
+    sources:
+    - us-gaap:Revenues
+    - us-gaap:RevenuesNetOfInterestExpense
+    formula: net_interest_income + noninterest_income
+- code: provision_credit_losses
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: provision_credit_losses.1
+    sources:
+    - us-gaap:ProvisionForLoanLeaseAndOtherLosses
+    - us-gaap:ProvisionForLoanAndLeaseLosses
+- code: noninterest_expense
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: noninterest_expense.1
+    sources:
+    - us-gaap:NoninterestExpense
+- code: pretax_income
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: pretax_income.1
+    sources:
+    - us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest
+    - us-gaap:IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments
+    - ifrs-full:ProfitLossBeforeTax
+- code: income_tax
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: income_tax.1
+    sources:
+    - us-gaap:IncomeTaxExpenseBenefit
+    - ifrs-full:IncomeTaxExpenseContinuingOperations
+- code: net_income_parent
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: net_income_parent.1
+    sources:
+    - us-gaap:NetIncomeLoss
+    - ifrs-full:ProfitLossAttributableToOwnersOfParent
+- code: net_income_nci
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: net_income_nci.1
+    sources:
+    - us-gaap:NetIncomeLossAttributableToNoncontrollingInterest
+    - ifrs-full:ProfitLossAttributableToNoncontrollingInterests
+- code: net_income
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: net_income.1
+    sources:
+    - us-gaap:ProfitLoss
+    - ifrs-full:ProfitLoss
+    formula: net_income_parent + net_income_nci?
+- code: preferred_dividends
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: preferred_dividends.1
+    sources:
+    - us-gaap:DividendsPreferredStock
+    - us-gaap:PreferredStockDividendsIncomeStatementImpact
+- code: net_income_common
+  statement: income
+  period: duration
+  unit: money
+  rules:
+  - id: net_income_common.1
+    sources:
+    - us-gaap:NetIncomeLossAvailableToCommonStockholdersBasic
+    formula: net_income_parent - preferred_dividends?
+- code: eps_basic
+  statement: income
+  period: duration
+  unit: per_share
+  rules:
+  - id: eps_basic.1
+    sources:
+    - us-gaap:EarningsPerShareBasic
+    - ifrs-full:BasicEarningsLossPerShare
+- code: eps_diluted
+  statement: income
+  period: duration
+  unit: per_share
+  rules:
+  - id: eps_diluted.1
+    sources:
+    - us-gaap:EarningsPerShareDiluted
+    - us-gaap:EarningsPerShareBasicAndDiluted
+    - ifrs-full:DilutedEarningsLossPerShare
+- code: shares_basic_weighted
+  statement: income
+  period: duration
+  unit: shares
+  rules:
+  - id: shares_basic_weighted.1
+    sources:
+    - us-gaap:WeightedAverageNumberOfSharesOutstandingBasic
+    - ifrs-full:WeightedAverageShares
+- code: shares_diluted_weighted
+  statement: income
+  period: duration
+  unit: shares
+  rules:
+  - id: shares_diluted_weighted.1
+    sources:
+    - us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding
+    - ifrs-full:AdjustedWeightedAverageShares
+- code: cash_and_due
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: cash_and_due.1
+    sources:
+    - us-gaap:CashAndDueFromBanks
+    - us-gaap:CashAndCashEquivalentsAtCarryingValue
+- code: deposits_with_banks
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: deposits_with_banks.1
+    sources:
+    - us-gaap:InterestBearingDepositsInBanks
+- code: securities_afs
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: securities_afs.1
+    sources:
+    - us-gaap:AvailableForSaleSecuritiesDebtSecurities
+    - us-gaap:DebtSecuritiesAvailableForSaleExcludingAccruedInterest
+- code: securities_htm
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: securities_htm.1
+    sources:
+    - us-gaap:HeldToMaturitySecurities
+    - us-gaap:DebtSecuritiesHeldToMaturityExcludingAccruedInterestAfterAllowanceForCreditLoss
+- code: loans_gross
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: loans_gross.1
+    sources:
+    - us-gaap:LoansAndLeasesReceivableNetOfDeferredIncome
+    - us-gaap:FinancingReceivableExcludingAccruedInterestBeforeAllowanceForCreditLoss
+- code: loan_allowance
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: loan_allowance.1
+    sources:
+    - us-gaap:LoansAndLeasesReceivableAllowance
+    - us-gaap:FinancingReceivableAllowanceForCreditLossExcludingAccruedInterest
+- code: loans_net
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: loans_net.1
+    formula: loans_gross - loan_allowance
+- code: goodwill
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: goodwill.1
+    sources:
+    - us-gaap:Goodwill
+    - ifrs-full:Goodwill
+- code: total_assets
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: total_assets.1
+    sources:
+    - us-gaap:Assets
+    - ifrs-full:Assets
+- code: deposits
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: deposits.1
+    sources:
+    - us-gaap:Deposits
+- code: short_term_borrowings
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: short_term_borrowings.1
+    sources:
+    - us-gaap:ShortTermBorrowings
+- code: long_term_debt
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: long_term_debt.1
+    sources:
+    - us-gaap:LongTermDebt
+    - us-gaap:LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities
+    - us-gaap:LongTermDebtNoncurrent
+- code: equity_parent
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: equity_parent.1
+    sources:
+    - us-gaap:StockholdersEquity
+    - ifrs-full:EquityAttributableToOwnersOfParent
+- code: preferred_equity
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: preferred_equity.1
+    sources:
+    - us-gaap:PreferredStockValue
+    - us-gaap:PreferredStockIncludingAdditionalPaidInCapitalNetOfDiscount
+- code: common_equity
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: common_equity.1
+    formula: equity_parent - preferred_equity?
+- code: equity_nci
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: equity_nci.1
+    sources:
+    - us-gaap:MinorityInterest
+    - ifrs-full:NoncontrollingInterests
+- code: total_equity
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: total_equity.1
+    sources:
+    - us-gaap:StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest
+    - ifrs-full:Equity
+    formula: equity_parent + equity_nci?
+- code: liabilities_and_equity
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: liabilities_and_equity.1
+    sources:
+    - us-gaap:LiabilitiesAndStockholdersEquity
+    - ifrs-full:EquityAndLiabilities
+- code: total_liabilities
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: total_liabilities.1
+    sources:
+    - us-gaap:Liabilities
+    - ifrs-full:Liabilities
+    formula: liabilities_and_equity - total_equity
+- code: shares_outstanding
+  statement: balance
+  period: instant
+  unit: shares
+  rules:
+  - id: shares_outstanding.1
+    sources:
+    - us-gaap:CommonStockSharesOutstanding
+    - ifrs-full:NumberOfSharesOutstanding
+- code: cfo
+  statement: cash_flow
+  period: duration
+  unit: money
+  rules:
+  - id: cfo.1
+    sources:
+    - us-gaap:NetCashProvidedByUsedInOperatingActivities
+    - us-gaap:NetCashProvidedByUsedInOperatingActivitiesContinuingOperations
+    - ifrs-full:CashFlowsFromUsedInOperatingActivities
+- code: cfi
+  statement: cash_flow
+  period: duration
+  unit: money
+  rules:
+  - id: cfi.1
+    sources:
+    - us-gaap:NetCashProvidedByUsedInInvestingActivities
+    - us-gaap:NetCashProvidedByUsedInInvestingActivitiesContinuingOperations
+    - ifrs-full:CashFlowsFromUsedInInvestingActivities
+- code: dividends_paid
+  statement: cash_flow
+  period: duration
+  unit: money
+  rules:
+  - id: dividends_paid.1
+    sources:
+    - us-gaap:PaymentsOfDividends
+    - us-gaap:PaymentsOfDividendsCommonStock
+    - ifrs-full:DividendsPaidClassifiedAsFinancingActivities
+- code: share_repurchases
+  statement: cash_flow
+  period: duration
+  unit: money
+  rules:
+  - id: share_repurchases.1
+    sources:
+    - us-gaap:PaymentsForRepurchaseOfCommonStock
+- code: cff
+  statement: cash_flow
+  period: duration
+  unit: money
+  rules:
+  - id: cff.1
+    sources:
+    - us-gaap:NetCashProvidedByUsedInFinancingActivities
+    - us-gaap:NetCashProvidedByUsedInFinancingActivitiesContinuingOperations
+    - ifrs-full:CashFlowsFromUsedInFinancingActivities
