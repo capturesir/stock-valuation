@@ -3796,6 +3796,131 @@
      }
     }
    }
+  },
+  "/api/v1/stocks/{ticker}/statements/export": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "匯出標準化財報：Excel（財報、比率與增長、出處、檢查，附系統名稱）或 CSV；數值為精確原值",
+    "operationId": "export_api_v1_stocks__ticker__statements_export_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "xlsx",
+        "csv"
+       ],
+       "type": "string",
+       "default": "xlsx",
+       "title": "Format"
+      }
+     },
+     {
+      "name": "view",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "latest",
+        "original"
+       ],
+       "type": "string",
+       "default": "latest",
+       "title": "View"
+      }
+     },
+     {
+      "name": "period",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "annual",
+        "quarterly"
+       ],
+       "type": "string",
+       "default": "annual",
+       "title": "Period"
+      }
+     },
+     {
+      "name": "years",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 40,
+       "minimum": 1,
+       "default": 10,
+       "title": "Years"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {},
+       "text/csv": {}
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -4160,6 +4285,29 @@
      "name"
     ],
     "title": "BrandingOut"
+   },
+   "CagrValue": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "years": {
+      "type": "integer",
+      "title": "Years"
+     },
+     "value": {
+      "type": "string",
+      "title": "Value"
+     }
+    },
+    "type": "object",
+    "required": [
+     "code",
+     "years",
+     "value"
+    ],
+    "title": "CagrValue"
    },
    "CheckFailure": {
     "properties": {
@@ -4628,6 +4776,36 @@
      "facts"
     ],
     "title": "FilerOut"
+   },
+   "GrowthRow": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code",
+      "description": "標準科目"
+     },
+     "cells": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Cells",
+      "description": "按年增長（季度與去年同季比較）；上期為零或負數時為 null"
+     }
+    },
+    "type": "object",
+    "required": [
+     "code",
+     "cells"
+    ],
+    "title": "GrowthRow"
    },
    "HTTPValidationError": {
     "properties": {
@@ -5843,6 +6021,64 @@
     ],
     "title": "PriceSeries"
    },
+   "RatioCell": {
+    "properties": {
+     "value": {
+      "type": "string",
+      "title": "Value",
+      "description": "比率（0.2142 = 21.42%；倍數與日數照原值）"
+     },
+     "inputs": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Inputs",
+      "description": "計算用到的標準科目數值；平均值附期末與一年前數字"
+     }
+    },
+    "type": "object",
+    "required": [
+     "value"
+    ],
+    "title": "RatioCell"
+   },
+   "RatioRow": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "pct",
+       "times",
+       "days"
+      ],
+      "title": "Kind"
+     },
+     "cells": {
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/RatioCell"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Cells"
+     }
+    },
+    "type": "object",
+    "required": [
+     "code",
+     "kind",
+     "cells"
+    ],
+    "title": "RatioRow"
+   },
    "RevisionOut": {
     "properties": {
      "ticker": {
@@ -6286,6 +6522,9 @@
      "checks": {
       "$ref": "#/components/schemas/StatementChecks"
      },
+     "ratios": {
+      "$ref": "#/components/schemas/StatementRatios"
+     },
      "ruleset": {
       "type": "string",
       "title": "Ruleset"
@@ -6364,6 +6603,7 @@
      "template",
      "template_applied",
      "checks",
+     "ratios",
      "ruleset",
      "ruleset_version",
      "view",
@@ -6432,6 +6672,48 @@
      "version"
     ],
     "title": "StatementChecks"
+   },
+   "StatementRatios": {
+    "properties": {
+     "ratioset": {
+      "type": "string",
+      "title": "Ratioset"
+     },
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "rows": {
+      "items": {
+       "$ref": "#/components/schemas/RatioRow"
+      },
+      "type": "array",
+      "title": "Rows"
+     },
+     "growth": {
+      "items": {
+       "$ref": "#/components/schemas/GrowthRow"
+      },
+      "type": "array",
+      "title": "Growth"
+     },
+     "cagr": {
+      "items": {
+       "$ref": "#/components/schemas/CagrValue"
+      },
+      "type": "array",
+      "title": "Cagr",
+      "description": "至最近財年的 3 年與 5 年複合增長率"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ratioset",
+     "version",
+     "rows",
+     "growth"
+    ],
+    "title": "StatementRatios"
    },
    "StatementsStatus": {
     "properties": {

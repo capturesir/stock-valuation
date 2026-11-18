@@ -547,7 +547,23 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
                             "difference": format(r.difference.quantize(Decimal("0.0001")), "f") if r.difference is not None else None}
                            for r in results if r.status == "fail" and r.period in shown]}
 
+    from libs.sv_data.ratios import cagr, compute_ratios, growth, load_ratios
+
+    rr = load_ratios(f"ratios_{template}")
+    rv = compute_ratios(std, rr, rs)
+    gv = growth(std, rr.growth)
+    cv = cagr(std, rr.growth)
+    q4 = lambda d: format(d.quantize(Decimal("0.0001")), "f")           # noqa: E731
+    ratios = {"ratioset": rr.name, "version": rr.version,
+              "rows": [{"code": m.id, "kind": m.kind,
+                        "cells": [({"value": q4(rv[(m.id, y.label)].value), "inputs": rv[(m.id, y.label)].inputs}
+                                   if (m.id, y.label) in rv else None) for y in fys]} for m in rr.measures],
+              "growth": [{"code": c, "cells": [q4(gv[(c, y.label)]) if (c, y.label) in gv else None for y in fys]}
+                         for c in rr.growth],
+              "cagr": [{"code": c, "years": n, "value": q4(cv[(c, n)])} for c in rr.growth for n in (3, 5) if (c, n) in cv]}
+
     return {"cik": filer.cik, "name": filer.name, "template": template, "template_applied": rs.template, "checks": checks,
+            "ratios": ratios,
             "ruleset": rs.name, "ruleset_version": rs.version, "currency": std.currency, "view": view,
             "as_of": as_of.isoformat() if as_of else None,
             "splits_applied": [{"date": sp.date.isoformat(), "ratio": format(sp.ratio.normalize(), "f")} for sp in std.splits_applied],

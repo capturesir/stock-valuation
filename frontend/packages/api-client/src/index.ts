@@ -155,6 +155,8 @@ export function createClient(cfg: ClientConfig = {}) {
     valuations: (ticker: string) => req<StockValuations>("GET", `/stocks/${enc(ticker)}/valuations`),
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),
     excelUrl: (runId: string) => `${base}/runs/${enc(runId)}/excel`,
+    statementsExportUrl: (ticker: string, format: "xlsx" | "csv", view: "latest" | "original", period: "annual" | "quarterly") =>
+      `${base}/stocks/${enc(ticker)}/statements/export${q({ format, view, period, years: period === "quarterly" ? 12 : 10 })}`,
 
     watchlist: () => req<WatchlistEntry[]>("GET", "/watchlist"),
     addToWatchlist: (ticker: string) => req<WatchlistEntry>("POST", "/watchlist", { ticker }),

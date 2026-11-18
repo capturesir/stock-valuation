@@ -1,0 +1,19 @@
+# Ratios for the insurance chart (same format as ratios_general.yaml).
+# The loss ratio here is benefits and claims ÷ premiums earned: meaningful for property and casualty
+# insurers; for life insurers benefits also reflect reserve changes, so read it with care.
+
+ratios: insurance
+version: "2026.11.1"
+
+measures:
+  - {id: loss_ratio, kind: pct, numerator: benefits_and_claims, denominator: premiums_earned}
+  - {id: investment_yield, kind: pct, numerator: net_investment_income, denominator: investments, average: true, periods: [annual, ttm]}
+  - {id: net_margin, kind: pct, numerator: net_income_parent, denominator: revenue}
+  - {id: roe, kind: pct, numerator: net_income_parent, denominator: equity_parent, average: true, periods: [annual, ttm]}
+  - {id: roa, kind: pct, numerator: net_income_parent, denominator: total_assets, average: true, periods: [annual, ttm]}
+  - {id: premiums_to_equity, kind: times, numerator: premiums_earned, denominator: equity_parent, average: true, periods: [annual, ttm]}
+  - {id: equity_to_assets, kind: pct, numerator: total_equity, denominator: total_assets}
+  - {id: effective_tax_rate, kind: pct, numerator: income_tax, denominator: pretax_income}
+  - {id: payout_ratio, kind: pct, numerator: dividends_paid, denominator: net_income_parent}
+
+growth: [premiums_earned, net_investment_income, revenue, net_income_parent, eps_diluted, total_assets, equity_parent]

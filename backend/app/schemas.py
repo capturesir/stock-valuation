@@ -590,6 +590,36 @@ class StatementChecks(BaseModel):
     failures: list[CheckFailure] = Field(default_factory=list)
 
 
+class RatioCell(BaseModel):
+    value: str = Field(description="比率（0.2142 = 21.42%；倍數與日數照原值）")
+    inputs: dict = Field(default_factory=dict, description="計算用到的標準科目數值；平均值附期末與一年前數字")
+
+
+class RatioRow(BaseModel):
+    code: str
+    kind: Literal["pct", "times", "days"]
+    cells: list[Optional[RatioCell]]
+
+
+class GrowthRow(BaseModel):
+    code: str = Field(description="標準科目")
+    cells: list[Optional[str]] = Field(description="按年增長（季度與去年同季比較）；上期為零或負數時為 null")
+
+
+class CagrValue(BaseModel):
+    code: str
+    years: int
+    value: str
+
+
+class StatementRatios(BaseModel):
+    ratioset: str
+    version: str
+    rows: list[RatioRow]
+    growth: list[GrowthRow]
+    cagr: list[CagrValue] = Field(default_factory=list, description="至最近財年的 3 年與 5 年複合增長率")
+
+
 class StandardStatements(BaseModel):
     ticker: str
     cik: str
@@ -597,6 +627,7 @@ class StandardStatements(BaseModel):
     template: Literal["general", "bank", "insurance"] = Field(description="按 SIC 判斷的行業模板")
     template_applied: str = Field(description="實際套用的科目表（general｜bank｜insurance）")
     checks: StatementChecks
+    ratios: StatementRatios
     ruleset: str
     ruleset_version: str
     currency: Optional[str] = None

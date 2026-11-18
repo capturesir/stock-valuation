@@ -14,13 +14,20 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
   const { t, locale } = useI18n();
   const [view, setView] = useState<"latest" | "original">("latest");
   const [period, setPeriod] = useState<"annual" | "quarterly">("annual");
+  const [display, setDisplay] = useState<"values" | "common">("values");
   const [picked, setPicked] = useState<Picked>(null);
   const q = useQuery({ queryKey: ["std", ticker, view, period], queryFn: () => api.standardStatements(ticker, view, period) });
   const d = q.data;
   const millions = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const millionsShares = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
-  const show = (row: StdRow, c: StdCell) => {
+  const pctFmt = new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const show = (row: StdRow, c: StdCell, i: number) => {
     const n = Number(c.value);
+    if (display === "common") {
+      if (row.unit !== "money") return "—";
+      const base = d?.rows.find((r) => r.code === (row.statement === "balance" ? "total_assets" : "revenue"))?.cells[i];
+      return base && Number(base.value) ? pctFmt.format(n / Number(base.value)).replace(/^-/, "−") : "—";
+    }
     const s = row.unit === "per_share" ? groupDigits(c.value)
       : (row.unit === "shares" ? millionsShares : millions).format(n / 1e6);
     return s.replace(/^-/, "−");
@@ -50,12 +57,20 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
               <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} title={t(`std.view.${v}.hint`)}>{t(`std.view.${v}`)}</button>
             ))}
           </div>
+          <div className="seg" role="group" aria-label={t("std.display")}>
+            {(["values", "common"] as const).map((v) => (
+              <button key={v} type="button" aria-pressed={display === v} onClick={() => setDisplay(v)}>{t(`std.display.${v}`)}</button>
+            ))}
+          </div>
+          <a className="btn secondary small" href={api.statementsExportUrl(ticker, "xlsx", view, period)}>{t("std.export.xlsx")}</a>
+          <a className="btn secondary small" href={api.statementsExportUrl(ticker, "csv", view, period)}>{t("std.export.csv")}</a>
         </div>
       </div>
       {d.template !== "general" && <div className="banner info" role="note">{t(`std.template.${d.template}`)}</div>}
       {(d.splits_applied ?? []).length > 0 && <span className="small">{t("std.splits", {
         list: (d.splits_applied ?? []).map((s) => t("std.split", { date: String(s.date), ratio: String(s.ratio) })).join("、") })}</span>}
       <span className="muted small">{t("std.legend")}</span>
+      {display === "common" && <span className="small">{t("std.commonNote")}</span>}
 
       {STATEMENTS.map((st) => {
         const rows = d.rows.filter((r) => r.statement === st);        // already in display order
@@ -81,7 +96,7 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
                             <button type="button" className={`cell${picked?.code === r.code && picked.year === i ? " active" : ""}`}
                                     onClick={() => setPicked(picked?.code === r.code && picked.year === i ? null : { code: r.code, year: i })}
                                     aria-label={`${t(`std.item.${r.code}`)} ${d.years[i].label}`}>
-                              {show(r, c)}
+                              {show(r, c, i)}
                               {c.method === "formula" && <sup className="muted" title={t("std.mark.formula")}>ƒ</sup>}
                               {c.method === "derived" && <sup className="muted" title={t("std.mark.derived")}>Δ</sup>}
                               {c.change === "restated" && <sup className="mark-r" title={t("std.mark.restated")}>R</sup>}
@@ -99,8 +114,90 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
           </Fragment>
         );
       })}
+      <Ratios d={d} />
       <Checks d={d} />
     </section>
+  );
+}
+
+function Ratios({ d }: { d: Std }) {
+  const { t, f } = useI18n();
+  const [picked, setPicked] = useState<{ code: string; i: number } | null>(null);
+  const r = d.ratios;
+  const fmt = (kind: string, v: string) => {
+    const n = Number(v);
+    if (kind === "pct") return f.pct(n, 1, false);
+    if (kind === "days") return n.toFixed(0);
+    return `${n.toFixed(2)}×`;
+  };
+  const sel = picked && r.rows.find((x) => x.code === picked.code)?.cells[picked.i];
+  const inputText = (k: string, v: unknown) => {
+    if (k === "tax_rate") return t("std.taxRate", { rate: f.pct(Number(v), 1, false) });
+    const label = t(`std.item.${k}`);
+    if (v && typeof v === "object") {
+      const o = v as { end: string; year_ago: string };
+      return `${label} ${t("std.ratioAvg", { end: groupDigits(o.end), ago: groupDigits(o.year_ago) })}`;
+    }
+    return `${label} ${groupDigits(String(v))}`;
+  };
+  const cagr = r.cagr ?? [];
+  return (
+    <div style={{ borderTop: "1px solid var(--sv-line-faint)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+      <h3 style={{ margin: 0 }}>{t("std.ratios")}</h3>
+      <span className="muted small">{t("std.ratiosIntro", { version: r.version })}</span>
+      <div className="tbl-wrap">
+        <table className="tbl std" style={{ minWidth: 160 + d.years.length * 110 }}>
+          <thead><tr><th scope="col" className="l">{t("std.col.item")}</th>
+            {d.years.map((y) => <th key={y.label} scope="col" className={y.kind === "ttm" ? "ttm" : ""}>{y.kind === "ttm" ? t("std.ttm") : y.label}</th>)}</tr></thead>
+          <tbody>
+            {r.rows.map((row) => (
+              <tr key={row.code}>
+                <th scope="row" className="l">{t(`ratio.${row.code}`)}</th>
+                {row.cells.map((c, i) => (
+                  <td key={i} className={d.years[i].kind === "ttm" ? "ttm" : ""}>
+                    {c ? <button type="button" className={`cell${picked?.code === row.code && picked.i === i ? " active" : ""}`}
+                                 onClick={() => setPicked(picked?.code === row.code && picked.i === i ? null : { code: row.code, i })}>
+                      {fmt(row.kind, c.value)}</button> : <span className="muted">—</span>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {sel && picked && (
+        <div className="banner info" role="region" aria-label={t("std.ratioInputs")} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+          <strong>{t(`ratio.${picked.code}`)} · {d.years[picked.i].kind === "ttm" ? t("std.ttm") : d.years[picked.i].label}</strong>
+          <span>{t("std.ratioInputs")}：{Object.entries(sel.inputs ?? {}).map(([k, v]) => inputText(k, v)).join("；")}</span>
+        </div>
+      )}
+      <h3 style={{ margin: "8px 0 0" }}>{t("std.growth")}</h3>
+      <span className="muted small">{t("std.growthIntro")}</span>
+      <div className="tbl-wrap">
+        <table className="tbl std" style={{ minWidth: 160 + d.years.length * 110 }}>
+          <tbody>
+            {r.growth.map((g) => (
+              <tr key={g.code}>
+                <th scope="row" className="l">{t(`std.item.${g.code}`)}</th>
+                {g.cells.map((c, i) => <td key={i} className={d.years[i].kind === "ttm" ? "ttm" : ""}>
+                  {c != null ? <span className={Number(c) >= 0 ? "pos" : "neg"}>{f.pct(Number(c), 1, true)}</span> : <span className="muted">—</span>}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {cagr.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <strong>{t("std.cagr")}</strong>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px" }}>
+            {[...new Set(cagr.map((c) => c.code))].map((code) => (
+              <span key={code} className="small">{t(`std.item.${code}`)}：{cagr.filter((c) => c.code === code)
+                .map((c) => `${t("std.cagrYears", { n: c.years })} ${f.pct(Number(c.value), 1, true)}`).join(" · ")}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

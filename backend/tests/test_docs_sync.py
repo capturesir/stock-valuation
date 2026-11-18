@@ -72,6 +72,7 @@ def test_every_chart_item_and_check_has_a_label_in_every_language():
         d = yaml.safe_load(f.read_text(encoding="utf-8"))
         keys |= {f"std.item.{i['code']}" for i in d.get("items") or []}
         keys |= {f"check.{r['id']}" for r in d.get("rules") or []}
+        keys |= {f"ratio.{m['id']}" for m in d.get("measures") or []}
     for lang in ("zh-Hant", "zh-Hans", "en"):
         have = json.loads((locales / f"{lang}.json").read_text(encoding="utf-8"))
         assert not keys - set(have), f"{lang} is missing labels: {sorted(keys - set(have))}"

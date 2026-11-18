@@ -1,0 +1,50 @@
+# Ratios for the general chart (roadmap §6). Data, like the other rule files: every change bumps `version`.
+#
+# Per measure:
+#   id           stable identifier (frontend dictionary: ratio.<id>)
+#   kind         pct (shown as %) | times (×) | days
+#   numerator    standard items joined by + and − (a ? term may be missing and counts as zero)
+#   denominator  same
+#   average      average the balance-sheet (instant) items of the denominator over the period:
+#                (this period end + the same point a year earlier) / 2
+#   average_numerator  the same, for the numerator (e.g. receivables in receivable days)
+#   after_tax    multiply the numerator by (1 − effective tax rate), the rate being income tax ÷ pre-tax income
+#                for the same period, kept within 0–50 %
+#   multiply     a constant factor (365 for days)
+#   periods      where it is computed: annual, quarter, ttm (default: all three). Ratios that mix a period's
+#                flow with balances need a full year, so they are annual and TTM only.
+#
+# growth: items with year-on-year growth (a quarter against the same quarter a year earlier) and, for
+# fiscal years, compound annual growth over 3 and 5 years.
+
+ratios: general
+version: "2026.11.1"
+
+measures:
+  - {id: gross_margin, kind: pct, numerator: gross_profit, denominator: revenue}
+  - {id: operating_margin, kind: pct, numerator: operating_income, denominator: revenue}
+  - {id: net_margin, kind: pct, numerator: net_income_parent, denominator: revenue}
+  - {id: fcf_margin, kind: pct, numerator: free_cash_flow, denominator: revenue}
+  - {id: rnd_to_revenue, kind: pct, numerator: research_development, denominator: revenue}
+  - {id: capex_to_revenue, kind: pct, numerator: capex, denominator: revenue}
+  - {id: effective_tax_rate, kind: pct, numerator: income_tax, denominator: pretax_income}
+  - {id: roe, kind: pct, numerator: net_income_parent, denominator: equity_parent, average: true, periods: [annual, ttm]}
+  - {id: roa, kind: pct, numerator: net_income_parent, denominator: total_assets, average: true, periods: [annual, ttm]}
+  - id: roic
+    kind: pct
+    numerator: operating_income
+    after_tax: true
+    denominator: total_equity + debt_current? + debt_noncurrent? - cash?
+    average: true
+    periods: [annual, ttm]
+  - {id: asset_turnover, kind: times, numerator: revenue, denominator: total_assets, average: true, periods: [annual, ttm]}
+  - {id: inventory_turnover, kind: times, numerator: cost_of_revenue, denominator: inventory, average: true, periods: [annual, ttm]}
+  - {id: receivable_days, kind: days, numerator: receivables, average_numerator: true, denominator: revenue, multiply: 365, periods: [annual, ttm]}
+  - {id: current_ratio, kind: times, numerator: current_assets, denominator: current_liabilities}
+  - {id: debt_to_equity, kind: times, numerator: "debt_current? + debt_noncurrent", denominator: total_equity}
+  - {id: liabilities_to_assets, kind: pct, numerator: total_liabilities, denominator: total_assets}
+  - {id: cash_conversion, kind: times, numerator: cfo, denominator: net_income_parent}
+  - {id: payout_ratio, kind: pct, numerator: dividends_paid, denominator: net_income_parent}
+  - {id: shareholder_return_to_fcf, kind: pct, numerator: "dividends_paid? + share_repurchases?", denominator: free_cash_flow}
+
+growth: [revenue, gross_profit, operating_income, net_income_parent, eps_diluted, cfo, free_cash_flow, total_assets, equity_parent]
