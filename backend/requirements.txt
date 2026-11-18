@@ -3,7 +3,7 @@
 sqlalchemy>=2.0,<3
 alembic>=1.13,<2
 arq>=0.26,<1
-redis>=5,<6
+redis>=8.1.0,<9
 cryptography>=42
 psycopg[binary]>=3.2,<4
 # accounts, uploads and branding (2.0.0-alpha.2)
