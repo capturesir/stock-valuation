@@ -32,7 +32,7 @@ def load_config(path: Optional[Path] = None) -> dict:
 
 def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
                valuation_date: str = "2026-11-11", progress=None,
-               should_stop=None, skip_extract: bool = False) -> dict:
+               should_stop=None, skip_extract: bool = False, apply_adjustments: bool = True) -> dict:
     """Fetch -> assumptions -> engine -> verify -> Excel / markdown.
 
     ``progress`` is an optional callback ``(step_key, activity=None, skip=None)``
@@ -230,8 +230,14 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     # R06/R07: adopted statement adjustments scale the model drivers before the
     # engine runs, so the projection reflects them and the audit trail travels
     # with the result (Excel, run_meta, calc JSON).
+    # v2 passes apply_adjustments=False: cases/<ticker>/adjustments.json is one file per ticker shared by
+    # everyone, with no author, so it must not change another user's valuation silently. v2 adjustments
+    # come with central / personal plans (decision D12); until then v2 values on the system default.
     from . import adjustments as adjmod
-    spec, applied_adjustments = adjmod.apply_to_spec(spec, ticker)
+    if apply_adjustments:
+        spec, applied_adjustments = adjmod.apply_to_spec(spec, ticker)
+    else:
+        applied_adjustments = []
     if applied_adjustments:
         spec.setdefault("corrections", []).extend([
             {"item": f"財報金額調整：{a['item']}（{a['fy']}）",
@@ -266,6 +272,8 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     # R16: what the provider actually reported for this run (retries included).
     outj["llm_usage"] = client.usage_summary()
     outj["adjustments_applied"] = applied_adjustments
+    outj["adjustment_plan"] = ({"plan": "v1_shared_file", "items": len(applied_adjustments)} if apply_adjustments
+                               else {"plan": "system_default", "note": "未套用財報調整（系統預設）；中央與個人調整方案開發中（決定 D12）"})
     Path(result["path"]).write_text(
         json.dumps(outj, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     # write assumptions csv
