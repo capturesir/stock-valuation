@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import gzip
+from decimal import Decimal
 import json
 from pathlib import Path
 
@@ -381,3 +382,46 @@ def test_banks_get_the_bank_chart_and_checks(client, sec, member):
     fails = {(x["rule_id"], x["period"]) for x in d["checks"]["failures"]}
     assert ("net_interest_income", "FY2024") not in fails                        # 193,341 − 97,898 = 95,443
     assert ("deposits_within_liabilities", "FY2024") not in fails                # no total liabilities filed here: skipped, not failed
+
+
+# ------------------------------------------------------------------ step 7: ratios, growth, export
+
+def test_ratios_growth_and_their_inputs(client, sec, member):
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    r = d["ratios"]
+    assert r["ratioset"] == "general" and r["version"]
+    labels = [y["label"] for y in d["years"]]
+    growth = {g["code"]: dict(zip(labels, g["cells"])) for g in r["growth"]}
+    # FY2024 revenue 130,497 vs restated FY2023 60,900 (latest view)
+    assert growth["revenue"]["FY2024"] == str((Decimal("130497") / Decimal("60900") - 1).quantize(Decimal("0.0001")))
+    assert growth["revenue"]["FY2023"] is None                 # no FY2022 to compare with
+    ratios = {x["code"]: dict(zip(labels, x["cells"])) for x in r["rows"]}
+    roa = ratios["roa"]["FY2024"]
+    assert roa is None                                         # no net income filed in the fixture
+    assert ratios["liabilities_to_assets"]["FY2024"] is None   # no liabilities filed
+
+
+def test_export_excel_and_csv(client, sec, member):
+    from openpyxl import load_workbook
+
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    r = member.get(f"{API}/stocks/EXMP/statements/export", params={"format": "csv"}, headers={"Accept-Language": "en"})
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")
+    assert 'filename="EXMP_annual_' in r.headers["content-disposition"]
+    text = r.content.decode("utf-8-sig")
+    lines = text.replace("\r", "").splitlines()
+    assert lines[1].startswith("Item,code,Unit,FY2024 (2024-12-31),FY2023 (2023-12-31)")
+    assert "Revenue,revenue,USD,130497000000,60900000000" in lines
+    r = member.get(f"{API}/stocks/EXMP/statements/export", params={"format": "xlsx"})
+    assert r.status_code == 200
+    import io
+    wb = load_workbook(io.BytesIO(r.content))
+    assert wb.sheetnames == ["標準化財報", "比率", "出處", "檢查"]
+    ws = wb["標準化財報"]
+    assert ws["A1"].value == "EXAMPLE CORP (EXMP)" and ws["A2"].value == "估值工作台"      # the system name (branding)
+    header = [c.value for c in ws[5]]
+    found = [row for row in ws.iter_rows(values_only=True) if row[0] == "營業收入"]
+    assert header[1].startswith("FY2024") and found[0][1] == 130497000000     # exact, full units
+    lineage = [row for row in wb["出處"].iter_rows(values_only=True) if row[0] == "營業收入" and row[1] == "FY2024"]
+    assert lineage[0][5] == "us-gaap:Revenues" and lineage[0][7] == "0001234567-25-000010"

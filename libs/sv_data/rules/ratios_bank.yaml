@@ -1,0 +1,19 @@
+# Ratios for the bank chart (same format as ratios_general.yaml).
+
+ratios: bank
+version: "2026.11.1"
+
+measures:
+  - {id: nii_to_assets, kind: pct, numerator: net_interest_income, denominator: total_assets, average: true, periods: [annual, ttm]}
+  - {id: efficiency_ratio, kind: pct, numerator: noninterest_expense, denominator: revenue}
+  - {id: noninterest_share, kind: pct, numerator: noninterest_income, denominator: revenue}
+  - {id: provision_to_loans, kind: pct, numerator: provision_credit_losses, denominator: loans_gross, average: true, periods: [annual, ttm]}
+  - {id: allowance_to_loans, kind: pct, numerator: loan_allowance, denominator: loans_gross}
+  - {id: loans_to_deposits, kind: pct, numerator: loans_gross, denominator: deposits}
+  - {id: roe_common, kind: pct, numerator: net_income_common, denominator: common_equity, average: true, periods: [annual, ttm]}
+  - {id: roa, kind: pct, numerator: net_income_parent, denominator: total_assets, average: true, periods: [annual, ttm]}
+  - {id: equity_to_assets, kind: pct, numerator: total_equity, denominator: total_assets}
+  - {id: effective_tax_rate, kind: pct, numerator: income_tax, denominator: pretax_income}
+  - {id: payout_ratio, kind: pct, numerator: dividends_paid, denominator: net_income_parent}
+
+growth: [net_interest_income, noninterest_income, revenue, net_income_parent, eps_diluted, loans_gross, deposits, total_assets, common_equity]

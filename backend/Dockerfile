@@ -20,6 +20,8 @@ RUN pip install -r backend/requirements.txt
 COPY VERSION ./
 COPY src ./src
 COPY libs ./libs
+# item and check names for exports: the same dictionaries the web app uses
+COPY frontend/packages/i18n/src/locales ./frontend/packages/i18n/src/locales
 COPY backend ./backend
 COPY prompts ./prompts
 COPY data ./data

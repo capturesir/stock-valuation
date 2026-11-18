@@ -794,6 +794,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/statements/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 匯出標準化財報：Excel（財報、比率與增長、出處、檢查，附系統名稱）或 CSV；數值為精確原值 */
+        get: operations["export_api_v1_stocks__ticker__statements_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -919,6 +936,15 @@ export interface components {
             has_custom_icon: boolean;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /** CagrValue */
+        CagrValue: {
+            /** Code */
+            code: string;
+            /** Years */
+            years: number;
+            /** Value */
+            value: string;
         };
         /** CheckFailure */
         CheckFailure: {
@@ -1077,6 +1103,19 @@ export interface components {
             synced_at?: string | null;
             /** Last Error */
             last_error?: string | null;
+        };
+        /** GrowthRow */
+        GrowthRow: {
+            /**
+             * Code
+             * @description 標準科目
+             */
+            code: string;
+            /**
+             * Cells
+             * @description 按年增長（季度與去年同季比較）；上期為零或負數時為 null
+             */
+            cells: (string | null)[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1483,6 +1522,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** RatioCell */
+        RatioCell: {
+            /**
+             * Value
+             * @description 比率（0.2142 = 21.42%；倍數與日數照原值）
+             */
+            value: string;
+            /**
+             * Inputs
+             * @description 計算用到的標準科目數值；平均值附期末與一年前數字
+             */
+            inputs?: {
+                [key: string]: unknown;
+            };
+        };
+        /** RatioRow */
+        RatioRow: {
+            /** Code */
+            code: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "pct" | "times" | "days";
+            /** Cells */
+            cells: (components["schemas"]["RatioCell"] | null)[];
+        };
         /** RevisionOut */
         RevisionOut: {
             /** Ticker */
@@ -1612,6 +1678,7 @@ export interface components {
              */
             template_applied: string;
             checks: components["schemas"]["StatementChecks"];
+            ratios: components["schemas"]["StatementRatios"];
             /** Ruleset */
             ruleset: string;
             /** Ruleset Version */
@@ -1672,6 +1739,22 @@ export interface components {
             };
             /** Failures */
             failures?: components["schemas"]["CheckFailure"][];
+        };
+        /** StatementRatios */
+        StatementRatios: {
+            /** Ratioset */
+            ratioset: string;
+            /** Version */
+            version: string;
+            /** Rows */
+            rows: components["schemas"]["RatioRow"][];
+            /** Growth */
+            growth: components["schemas"]["GrowthRow"][];
+            /**
+             * Cagr
+             * @description 至最近財年的 3 年與 5 年複合增長率
+             */
+            cagr?: components["schemas"]["CagrValue"][];
         };
         /** StatementsStatus */
         StatementsStatus: {
@@ -3921,6 +4004,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_api_v1_stocks__ticker__statements_export_get: {
+        parameters: {
+            query?: {
+                format?: "xlsx" | "csv";
+                view?: "latest" | "original";
+                period?: "annual" | "quarterly";
+                years?: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                    "text/csv": unknown;
+                };
             };
             /** @description Validation Error */
             422: {

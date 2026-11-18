@@ -5,6 +5,7 @@ import datetime as dt
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -148,3 +149,33 @@ def fetch(ticker: str, request: Request, response: Response, db: Session = Depen
         response.status_code = 202
     db.expire_all()
     return _status(db, t)
+
+
+@router.get("/stocks/{ticker}/statements/export", response_class=FileResponse,
+            responses={200: {"content": {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}, "text/csv": {}}}},
+            summary="匯出標準化財報：Excel（財報、比率與增長、出處、檢查，附系統名稱）或 CSV；數值為精確原值")
+def export(ticker: str, format: Literal["xlsx", "csv"] = "xlsx", view: Literal["latest", "original"] = "latest",
+           period: Literal["annual", "quarterly"] = "annual", years: int = Query(10, ge=1, le=40),
+           lang: str = Depends(lang_dep), db: Session = Depends(get_db)):
+    import tempfile
+    from pathlib import Path
+
+    from ..services import branding, statements_export
+
+    f = _filer_or_404(db, ticker, lang)
+    t = ticker_or_400(ticker)
+    data = {"ticker": t, **statements.standard_statements(db, f, view=view, years=years, ticker=t, period=period)}
+    stem = f"{t}_{period}_{dt.date.today().isoformat()}"
+    if format == "csv":
+        return Response(statements_export.to_csv(data, lang), media_type="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="{stem}.csv"'})
+    import shutil
+
+    from starlette.background import BackgroundTask
+
+    tmp = Path(tempfile.mkdtemp(prefix="sv-export-"))
+    out = tmp / f"{stem}.xlsx"
+    statements_export.to_xlsx(data, lang, out)
+    branding.stamp_run_files(db, [str(out)])
+    return FileResponse(out, filename=out.name, background=BackgroundTask(shutil.rmtree, tmp, ignore_errors=True),
+                        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
