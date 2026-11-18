@@ -12,6 +12,7 @@ from libs.sv_data.sources import sec as sec_source
 
 FIX = Path(__file__).resolve().parents[2] / "libs" / "sv_data" / "tests" / "fixtures"
 CONTACT = "Example Research admin@example.com"
+SOURCES = {"sec_organisation": "Example Research", "sec_email": "admin@example.com"}
 CIK = "0001234567"
 API = "/api/v1"
 
@@ -43,8 +44,8 @@ def sec(client, monkeypatch):
 
     fake = FakeSec()
     monkeypatch.setattr(statements, "_http", fake)
-    r = client.put(f"{API}/admin/data-sources", json={"sec_contact": CONTACT})
-    assert r.status_code == 200 and r.json() == {"sec_contact": CONTACT, "sec_ready": True}
+    r = client.put(f"{API}/admin/data-sources", json=SOURCES)
+    assert r.status_code == 200 and r.json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True}
     return fake
 
 
@@ -54,13 +55,30 @@ def _db():
 
 
 def test_data_sources_are_admin_only_and_validated(client, member):
+    empty = {"sec_organisation": None, "sec_email": None, "sec_contact": None, "sec_ready": False}
     assert member.get(f"{API}/admin/data-sources").status_code == 403
-    assert member.put(f"{API}/admin/data-sources", json={"sec_contact": CONTACT}).status_code == 403
-    assert client.get(f"{API}/admin/data-sources").json() == {"sec_contact": None, "sec_ready": False}
-    r = client.put(f"{API}/admin/data-sources", json={"sec_contact": "admin@example.com"})
-    assert r.status_code == 400 and r.json()["detail"]["code"] == "sec_contact_invalid"
+    assert member.put(f"{API}/admin/data-sources", json=SOURCES).status_code == 403
+    assert client.get(f"{API}/admin/data-sources").json() == empty
+    for body, code in (({"sec_organisation": "", "sec_email": "admin@example.com"}, "sec_organisation_invalid"),
+                       ({"sec_organisation": "a@b.com", "sec_email": "admin@example.com"}, "sec_organisation_invalid"),
+                       ({"sec_organisation": "Example Research", "sec_email": ""}, "email_invalid"),
+                       ({"sec_organisation": "Example Research", "sec_email": "not-an-email"}, "email_invalid")):
+        r = client.put(f"{API}/admin/data-sources", json=body)
+        assert r.status_code == 400 and r.json()["detail"]["code"] == code, body
     r = client.post(f"{API}/admin/statements/sync/EXMP")
     assert r.status_code == 400 and r.json()["detail"]["code"] == "sec_contact_missing"
+    r = client.put(f"{API}/admin/data-sources", json={"sec_organisation": "  Example   Research ", "sec_email": " admin@example.com "})
+    assert r.json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True}          # spaces tidied
+    assert client.put(f"{API}/admin/data-sources", json={"sec_organisation": "", "sec_email": ""}).json() == empty
+
+
+def test_an_older_single_string_contact_is_read_as_two_fields(client):
+    from backend.app.models import Setting
+
+    with _db() as db:
+        db.add(Setting(key="data_sources", value={"sec_contact": CONTACT}))
+        db.commit()
+    assert client.get(f"{API}/admin/data-sources").json() == {**SOURCES, "sec_contact": CONTACT, "sec_ready": True}
 
 
 def test_sync_stores_raw_documents_filings_and_every_fact(client, sec, tmp_path):

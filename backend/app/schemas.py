@@ -441,11 +441,14 @@ class OpsStatus(BaseModel):
 # ---------------------------------------------------------------- statement data (alpha.3)
 
 class DataSourcesIn(BaseModel):
-    sec_contact: Optional[str] = Field(None, description="SEC User-Agent：機構名稱＋電郵，例如 \"Example Research admin@example.com\"；空白＝清除")
+    sec_organisation: Optional[str] = Field(None, description="SEC 要求的機構名稱，例如 \"Example Research\"；與電郵同時空白＝清除")
+    sec_email: Optional[str] = Field(None, description="SEC 要求的聯絡電郵")
 
 
 class DataSourcesOut(BaseModel):
-    sec_contact: Optional[str] = None
+    sec_organisation: Optional[str] = None
+    sec_email: Optional[str] = None
+    sec_contact: Optional[str] = Field(None, description="實際送給 SEC 的 User-Agent（機構名稱＋電郵）")
     sec_ready: bool
 
 

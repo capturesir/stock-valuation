@@ -886,14 +886,26 @@ export interface components {
         /** DataSourcesIn */
         DataSourcesIn: {
             /**
-             * Sec Contact
-             * @description SEC User-Agent：機構名稱＋電郵，例如 "Example Research admin@example.com"；空白＝清除
+             * Sec Organisation
+             * @description SEC 要求的機構名稱，例如 "Example Research"；與電郵同時空白＝清除
              */
-            sec_contact?: string | null;
+            sec_organisation?: string | null;
+            /**
+             * Sec Email
+             * @description SEC 要求的聯絡電郵
+             */
+            sec_email?: string | null;
         };
         /** DataSourcesOut */
         DataSourcesOut: {
-            /** Sec Contact */
+            /** Sec Organisation */
+            sec_organisation?: string | null;
+            /** Sec Email */
+            sec_email?: string | null;
+            /**
+             * Sec Contact
+             * @description 實際送給 SEC 的 User-Agent（機構名稱＋電郵）
+             */
             sec_contact?: string | null;
             /** Sec Ready */
             sec_ready: boolean;
