@@ -195,3 +195,21 @@ def manifest(db: Session) -> dict:
             "description": "股票估值：多方法理論價、估值走勢、財報與投資組合分析",
             "lang": "zh-Hant", "theme_color": "#1F5FBF", "background_color": "#F4F5F7",
             "display": "standalone", "start_url": "/", "scope": "/", "icons": icons}
+
+
+def stamp_run_files(db: Session, files: list[Optional[str]]) -> None:
+    """Brand a run's archived Excel and report with the current name and light PNG logo (5.2).
+
+    Only ever called on the copies under <APP_DATA_DIR>/runs/<job_id>/, never on out/."""
+    from src.export.brand import stamp_report, stamp_workbook
+
+    name = public(db)["name"]
+    meta = (_state(db).get("logos") or {}).get("light") or {}
+    logo = folder() / "logo-light.png" if meta.get("ext") == "png" else None
+    for f in files:
+        if not f:
+            continue
+        if f.endswith(".xlsx"):
+            stamp_workbook(f, name, logo if logo is not None and logo.is_file() else None)
+        elif f.endswith(".md"):
+            stamp_report(f, name)

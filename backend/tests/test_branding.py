@@ -64,3 +64,54 @@ def test_members_cannot_change_branding(member):
     assert member.put("/api/v1/admin/branding", json={"name": "x"}).status_code == 403
     assert member.post("/api/v1/admin/branding/logo/light",
                        files={"file": ("logo.svg", SVG_OK, "image/svg+xml")}).status_code == 403
+
+
+def test_run_excel_and_report_carry_the_brand_but_out_stays_neutral(configured, monkeypatch, tmp_path):
+    """5.2: the archived Excel and report of a v2 run show the system name and PNG logo; the engine's
+    own out/ files are left as the v1 tools wrote them."""
+    import json
+    import time
+    from pathlib import Path
+
+    from openpyxl import load_workbook
+
+    from backend.app.config import get_settings
+    from src.export.report_md import write_report
+    from src.export.workbook import build_workbook
+    from src.pipeline import orchestrator
+
+    root = Path(__file__).resolve().parents[2]
+    calc = json.loads((root / "out" / "2026-11-11_NVDA" / "2026-11-11_NVDA.json").read_text(encoding="utf-8"))
+    out = tmp_path / "out" / "2026-11-18_NVDA"
+    out.mkdir(parents=True)
+
+    def fake_run_ticker(ticker, cfg=None, use_llm=True, valuation_date="", progress=None, should_stop=None,
+                        skip_extract=False, apply_adjustments=True):
+        xlsx, md, js = out / "2026-11-18_NVDA_FCFF.xlsx", out / "2026-11-18_NVDA_valuation.md", out / "2026-11-18_NVDA.json"
+        build_workbook(calc, str(xlsx))
+        write_report(calc, str(md))
+        js.write_text(json.dumps(calc), encoding="utf-8")
+        return {"json": calc, "path": str(js), "xlsx": str(xlsx), "md": str(md), "verify_pass": True, "verify_errors": []}
+
+    monkeypatch.setattr(orchestrator, "run_ticker", fake_run_ticker)
+    configured.put("/api/v1/admin/branding", json={"name": "Hoi 投資研究"})
+    configured.post("/api/v1/admin/branding/logo/light", files={"file": ("logo.png", _png(), "image/png")})
+
+    job = configured.post("/api/v1/valuations", json={"ticker": "NVDA", "mode": "none"}).json()["id"]
+    end = time.time() + 10
+    while configured.get(f"/api/v1/jobs/{job}").json()["status"] not in ("done", "failed", "cancelled"):
+        assert time.time() < end, "job did not finish"
+        time.sleep(0.05)
+    run = configured.get("/api/v1/stocks/NVDA/valuations").json()["runs"][0]
+    excel = configured.get(f"/api/v1/runs/{run['id']}/excel")
+    assert excel.status_code == 200
+    dl = tmp_path / "dl.xlsx"
+    dl.write_bytes(excel.content)
+    wb = load_workbook(dl)
+    assert wb["摘要"]["A2"].value == "Hoi 投資研究" and len(wb["摘要"]._images) == 1
+    assert all(ws.oddHeader.left.text == "Hoi 投資研究" for ws in wb.worksheets)
+    report = get_settings().data_dir / "runs" / job / "2026-11-18_NVDA_valuation.md"
+    assert report.read_text(encoding="utf-8").startswith("> Hoi 投資研究\n\n# ")
+    # the engine's shared output is untouched
+    assert load_workbook(out / "2026-11-18_NVDA_FCFF.xlsx")["摘要"]["A2"].value is None
+    assert (out / "2026-11-18_NVDA_valuation.md").read_text(encoding="utf-8").startswith("# ")

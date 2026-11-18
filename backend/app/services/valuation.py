@@ -87,6 +87,23 @@ def archive_outputs(job_id: str, result: dict) -> tuple[Optional[str], Optional[
     return out[0], out[1]
 
 
+def _brand(job_id: str, result: dict) -> None:
+    """Stamp the archived Excel and report with the system name and logo; never fails the run."""
+    from ..config import get_settings
+    from . import branding
+
+    dest = get_settings().data_dir / "runs" / job_id
+    files = [str(dest / Path(result[k]).name) for k in ("xlsx", "md") if result.get(k)]
+    files = [f for f in files if Path(f).is_file()]      # archived copies only, never out/
+    if not files:
+        return
+    try:
+        with session() as db:
+            branding.stamp_run_files(db, files)
+    except Exception:  # pragma: no cover - branding must never cost a valuation
+        traceback.print_exc()
+
+
 def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str = "none", trigger: str = "manual",
                 source: str = "v2", verify_pass: Optional[bool] = None, calc_path: Optional[str] = None,
                 xlsx_path: Optional[str] = None, run_at: Optional[dt.datetime] = None,
@@ -229,6 +246,7 @@ def execute(job_id: str, payload: dict) -> None:
     calc_path, xlsx_path = (result or {}).get("path"), (result or {}).get("xlsx")
     if status == "done" and calc:
         calc_path, xlsx_path = archive_outputs(job_id, result)
+        _brand(job_id, result)
 
     with session() as db:
         run = None
