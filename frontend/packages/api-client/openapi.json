@@ -3520,7 +3520,7 @@
     "tags": [
      "statements"
     ],
-    "summary": "標準化年度財報：每個標準科目的數字、所用規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字）",
+    "summary": "標準化財報：年度或季度（period），最前一欄為近十二個月（TTM）；每個數字附規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字）",
     "operationId": "standard_api_v1_stocks__ticker__statements_get",
     "parameters": [
      {
@@ -3564,12 +3564,26 @@
       }
      },
      {
+      "name": "period",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "annual",
+        "quarterly"
+       ],
+       "type": "string",
+       "default": "annual",
+       "title": "Period"
+      }
+     },
+     {
       "name": "years",
       "in": "query",
       "required": false,
       "schema": {
        "type": "integer",
-       "maximum": 30,
+       "maximum": 40,
        "minimum": 1,
        "default": 10,
        "title": "Years"
@@ -6250,6 +6264,15 @@
       ],
       "title": "View"
      },
+     "period": {
+      "type": "string",
+      "enum": [
+       "annual",
+       "quarterly"
+      ],
+      "title": "Period",
+      "default": "annual"
+     },
      "as_of": {
       "anyOf": [
        {
@@ -6448,9 +6471,12 @@
       "type": "string",
       "enum": [
        "concept",
-       "formula"
+       "formula",
+       "derived",
+       "ttm"
       ],
-      "title": "Method"
+      "title": "Method",
+      "description": "concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月"
      },
      "rule_id": {
       "type": "string",
@@ -6611,6 +6637,14 @@
        }
       ],
       "title": "Document Url"
+     },
+     "parts": {
+      "items": {
+       "$ref": "#/components/schemas/StdPart"
+      },
+      "type": "array",
+      "title": "Parts",
+      "description": "推算季度或 TTM 用到的申報數字"
      }
     },
     "type": "object",
@@ -6620,6 +6654,78 @@
      "rule_id"
     ],
     "title": "StdCell"
+   },
+   "StdPart": {
+    "properties": {
+     "sign": {
+      "type": "integer",
+      "title": "Sign",
+      "description": "+1 或 −1：推算時加或減"
+     },
+     "value": {
+      "type": "string",
+      "title": "Value"
+     },
+     "form": {
+      "type": "string",
+      "title": "Form"
+     },
+     "accession": {
+      "type": "string",
+      "title": "Accession"
+     },
+     "filed": {
+      "type": "string",
+      "title": "Filed"
+     },
+     "period_start": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Period Start"
+     },
+     "period_end": {
+      "type": "string",
+      "title": "Period End"
+     },
+     "index_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Index Url"
+     },
+     "document_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Document Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "sign",
+     "value",
+     "form",
+     "accession",
+     "filed",
+     "period_end"
+    ],
+    "title": "StdPart"
    },
    "StdRow": {
     "properties": {
@@ -6674,7 +6780,8 @@
     "properties": {
      "label": {
       "type": "string",
-      "title": "Label"
+      "title": "Label",
+      "description": "FY2025｜FY2025 Q1｜TTM"
      },
      "start": {
       "type": "string",
@@ -6683,6 +6790,38 @@
      "end": {
       "type": "string",
       "title": "End"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "annual",
+       "quarter",
+       "ttm"
+      ],
+      "title": "Kind",
+      "default": "annual"
+     },
+     "fiscal_year": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fiscal Year"
+     },
+     "quarter": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Quarter"
      }
     },
     "type": "object",

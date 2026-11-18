@@ -295,3 +295,31 @@ def test_daily_check_is_skipped_without_a_sec_contact(client):
     from backend.app.services import statements
 
     assert statements.update_all(session)["skipped"] == "sec_contact_missing"
+
+
+def test_quarterly_statements_with_derived_q4_and_ttm(client, sec, member):
+    doc = json.loads((FIX / "companyfacts.json").read_text())
+    rev = doc["facts"]["us-gaap"]["Revenues"]["units"]["USD"]
+    q = lambda s, e, v, accn, filed: {"start": s, "end": e, "val": v, "accn": accn, "fy": 2024, "fp": "Q", "form": "10-Q", "filed": filed}
+    rev += [q("2024-01-01", "2024-03-31", 30000000000, "0001234567-24-000010", "2024-05-01"),
+            q("2024-04-01", "2024-06-30", 34000000000, "0001234567-24-000015", "2024-08-01"),
+            q("2024-01-01", "2024-06-30", 64000000000, "0001234567-24-000015", "2024-08-01"),
+            q("2024-01-01", "2024-09-30", 99082000000, "0001234567-24-000020", "2024-11-01"),
+            # the year in progress: FY2025 Q1, so four consecutive quarters exist for TTM
+            {**q("2025-01-01", "2025-03-31", 40000000000, "0001234567-25-000030", "2025-05-01"), "fy": 2025}]
+    sec.facts(doc)
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    d = member.get(f"{API}/stocks/EXMP/statements", params={"period": "quarterly"}).json()
+    assert d["period"] == "quarterly"
+    labels = [y["label"] for y in d["years"]]
+    assert labels == ["TTM", "FY2025 Q1", "FY2024 Q4", "FY2024 Q3", "FY2024 Q2", "FY2024 Q1"]
+    assert d["years"][0]["kind"] == "ttm" and d["years"][2] == {"label": "FY2024 Q4", "start": "2024-10-01", "end": "2024-12-31",
+                                                                 "kind": "quarter", "fiscal_year": "FY2024", "quarter": 4}
+    cells = dict(zip(labels, {r["code"]: r for r in d["rows"]}["revenue"]["cells"]))
+    q4 = cells["FY2024 Q4"]
+    assert (q4["value"], q4["method"]) == ("31415000000", "derived")            # FY 130,497 − 9M 99,082
+    assert [(p["sign"], p["accession"]) for p in q4["parts"]] == [(1, "0001234567-25-000010"), (-1, "0001234567-24-000020")]
+    assert cells["FY2024 Q3"]["value"] == "35082000000" and cells["FY2024 Q3"]["method"] == "concept"
+    assert cells["TTM"]["value"] == str(34000000000 + 35082000000 + 31415000000 + 40000000000) and cells["TTM"]["method"] == "ttm"
+    annual = member.get(f"{API}/stocks/EXMP/statements").json()
+    assert [y["label"] for y in annual["years"]] == ["TTM", "FY2024", "FY2023"]  # TTM leads the annual view too

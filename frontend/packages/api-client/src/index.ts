@@ -140,8 +140,8 @@ export function createClient(cfg: ClientConfig = {}) {
     statementsStatus: (ticker: string) => req<StatementsStatus>("GET", `/stocks/${enc(ticker)}/statements/status`),
     fetchStatements: (ticker: string) => req<StatementsStatus>("POST", `/stocks/${enc(ticker)}/statements/fetch`),
     filedConcepts: (ticker: string) => req<FiledConceptOut[]>("GET", `/stocks/${enc(ticker)}/filed-concepts`),
-    standardStatements: (ticker: string, view: "latest" | "original" = "latest", years = 10) =>
-      req<StandardStatements>("GET", `/stocks/${enc(ticker)}/statements${q({ view, years })}`),
+    standardStatements: (ticker: string, view: "latest" | "original" = "latest", period: "annual" | "quarterly" = "annual", years = 10) =>
+      req<StandardStatements>("GET", `/stocks/${enc(ticker)}/statements${q({ view, period, years: period === "quarterly" ? Math.max(years, 12) : years })}`),
     filedFacts: (ticker: string, concept: string, taxonomy = "us-gaap") =>
       req<FiledFactOut[]>("GET", `/stocks/${enc(ticker)}/filed-facts${q({ concept, taxonomy })}`),
     removeLogo: (variant: "light" | "dark") => req<BrandingOut>("DELETE", `/admin/branding/logo/${variant}`),

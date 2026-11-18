@@ -188,9 +188,18 @@ class FactRef:
 
 @dataclass(frozen=True)
 class FiscalYear:
-    label: str                      # FY2025: the calendar year the fiscal year ends in
+    """A reporting period: a fiscal year (kind "annual"), one of its quarters, or the trailing twelve months."""
+    label: str                      # FY2025 (the calendar year the fiscal year ends in) | FY2025 Q1 | TTM
     start: dt.date
     end: dt.date
+    kind: str = "annual"            # annual | quarter | ttm
+    fy_label: Optional[str] = None  # quarters: their fiscal year
+    fy_start: Optional[dt.date] = None
+    quarter: Optional[int] = None
+    prev_end: Optional[dt.date] = None   # quarters 2–4: end of the previous quarter (for year-to-date derivation)
+
+
+Period = FiscalYear
 
 
 @dataclass
@@ -210,8 +219,9 @@ class StdValue:
     raw_value: Optional[Decimal] = None            # the chosen fact exactly as filed (before any split adjustment)
     split_factor: Decimal = Decimal(1)             # cumulative ratio of confirmed splits after it was filed
     formula: Optional[str] = None                            # the rule's formula text, for method "formula"
-    inputs: list[str] = field(default_factory=list)          # items a formula used
+    inputs: list[str] = field(default_factory=list)          # items a formula used; quarters a TTM sum used
     assumed_zero: list[str] = field(default_factory=list)    # optional formula terms not filed
+    parts: list = field(default_factory=list)                # (sign, FactRef) for a derived quarter or TTM
 
 
 @dataclass
@@ -225,6 +235,8 @@ class Standardized:
     fiscal_years: list[FiscalYear]
     values: dict[tuple[str, str], StdValue]
     splits_applied: list = field(default_factory=list)     # confirmed splits used for per-share and share counts
+    quarters: list = field(default_factory=list)           # fiscal quarters, oldest first
+    ttm: Optional[FiscalYear] = None                       # trailing twelve months to the latest quarter
 
     def get(self, item: str, fy: str) -> Optional[StdValue]:
         return self.values.get((item, fy))
@@ -250,6 +262,56 @@ def fiscal_years(facts: Iterable[FactRef]) -> list[FiscalYear]:
     return sorted((fy for _, fy in by_label.values()), key=lambda y: y.end)
 
 
+QUARTER_FORMS = {"10-Q", "10-Q/A", "10-K", "10-K/A"}
+QUARTER_DAYS = (80, 100)
+YTD_DAYS = {1: (80, 100), 2: (170, 190), 3: (260, 285)}
+
+
+def _near(a: dt.date, b: dt.date) -> bool:
+    return abs((a - b).days) <= START_TOLERANCE
+
+
+def fiscal_quarters(facts: Iterable[FactRef], years: list[FiscalYear]) -> list[FiscalYear]:
+    """Quarters of every fiscal year, plus the current one not yet closed by a 10-K.
+
+    Quarter ends come from the year-to-date periods filed in 10-Qs (3, 6 and 9 months from the fiscal-year
+    start), falling back to stand-alone three-month periods; Q4 ends with the fiscal year."""
+    facts = [f for f in facts if f.form in QUARTER_FORMS and f.period_start is not None]
+    fys = list(years)
+    if fys:      # the fiscal year in progress
+        start = fys[-1].end + dt.timedelta(days=1)
+        fys.append(FiscalYear(f"FY{(start + dt.timedelta(days=364)).year}", start, start + dt.timedelta(days=380), kind="open"))
+    out: list[FiscalYear] = []
+    for fy in fys:
+        ytd: dict[int, Counter] = defaultdict(Counter)
+        threes: list[FactRef] = []
+        for f in facts:
+            if not (fy.start < f.period_end <= fy.end):
+                continue
+            d = f.days or 0
+            if _near(f.period_start, fy.start):
+                for k, (lo, hi) in YTD_DAYS.items():
+                    if lo <= d <= hi:
+                        ytd[k][f.period_end] += 1
+            if QUARTER_DAYS[0] <= d <= QUARTER_DAYS[1]:
+                threes.append(f)
+        ends: dict[int, dt.date] = {k: c.most_common(1)[0][0] for k, c in ytd.items() if c}
+        for k in (2, 3):         # no year-to-date period: a three-month period right after the previous quarter
+            if k not in ends and (k - 1) in ends:
+                c = Counter(f.period_end for f in threes if _near(f.period_start, ends[k - 1] + dt.timedelta(days=1)))
+                if c:
+                    ends[k] = c.most_common(1)[0][0]
+        if fy.kind == "annual":
+            ends[4] = fy.end
+        for k in (1, 2, 3, 4):
+            if k not in ends or (k > 1 and (k - 1) not in ends):
+                break
+            prev = ends.get(k - 1)
+            out.append(FiscalYear(f"{fy.label} Q{k}", fy.start if k == 1 else prev + dt.timedelta(days=1), ends[k],
+                                  kind="quarter", fy_label=fy.label, fy_start=fy.start, quarter=k, prev_end=prev))
+    return out
+
+
 def _unit_ok(item: Item, unit: str, ccy: Optional[str]) -> bool:
     if item.unit == "money":
         return unit == ccy
@@ -261,8 +323,16 @@ def _unit_ok(item: Item, unit: str, ccy: Optional[str]) -> bool:
 def _in_period(item: Item, f: FactRef, fy: FiscalYear) -> bool:
     if item.period == "instant":
         return f.period_start is None and f.period_end == fy.end
-    return (f.period_start is not None and f.period_end == fy.end
-            and abs((f.period_start - fy.start).days) <= START_TOLERANCE)
+    if f.period_start is None or f.period_end != fy.end or not _near(f.period_start, fy.start):
+        return False
+    if fy.kind == "quarter":
+        return QUARTER_DAYS[0] <= (f.days or 0) <= QUARTER_DAYS[1]
+    return True
+
+
+def _ytd(f: FactRef, fy_start: dt.date, end: dt.date) -> bool:
+    """A year-to-date period: from the fiscal-year start to ``end``."""
+    return f.period_start is not None and f.period_end == end and _near(f.period_start, fy_start)
 
 
 def change_kind(item: Item, first: Decimal, last: Decimal) -> Optional[str]:
@@ -342,7 +412,15 @@ def confirmed_splits(facts: Iterable[FactRef], splits: Iterable[Split]) -> list[
 
 def standardize(facts: Iterable[FactRef], ruleset: Ruleset, view: str = "latest",
                 as_of: Optional[dt.date] = None, splits: Optional[Iterable[Split]] = None) -> Standardized:
-    """``splits`` (from market data) put every per-share value and share count on today's share basis
+    """Fiscal years, fiscal quarters and the trailing twelve months, all in one pass.
+
+    Quarters: a filed three-month value is used as is; otherwise a money amount is derived from the
+    year-to-date values of the same concept (Q2 = H1 − Q1, Q3 = 9M − H1, Q4 = FY − 9M), method "derived".
+    Per-share values and share counts are never derived by subtraction (the share count changes within
+    the year). TTM: the sum of the last four quarters for money amounts; for per-share values the usual
+    FY + YTD − prior-year YTD; balance-sheet items as at the latest quarter end.
+
+    ``splits`` (from market data) put every per-share value and share count on today's share basis
     (or ``as_of``'s): a value filed before a confirmed split is divided (per share) or multiplied (shares)
     by its ratio. Without ``splits`` nothing is adjusted, and a change between filings by a whole-number
     ratio is reported as ``split_adjusted`` rather than ``restated``."""
@@ -351,6 +429,7 @@ def standardize(facts: Iterable[FactRef], ruleset: Ruleset, view: str = "latest"
     facts = [f for f in facts if as_of is None or f.filed <= as_of]
     ccy = reporting_currency(facts)
     years = fiscal_years(facts)
+    quarters = fiscal_quarters(facts, years)
     applied = confirmed_splits(facts, [s for s in (splits or []) if as_of is None or s.date <= as_of])
     by_concept: dict[tuple[str, str], list[FactRef]] = defaultdict(list)
     for f in facts:
@@ -373,44 +452,130 @@ def standardize(facts: Iterable[FactRef], ruleset: Ruleset, view: str = "latest"
             return f.value * k, Decimal(0), k
         return f.value, Decimal(0), k
 
+    def pick(item: Item, cands: list[FactRef]) -> tuple[FactRef, Decimal, Optional[str], Decimal, Decimal, Decimal]:
+        """(chosen fact, its adjusted value, change, first value, latest value, split factor)."""
+        cands = sorted(cands, key=order)
+        chosen = cands[-1] if view == "latest" else cands[0]
+        (v0, u0, _), (v1, u1, _) = adjust(item, cands[0]), adjust(item, cands[-1])
+        value, _, k = adjust(item, chosen)
+        if splits is None:
+            change = change_kind(item, cands[0].value, cands[-1].value)
+        else:
+            change = None if _same(item.unit, v0, u0, v1, u1) else "restated"
+        return chosen, value, change, v0, v1, k
+
     out: dict[tuple[str, str], StdValue] = {}
-    for fy in years:
+
+    def formula(item: Item, rule: Rule, label: str) -> Optional[StdValue]:
+        total, inputs, zero = Decimal(0), [], []
+        for t in rule.formula:
+            v = out.get((t.item, label))
+            if v is None:
+                if t.optional:
+                    zero.append(t.item)
+                    continue
+                return None
+            total += t.sign * v.value
+            inputs.append(t.item)
+        if not inputs:
+            return None
+        return StdValue(item.code, label, total, _unit_label(item, ccy), "formula", rule.id,
+                        formula=rule.formula_text, inputs=inputs, assumed_zero=zero)
+
+    def resolve(p: FiscalYear) -> None:
         for item in ruleset.items:
-            rule = next((r for r in item.rules if r.applies(fy.start)), None)
+            rule = next((r for r in item.rules if r.applies(p.start)), None)
             if rule is None:
                 continue
             got = None
             for src in rule.sources:
-                cands = [f for f in by_concept.get(src, ()) if _unit_ok(item, f.unit, ccy) and _in_period(item, f, fy)]
-                if not cands:
-                    continue
-                cands.sort(key=order)
-                chosen = cands[-1] if view == "latest" else cands[0]
-                (v0, u0, _), (v1, u1, _) = adjust(item, cands[0]), adjust(item, cands[-1])
-                value, _, k = adjust(item, chosen)
-                if splits is None:
-                    change = change_kind(item, cands[0].value, cands[-1].value)
-                else:
-                    change = None if _same(item.unit, v0, u0, v1, u1) else "restated"
-                got = StdValue(item.code, fy.label, value, _unit_label(item, ccy), "concept", rule.id,
-                               concept=f"{src[0]}:{src[1]}", fact=chosen, restated=change == "restated", change=change,
-                               original_value=v0, latest_value=v1, raw_value=chosen.value, split_factor=k)
-                break
-            if got is None and rule.formula:
-                total, inputs, zero, ok = Decimal(0), [], [], True
-                for t in rule.formula:
-                    v = out.get((t.item, fy.label))
-                    if v is None:
-                        if t.optional:
-                            zero.append(t.item)
-                            continue
-                        ok = False
+                pool = [f for f in by_concept.get(src, ()) if _unit_ok(item, f.unit, ccy)]
+                cands = [f for f in pool if _in_period(item, f, p)]
+                if cands:
+                    chosen, value, change, v0, v1, k = pick(item, cands)
+                    got = StdValue(item.code, p.label, value, _unit_label(item, ccy), "concept", rule.id,
+                                   concept=f"{src[0]}:{src[1]}", fact=chosen, restated=change == "restated", change=change,
+                                   original_value=v0, latest_value=v1, raw_value=chosen.value, split_factor=k)
+                    break
+                # a quarter without its own three-month value: year-to-date minus the previous year-to-date
+                if (p.kind == "quarter" and p.quarter and p.quarter > 1 and item.unit == "money"
+                        and item.period == "duration"):
+                    cur = [f for f in pool if _ytd(f, p.fy_start, p.end)]
+                    prev = [f for f in pool if _ytd(f, p.fy_start, p.prev_end)]
+                    if cur and prev:
+                        fa, va, ca, *_ = pick(item, cur)
+                        fb, vb, cb, *_ = pick(item, prev)
+                        change = "restated" if "restated" in (ca, cb) else None
+                        got = StdValue(item.code, p.label, va - vb, _unit_label(item, ccy), "derived", rule.id,
+                                       concept=f"{src[0]}:{src[1]}", restated=change == "restated", change=change,
+                                       parts=[(1, fa), (-1, fb)])
                         break
-                    total += t.sign * v.value
-                    inputs.append(t.item)
-                if ok and inputs:
-                    got = StdValue(item.code, fy.label, total, _unit_label(item, ccy), "formula", rule.id,
-                                   formula=rule.formula_text, inputs=inputs, assumed_zero=zero)
+                    # no previous year-to-date filed: year-to-date minus the earlier quarters (e.g. Q4 = FY − Q1 − Q2 − Q3)
+                    earlier = [x for x in quarters if x.fy_label == p.fy_label and (x.quarter or 0) < p.quarter]
+                    vals = [out.get((item.code, x.label)) for x in earlier]
+                    if cur and len(earlier) == p.quarter - 1 and all(v is not None and v.concept == f"{src[0]}:{src[1]}" for v in vals):
+                        fa, va, ca, *_ = pick(item, cur)
+                        change = "restated" if ca == "restated" or any(v.restated for v in vals) else None
+                        got = StdValue(item.code, p.label, va - sum((v.value for v in vals), Decimal(0)), _unit_label(item, ccy),
+                                       "derived", rule.id, concept=f"{src[0]}:{src[1]}", restated=change == "restated",
+                                       change=change, parts=[(1, fa)], inputs=[x.label for x in earlier])
+                        break
+            if got is None and rule.formula:
+                got = formula(item, rule, p.label)
             if got is not None:
-                out[(item.code, fy.label)] = got
-    return Standardized(ruleset.name, ruleset.version, ruleset.template, ccy, view, as_of, years, out, applied)
+                out[(item.code, p.label)] = got
+
+    for p in years:
+        resolve(p)
+    for p in quarters:
+        resolve(p)
+
+    # trailing twelve months, to the latest quarter end
+    ttm = None
+    last4 = quarters[-4:]
+    if len(last4) == 4 and all(_near(b.start, a.end + dt.timedelta(days=1)) for a, b in zip(last4, last4[1:])):
+        q = last4[-1]
+        ttm = FiscalYear("TTM", last4[0].start, q.end, kind="ttm", fy_label=q.fy_label, fy_start=q.fy_start, quarter=q.quarter)
+        annual = {y.label: y for y in years}
+        prev_fy = next((y for y in reversed(years) if y.end < q.fy_start), None) if q.fy_start else None
+        for item in ruleset.items:
+            rule = next((r for r in item.rules if r.applies(q.start)), None)
+            if rule is None:
+                continue
+            got = None
+            if item.period == "instant":
+                v = out.get((item.code, q.label))
+                if v is not None:
+                    got = StdValue(**{**v.__dict__, "fiscal_year": "TTM"})
+            elif item.unit == "money":
+                vals = [out.get((item.code, x.label)) for x in last4]
+                if all(v is not None for v in vals) and rule.sources:
+                    got = StdValue(item.code, "TTM", sum((v.value for v in vals), Decimal(0)), _unit_label(item, ccy), "ttm",
+                                   rule.id, inputs=[x.label for x in last4],
+                                   restated=any(v.restated for v in vals), change="restated" if any(v.restated for v in vals) else None)
+                elif rule.formula:
+                    got = formula(item, rule, "TTM")
+            elif item.unit == "per_share":
+                if q.quarter == 4 and q.fy_label in annual:
+                    v = out.get((item.code, q.fy_label))
+                    if v is not None:
+                        got = StdValue(**{**v.__dict__, "fiscal_year": "TTM"})
+                elif prev_fy is not None:
+                    fy_v = out.get((item.code, prev_fy.label))
+                    for src in rule.sources:
+                        pool = [f for f in by_concept.get(src, ()) if _unit_ok(item, f.unit, ccy)]
+                        cur = [f for f in pool if _ytd(f, q.fy_start, q.end)]
+                        prior_end = [f.period_end for f in pool if f.period_start is not None and _near(f.period_start, prev_fy.start)
+                                     and abs((f.period_end - (q.end - dt.timedelta(days=364))).days) <= 7]
+                        prior = [f for f in pool if prior_end and _ytd(f, prev_fy.start, prior_end[0])]
+                        if fy_v is not None and fy_v.method == "concept" and cur and prior:
+                            fa, va, *_ = pick(item, cur)
+                            fb, vb, *_ = pick(item, prior)
+                            got = StdValue(item.code, "TTM", fy_v.value + va - vb, _unit_label(item, ccy), "ttm", rule.id,
+                                           concept=f"{src[0]}:{src[1]}", inputs=[prev_fy.label],
+                                           parts=[(1, fy_v.fact), (1, fa), (-1, fb)])
+                            break
+            if got is not None:
+                out[(item.code, "TTM")] = got
+    return Standardized(ruleset.name, ruleset.version, ruleset.template, ccy, view, as_of, years, out, applied,
+                        quarters=quarters, ttm=ttm)

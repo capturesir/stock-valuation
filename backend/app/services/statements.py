@@ -397,8 +397,9 @@ def filing_urls(cik: str, accession: str, primary: Optional[str]) -> dict:
 # ------------------------------------------------------------------ layer ③ standard (computed on read)
 
 def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: Optional[dt.date] = None,
-                        years: int = 10, ticker: Optional[str] = None) -> dict:
-    """Annual standardised statements from the stored filed facts.
+                        years: int = 10, ticker: Optional[str] = None, period: str = "annual") -> dict:
+    """Standardised statements from the stored filed facts: fiscal years or quarters (newest first),
+    with the trailing twelve months as the first column when four consecutive quarters exist.
 
     Deterministic: the same filed facts, ruleset version, view and as_of give the same numbers, so the
     values are computed on read rather than stored; a valuation that uses them will record the
@@ -424,8 +425,12 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
     splits = [Split(a.date, ratio(a.value)) for a in db.scalars(select(CorporateAction).where(
         CorporateAction.ticker == (ticker or ""), CorporateAction.kind == "split"))]
     std = standardize(facts, rs, view=view, as_of=as_of, splits=splits)
-    fys = list(reversed(std.fiscal_years))[:years]               # newest first
+    periods = std.quarters if period == "quarterly" else std.fiscal_years
+    fys = list(reversed(periods))[:years]                        # newest first
+    if std.ttm is not None:
+        fys = [std.ttm] + fys
     used = {v.fact.accession for v in std.values.values() if v.fact is not None}
+    used |= {f.accession for v in std.values.values() for _, f in v.parts if f is not None}
     primary = {a: p for a, p in db.execute(select(Filing.accession, Filing.primary_document).where(Filing.accession.in_(used)))} if used else {}
 
     def cell(code: str, label: str) -> Optional[dict]:
@@ -442,6 +447,10 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
         if v.fact is not None:
             out.update(form=v.fact.form, accession=v.fact.accession, filed=v.fact.filed.isoformat(),
                        **filing_urls(filer.cik, v.fact.accession, primary.get(v.fact.accession)))
+        out["parts"] = [{"sign": sign, "value": format(f.value, "f"), "form": f.form, "accession": f.accession,
+                         "filed": f.filed.isoformat(), "period_start": f.period_start.isoformat() if f.period_start else None,
+                         "period_end": f.period_end.isoformat(), **filing_urls(filer.cik, f.accession, primary.get(f.accession))}
+                        for sign, f in v.parts if f is not None]
         return out
 
     template = template_for_sic(filer.sic)
@@ -449,6 +458,8 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
             "ruleset": rs.name, "ruleset_version": rs.version, "currency": std.currency, "view": view,
             "as_of": as_of.isoformat() if as_of else None,
             "splits_applied": [{"date": sp.date.isoformat(), "ratio": format(sp.ratio.normalize(), "f")} for sp in std.splits_applied],
-            "years": [{"label": y.label, "start": y.start.isoformat(), "end": y.end.isoformat()} for y in fys],
+            "period": period,
+            "years": [{"label": y.label, "start": y.start.isoformat(), "end": y.end.isoformat(), "kind": y.kind,
+                       "fiscal_year": y.fy_label, "quarter": y.quarter} for y in fys],
             "rows": [{"code": i.code, "statement": i.statement, "unit": i.unit,
                       "cells": [cell(i.code, y.label) for y in fys]} for i in rs.items]}

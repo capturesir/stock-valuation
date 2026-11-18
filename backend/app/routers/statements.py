@@ -102,12 +102,13 @@ def facts(ticker: str, concept: str = Query(..., max_length=200), taxonomy: str 
 
 
 @router.get("/stocks/{ticker}/statements", response_model=StandardStatements,
-            summary="標準化年度財報：每個標準科目的數字、所用規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字）")
+            summary="標準化財報：年度或季度（period），最前一欄為近十二個月（TTM）；每個數字附規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字）")
 def standard(ticker: str, view: Literal["latest", "original"] = "latest", as_of: dt.date | None = None,
-             years: int = Query(10, ge=1, le=30), db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+             period: Literal["annual", "quarterly"] = "annual", years: int = Query(10, ge=1, le=40),
+             db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
     f = _filer_or_404(db, ticker, lang)
-    return {"ticker": ticker_or_400(ticker), **statements.standard_statements(db, f, view=view, as_of=as_of, years=years,
-                                                                                  ticker=ticker_or_400(ticker))}
+    t = ticker_or_400(ticker)
+    return {"ticker": t, **statements.standard_statements(db, f, view=view, as_of=as_of, years=years, ticker=t, period=period)}
 
 
 FRESH = dt.timedelta(hours=6)          # a fetch within this window is not repeated (the daily check keeps it current)

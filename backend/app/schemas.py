@@ -522,14 +522,30 @@ class StatementsStatus(BaseModel):
 
 
 class StdYear(BaseModel):
-    label: str
+    label: str = Field(description="FY2025｜FY2025 Q1｜TTM")
     start: str
     end: str
+    kind: Literal["annual", "quarter", "ttm"] = "annual"
+    fiscal_year: Optional[str] = None
+    quarter: Optional[int] = None
+
+
+class StdPart(BaseModel):
+    sign: int = Field(description="+1 或 −1：推算時加或減")
+    value: str
+    form: str
+    accession: str
+    filed: str
+    period_start: Optional[str] = None
+    period_end: str
+    index_url: Optional[str] = None
+    document_url: Optional[str] = None
 
 
 class StdCell(BaseModel):
     value: str = Field(description="標準值，精確十進位字串")
-    method: Literal["concept", "formula"]
+    method: Literal["concept", "formula", "derived", "ttm"] = Field(
+        description="concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月")
     rule_id: str
     concept: Optional[str] = Field(None, description="取自的申報科目（taxonomy:Concept）")
     restated: bool = False
@@ -546,6 +562,7 @@ class StdCell(BaseModel):
     filed: Optional[str] = None
     index_url: Optional[str] = None
     document_url: Optional[str] = None
+    parts: list[StdPart] = Field(default_factory=list, description="推算季度或 TTM 用到的申報數字")
 
 
 class StdRow(BaseModel):
@@ -565,6 +582,7 @@ class StandardStatements(BaseModel):
     ruleset_version: str
     currency: Optional[str] = None
     view: Literal["latest", "original"]
+    period: Literal["annual", "quarterly"] = "annual"
     as_of: Optional[str] = None
     splits_applied: list[dict] = Field(default_factory=list, description="已套用的股份分拆（日期、比例），只計申報文件確認過的")
     years: list[StdYear]

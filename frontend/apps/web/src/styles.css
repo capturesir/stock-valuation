@@ -245,3 +245,4 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; 
 .tbl.std sup { font-size: 10px; margin-left: 2px; }
 .tbl.std sup.mark-r { color: var(--sv-secondary-strong); font-weight: 700; }
 .linklike { border: 0; background: none; padding: 0; color: var(--sv-primary); cursor: pointer; font: inherit; text-decoration: underline; }
+.tbl.std th.ttm, .tbl.std td.ttm { background: var(--sv-track); }

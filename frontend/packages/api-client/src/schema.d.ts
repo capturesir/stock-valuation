@@ -750,7 +750,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 標準化年度財報：每個標準科目的數字、所用規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字） */
+        /** 標準化財報：年度或季度（period），最前一欄為近十二個月（TTM）；每個數字附規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字） */
         get: operations["standard_api_v1_stocks__ticker__statements_get"];
         put?: never;
         post?: never;
@@ -1598,6 +1598,12 @@ export interface components {
              * @enum {string}
              */
             view: "latest" | "original";
+            /**
+             * Period
+             * @default annual
+             * @enum {string}
+             */
+            period: "annual" | "quarterly";
             /** As Of */
             as_of?: string | null;
             /**
@@ -1686,9 +1692,10 @@ export interface components {
             value: string;
             /**
              * Method
+             * @description concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月
              * @enum {string}
              */
-            method: "concept" | "formula";
+            method: "concept" | "formula" | "derived" | "ttm";
             /** Rule Id */
             rule_id: string;
             /**
@@ -1746,6 +1753,35 @@ export interface components {
             index_url?: string | null;
             /** Document Url */
             document_url?: string | null;
+            /**
+             * Parts
+             * @description 推算季度或 TTM 用到的申報數字
+             */
+            parts?: components["schemas"]["StdPart"][];
+        };
+        /** StdPart */
+        StdPart: {
+            /**
+             * Sign
+             * @description +1 或 −1：推算時加或減
+             */
+            sign: number;
+            /** Value */
+            value: string;
+            /** Form */
+            form: string;
+            /** Accession */
+            accession: string;
+            /** Filed */
+            filed: string;
+            /** Period Start */
+            period_start?: string | null;
+            /** Period End */
+            period_end: string;
+            /** Index Url */
+            index_url?: string | null;
+            /** Document Url */
+            document_url?: string | null;
         };
         /** StdRow */
         StdRow: {
@@ -1769,12 +1805,25 @@ export interface components {
         };
         /** StdYear */
         StdYear: {
-            /** Label */
+            /**
+             * Label
+             * @description FY2025｜FY2025 Q1｜TTM
+             */
             label: string;
             /** Start */
             start: string;
             /** End */
             end: string;
+            /**
+             * Kind
+             * @default annual
+             * @enum {string}
+             */
+            kind: "annual" | "quarter" | "ttm";
+            /** Fiscal Year */
+            fiscal_year?: string | null;
+            /** Quarter */
+            quarter?: number | null;
         };
         /**
          * StockProfile
@@ -3714,6 +3763,7 @@ export interface operations {
             query?: {
                 view?: "latest" | "original";
                 as_of?: string | null;
+                period?: "annual" | "quarterly";
                 years?: number;
             };
             header?: {
