@@ -58,7 +58,7 @@ jobs:
           # `working-directory` does not apply to `uses:` steps; point the action at the
           # package.json that declares `packageManager`, otherwise it finds no pnpm version.
           package_json_file: frontend/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
