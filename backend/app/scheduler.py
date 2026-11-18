@@ -69,6 +69,11 @@ def run_once() -> dict:
     from .services import market
 
     summary = market.update_all(session)
+    try:  # gaps against the exchange calendar (repaired where the source has the data), monthly re-reads
+        from .services import completeness
+        summary["completeness"] = completeness.run_all(session)
+    except Exception as exc:
+        summary["completeness"] = {"error": f"{type(exc).__name__}: {exc}"}
     try:  # SEC statements: new filings since the last check (one small request per company)
         from .services import statements
         summary["statements"] = statements.update_all(session)

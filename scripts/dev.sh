@@ -38,7 +38,7 @@ db_up() {
 }
 
 deps() {
-  "$PY" -c "import fastapi, sqlalchemy, argon2, multipart, PIL" 2>/dev/null || {
+  "$PY" -c "import fastapi, sqlalchemy, argon2, multipart, PIL, exchange_calendars, scipy" 2>/dev/null || {
     echo "安裝後端套件…"; "$PY" -m pip install -q -r backend/requirements.txt; }
   "$PY" -m ruff --version >/dev/null 2>&1 || "$PY" -m pip install -q ruff
   need pnpm "請執行 corepack enable（Node.js 20 以上）"

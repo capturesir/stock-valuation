@@ -284,7 +284,7 @@
   "admin.brand.none": "使用預設圖示",
   "settings.adminOnly": "AI 連線、預算與價格表全系統共用，只有管理員可以修改。",
   "admin.sec.market": "市場數據",
-  "admin.market.intro": "每個曾使用的代號與匯率都會每日累積價格、派息與拆股。價格以未調整數字保存，總回報由系統自行計算並與來源核對。",
+  "admin.market.intro": "每個曾使用的代號與匯率都會每日累積價格、派息與拆股，並按交易所交易日曆檢查缺口（有缺口即重抓，來源也沒有的只標示、不填補），每月重讀全部歷史。價格以未調整數字保存，總回報由系統自行計算並與來源核對。",
   "admin.market.schedule": "每日更新：{times}（{tz}）· 下次 {next}",
   "admin.market.off": "每日更新已關閉",
   "admin.market.lastRun": "上次更新 {at}：成功 {ok}，失敗 {failed}",
@@ -626,5 +626,13 @@
   "std.export.csv": "匯出 CSV",
   "std.ratioInputs": "計算用到的數值",
   "std.ratioAvg": "（期末 {end}，一年前 {ago}，取平均）",
-  "std.taxRate": "稅率 {rate}"
+  "std.taxRate": "稅率 {rate}",
+  "admin.market.completeness": "完整性",
+  "admin.market.complete": "完整",
+  "admin.market.stale": "停更 {n} 個交易日",
+  "admin.market.sourceMissing": "來源缺 {n} 日",
+  "admin.market.noCalendar": "沒有交易日曆",
+  "admin.market.dividendsOk": "派息與 SEC 相符",
+  "admin.market.dividendsWarn": "派息與 SEC 差 {pct}",
+  "admin.market.dividendsHint": "最近三個財年每股股息合計，與 SEC 申報比較（已按股份分拆調整）"
 }

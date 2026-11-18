@@ -215,7 +215,8 @@ def track(db: Session, ticker: str) -> Security:
     return sec
 
 
-def sync(db: Session, ticker: str, full: bool = False, now: Optional[dt.datetime] = None) -> dict:
+def sync(db: Session, ticker: str, full: bool = False, now: Optional[dt.datetime] = None,
+         start: Optional[dt.date] = None) -> dict:
     """Backfill the whole history the first time (or with ``full``), otherwise re-read the last
     INCREMENTAL_DAYS and append. Returns a summary; errors are recorded on the security and raised.
 
@@ -235,18 +236,19 @@ def sync(db: Session, ticker: str, full: bool = False, now: Optional[dt.datetime
                 "actions_revised": 0, "first_date": _iso(sec.first_date) if sec else None,
                 "last_date": _iso(sec.last_date) if sec else None, "bars": sec.bars if sec else 0}
     try:
-        out = _sync(db, ticker, full, now)
+        out = _sync(db, ticker, full, now, start)
         db.commit()                      # visible to whoever waited on the lock
         return out
     finally:
         store.delete(f"lk:sync:{ticker}")
 
 
-def _sync(db: Session, ticker: str, full: bool, now: Optional[dt.datetime]) -> dict:
+def _sync(db: Session, ticker: str, full: bool, now: Optional[dt.datetime], start_at: Optional[dt.date] = None) -> dict:
+    """``start_at`` re-reads from that date (gap repair) instead of the usual overlap window."""
     src = get_source()
     sec = track(db, ticker)
     first = full or sec.backfilled_at is None or sec.last_date is None
-    start = None if first else sec.last_date - dt.timedelta(days=INCREMENTAL_DAYS)
+    start = None if first else (start_at or sec.last_date - dt.timedelta(days=INCREMENTAL_DAYS))
     try:
         hist = src.history(ticker, start=start)
     except Exception as exc:
