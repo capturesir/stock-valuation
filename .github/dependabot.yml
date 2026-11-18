@@ -2,31 +2,25 @@
 # - cooldown: only propose versions published at least 7 days ago (supply-chain safety: a malicious or
 #   broken release is usually pulled within days). It also matches pnpm's minimumReleaseAge, which refuses
 #   packages younger than its threshold — without it the npm update job failed on hours-old versions.
-# - minor and patch updates arrive as one grouped PR per ecosystem; a major version gets its own PR to review.
+# - Python: all updates in one weekly PR; npm: minor+patch grouped, majors one by one; Actions: one PR.
 # - base images: the runtime Python / Node must match what CI tests (Python 3.12, Node 22 LTS), so only
 #   patch updates are automatic; a Python or Node upgrade is a deliberate change made together with CI.
 version: 2
 updates:
+  # One pip entry: scanning "/" also reads backend/requirements.txt (a second "/backend" entry produced
+  # duplicate PRs). Lower-bound bumps carry no semver type, so group by pattern: one Python PR a week.
   - package-ecosystem: pip
     directory: /
     schedule: { interval: weekly, day: monday }
     cooldown: { default-days: 7 }
     open-pull-requests-limit: 5
     groups:
-      python-minor-and-patch:
-        update-types: [minor, patch]
-  - package-ecosystem: pip
-    directory: /backend
-    schedule: { interval: weekly, day: monday }
-    cooldown: { default-days: 7 }
-    open-pull-requests-limit: 5
+      python:
+        patterns: ["*"]
     ignore:
       # arq (the job queue) pins redis-py below 6; lift this when arq supports newer clients
       - dependency-name: redis
         versions: [">=6"]
-    groups:
-      backend-minor-and-patch:
-        update-types: [minor, patch]
   - package-ecosystem: npm            # pnpm-lock.yaml is supported
     directory: /frontend
     schedule: { interval: weekly, day: monday }
