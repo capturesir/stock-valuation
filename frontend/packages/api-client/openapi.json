@@ -7348,6 +7348,17 @@
        }
       ],
       "title": "Requested By"
+     },
+     "plan": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/PlanRef"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "本次估值套用的調整方案與版本（D12）；空值＝系統預設或財報不是取自 SEC 標準層"
      }
     },
     "type": "object",
@@ -9152,6 +9163,43 @@
       "type": "array",
       "title": "Data Gaps",
       "default": []
+     },
+     "statement_source": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Statement Source",
+      "description": "財報來源：sec_standard（SEC 標準層）｜yahoo｜builtin（內建規格）"
+     },
+     "ruleset_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ruleset Version",
+      "description": "SEC 標準層的規則版本（含公司覆蓋）"
+     },
+     "adjustment_plan": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adjustment Plan",
+      "description": "套用的調整方案 {kind, id, version, label}；空值＝系統預設"
      }
     },
     "type": "object",
@@ -11001,8 +11049,20 @@
      "force": {
       "type": "boolean",
       "title": "Force",
-      "description": "同一代號、日期、AI 模式近期已估值時仍要重算",
+      "description": "同一代號、日期、AI 模式、調整方案版本近期已估值時仍要重算",
       "default": false
+     },
+     "plan": {
+      "type": "string",
+      "enum": [
+       "auto",
+       "central",
+       "personal",
+       "none"
+      ],
+      "title": "Plan",
+      "description": "美股財報套用的調整方案（D12）：auto＝我的個人方案 → 中央方案 → 不調整",
+      "default": "auto"
      }
     },
     "type": "object",

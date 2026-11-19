@@ -58,7 +58,7 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
     setError(null);
     setRecent(null);
     try {
-      const j = await api.startValuation({ ticker, mode, tasks, valuation_date: date, force });
+      const j = await api.startValuation({ ticker, mode, tasks, valuation_date: date, force, plan: "auto" });
       setJoined(Boolean(j.joined));
       follow(j);
     } catch (e) {

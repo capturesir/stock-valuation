@@ -86,7 +86,7 @@ def test_run_excel_and_report_carry_the_brand_but_out_stays_neutral(configured, 
     out.mkdir(parents=True)
 
     def fake_run_ticker(ticker, cfg=None, use_llm=True, valuation_date="", progress=None, should_stop=None,
-                        skip_extract=False, apply_adjustments=True):
+                        skip_extract=False, apply_adjustments=True, statements=None):
         xlsx, md, js = out / "2026-11-18_NVDA_FCFF.xlsx", out / "2026-11-18_NVDA_valuation.md", out / "2026-11-18_NVDA.json"
         build_workbook(calc, str(xlsx))
         write_report(calc, str(md))

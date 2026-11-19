@@ -848,5 +848,11 @@
   "adj.mineIs": "mine is {v}",
   "adj.merge": "Merge the {n} selected",
   "adj.markReviewed": "Reviewed; keep my plan",
-  "adj.mergeNote": "Merged central v{v}"
+  "adj.mergeNote": "Merged central v{v}",
+  "run.statements": "Statements",
+  "run.source.sec_standard": "SEC standard layer",
+  "run.source.yahoo": "Yahoo statements",
+  "run.source.builtin": "Built-in spec (hand-verified)",
+  "run.plan.central": "Central plan v{v}",
+  "run.plan.personal": "{name}'s personal plan v{v}"
 }

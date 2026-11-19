@@ -530,3 +530,62 @@ def test_central_and_personal_adjustment_plans_with_versions(client, sec, member
     for bad in ({**adj, "period": "TTM"}, {**adj, "item": "nope"}, {**adj, "value": "abc"}):
         r = member.put(f"{P}/personal", json={"adjustments": [bad], "base_version": 2})
         assert r.status_code == 400 and r.json()["detail"]["code"] == "adjustment_invalid", bad
+
+
+# ------------------------------------------------------------------ alpha.3 step 10: valuations read the standard layer
+
+def test_valuation_reads_the_standard_layer_with_the_chosen_plan(client, sec, member, monkeypatch):
+    from test_api import _install_fake_engine, _wait
+
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    adj = {"item": "revenue", "period": "FY2024", "value": "130000000000", "reason": "one-off licence fee"}
+    central = client.put(f"{API}/stocks/EXMP/adjustment-plans/central", json={"adjustments": [adj], "base_version": 0}).json()["central"]
+    calls = _install_fake_engine(monkeypatch)
+    r = member.post(f"{API}/valuations", json={"ticker": "EXMP", "mode": "none"})
+    assert r.status_code == 202, r.text
+    assert r.json()["plan"] == {"kind": "central", "id": central["id"], "version": 1, "label": "central v1"}
+    assert _wait(member, r.json()["id"])["status"] == "done"
+    std = calls["statements"]
+    assert std["plan"]["version"] == 1 and std["ticker"] == "EXMP"
+    assert {x["code"]: x for x in std["rows"]}["revenue"]["cells"][0]["value"] == "130000000000"
+    run = member.get(f"{API}/stocks/EXMP/valuations").json()["runs"][0]
+    assert run["adjustment_plan"]["version"] == 1
+    # the same plan version moments later is the same valuation; another plan is not
+    r = member.post(f"{API}/valuations", json={"ticker": "EXMP", "mode": "none"})
+    assert r.status_code == 409 and r.json()["detail"]["code"] == "recent_valuation"
+    r = member.post(f"{API}/valuations", json={"ticker": "EXMP", "mode": "none", "plan": "none"})
+    assert r.status_code == 202 and r.json()["plan"] is None
+    _wait(member, r.json()["id"])
+    assert calls["statements"]["plan"] is None
+    runs = member.get(f"{API}/stocks/EXMP/valuations").json()["runs"]
+    assert sorted(x["adjustment_plan"] is None for x in runs) == [False, True]
+
+
+def test_standard_layer_to_engine_rows():
+    from src.pipeline import standard_input
+
+    def cell(v, **kw):
+        return {"value": v, **kw}
+    std = {"ruleset": "general", "ruleset_version": "1", "view": "latest", "as_of": None,
+           "plan": {"kind": "central", "id": "x", "version": 2, "label": "central v2"},
+           "checks": {"grades": {"FY2024": "A", "FY2023": "C", "FY2022": "C"}},
+           "years": [{"label": "TTM", "kind": "ttm", "end": "2025-03-31"}, {"label": "FY2024", "kind": "annual", "end": "2024-12-31"},
+                     {"label": "FY2023", "kind": "annual", "end": "2023-12-31"}, {"label": "FY2022", "kind": "annual", "end": "2022-12-31"}],
+           "rows": [{"code": "revenue", "cells": [cell("400"), cell("100"), cell("90", adjustment={"reason": "fix"}), cell("80")]},
+                    {"code": "capex", "cells": [None, cell("7"), cell("6"), cell("5")]},
+                    {"code": "pretax_income", "cells": [None, cell("20"), cell("18"), cell("16")]},
+                    {"code": "income_tax", "cells": [None, cell("5"), cell("4"), cell("4")]},
+                    {"code": "cash", "cells": [None, cell("30"), None, None]},
+                    {"code": "short_term_investments", "cells": [None, cell("10"), None, None]},
+                    {"code": "debt_noncurrent", "cells": [None, cell("50"), None, None]}]}
+    yahoo = {"is_a": {"2024-12-31": {"Total Revenue": 999.0, "EBIT": 1.0, "Some Row": 3.0}},
+             "bs_a": {"2024-12-31": {"Capital Lease Obligations": 4.0, "Total Debt": 999.0}},
+             "cf_a": {"2024-12-31": {"Capital Expenditure": -999.0}, "2021-12-31": {"Capital Expenditure": -1.0}}}
+    is_a, bs_a, cf_a, gaps, source = standard_input.to_blocks(std, yahoo)
+    assert sorted(is_a) == ["2023-12-31", "2024-12-31"]            # FY2022: grade C and not adjusted; FY2023 adjusted
+    row = is_a["2024-12-31"]
+    assert row["Total Revenue"] == 100 and "EBIT" not in row and row["Some Row"] == 3.0 and row["Tax Rate For Calcs"] == 0.25
+    assert cf_a["2024-12-31"]["Capital Expenditure"] == -7 and "2021-12-31" not in cf_a
+    assert bs_a["2024-12-31"]["Total Debt"] == 54 and bs_a["2024-12-31"]["Cash Cash Equivalents And Short Term Investments"] == 40
+    assert source["years"] == ["FY2024", "FY2023"] and source["dropped"] == ["FY2022"] and source["plan"]["version"] == 2
+    assert "中央方案 v2" in gaps[0] and "FY2022" in gaps[1] and "Capital Lease Obligations" in gaps[2]

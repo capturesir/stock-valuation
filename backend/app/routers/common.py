@@ -42,6 +42,7 @@ def run_out(r: Run) -> dict:
         "methods": [{"method": m.method, "scenario": m.scenario, "value": m.value, "weight": m.weight}
                     for m in r.methods],
         "data_gaps": list(r.data_gaps or []),
+        "statement_source": r.statement_source, "ruleset_version": r.ruleset_version, "adjustment_plan": r.adjustment_plan,
     }
 
 

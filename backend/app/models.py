@@ -90,6 +90,11 @@ class Run(Base):
     xlsx_path: Mapped[Optional[str]] = mapped_column(Text)
     data_gaps: Mapped[Optional[list]] = mapped_column(JSON)
     requested_by: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    # alpha.3 step 10: where the statements came from and which adjustment plan was applied (D12)
+    statement_source: Mapped[Optional[str]] = mapped_column(String(16))   # sec_standard | yahoo | builtin
+    ruleset_version: Mapped[Optional[str]] = mapped_column(String(48))    # standard-layer ruleset, with company overlay
+    adjustment_plan: Mapped[Optional[dict]] = mapped_column(JSON)          # {kind, id, version, label}; null = system default
+    plan_key: Mapped[str] = mapped_column(String(80), default="system_default", server_default="system_default")
     methods: Mapped[list["MethodResult"]] = relationship(back_populates="run", cascade="all, delete-orphan",
                                                          order_by="MethodResult.id")
 
