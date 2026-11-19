@@ -13,7 +13,7 @@ from .. import limits
 from ..auth import Principal, current_principal, require_admin
 from ..db import get_db
 from ..i18n import http_error, lang_dep
-from ..models import FiledConceptRow, FiledFactRow, Filer, Filing
+from ..models import FiledConceptRow, FiledFactRow, Filer, Filing, InstanceFactRow
 from ..schemas import (DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, StandardStatements,
                        StatementsStatus, StatementsSyncResult)
 from ..services import statements
@@ -74,9 +74,19 @@ def concepts(ticker: str, db: Session = Depends(get_db), lang: str = Depends(lan
          .where(FiledFactRow.cik == f.cik)
          .group_by(FiledFactRow.taxonomy, FiledFactRow.concept, FiledConceptRow.label)
          .order_by(FiledFactRow.taxonomy, FiledFactRow.concept))
-    return [{"taxonomy": t, "concept": c, "label": label, "units": sorted(units), "facts": n,
+    out = [{"taxonomy": t, "concept": c, "label": label, "units": sorted(units), "facts": n,
+            "first_end": first.isoformat(), "last_end": last.isoformat()}
+           for t, c, units, n, first, last, label in db.execute(q)]
+    # the filer's own concepts (not in companyfacts), from each annual report's XBRL instance
+    I = InstanceFactRow
+    q = (select(I.taxonomy, I.concept, func.array_agg(func.distinct(I.unit)), func.count(), func.min(I.period_end),
+                func.max(I.period_end))
+         .where(I.cik == f.cik, I.extension.is_(True), I.dims_key == "").group_by(I.taxonomy, I.concept)
+         .order_by(I.taxonomy, I.concept))
+    out += [{"taxonomy": t, "concept": c, "source": "instance", "label": None, "units": sorted(units), "facts": n,
              "first_end": first.isoformat(), "last_end": last.isoformat()}
-            for t, c, units, n, first, last, label in db.execute(q)]
+            for t, c, units, n, first, last in db.execute(q)]
+    return out
 
 
 @router.get("/stocks/{ticker}/filed-facts", response_model=list[FiledFactOut],
@@ -85,6 +95,18 @@ def facts(ticker: str, concept: str = Query(..., max_length=200), taxonomy: str 
           unit: str | None = Query(None, max_length=40), limit: int = Query(500, ge=1, le=5000),
           db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> list[dict]:
     f = _filer_or_404(db, ticker, lang)
+    if taxonomy not in statements.STANDARD_TAXONOMIES:        # a filer's own concept: from the XBRL instances
+        I = InstanceFactRow
+        q = (select(I, Filing.primary_document).join(Filing, Filing.accession == I.accession, isouter=True)
+             .where(I.cik == f.cik, I.taxonomy == taxonomy, I.concept == concept, I.dims_key == "")
+             .order_by(I.period_end.desc(), I.period_start.desc().nulls_last(), I.filed.desc()).limit(limit))
+        if unit:
+            q = q.where(I.unit == unit)
+        return [{"taxonomy": r.taxonomy, "concept": r.concept, "source": "instance", "unit": r.unit,
+                 "value": format(r.value, "f"), "period_start": r.period_start.isoformat() if r.period_start else None,
+                 "period_end": r.period_end.isoformat(), "fy": None, "fp": None, "form": r.form, "accession": r.accession,
+                 "filed": r.filed.isoformat(), "frame": None, **statements.filing_urls(f.cik, r.accession, primary)}
+                for r, primary in db.execute(q)]
     q = (select(FiledFactRow, Filing.primary_document)
          .join(Filing, Filing.accession == FiledFactRow.accession, isouter=True)
          .where(FiledFactRow.cik == f.cik, FiledFactRow.taxonomy == taxonomy, FiledFactRow.concept == concept)

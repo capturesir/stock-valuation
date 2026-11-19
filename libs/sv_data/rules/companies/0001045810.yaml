@@ -1,0 +1,10 @@
+# Company overlay: NVIDIA (CIK 0001045810). Extra sources tried after the template's own.
+# Source: each 10-K's XBRL instance (alpha.3 step 8); companyfacts omits filer-defined concepts.
+cik: "0001045810"
+company: NVIDIA Corp
+version: "1"
+items:
+  capex:
+    # FY2013–FY2023 cash-flow line "Purchases related to property and equipment and intangible assets"
+    # (us-gaap:PaymentsToAcquireProductiveAssets from FY2022 on)
+    sources: [nvda:PurchasesOfPropertyAndEquipmentAndIntangibleAssets]

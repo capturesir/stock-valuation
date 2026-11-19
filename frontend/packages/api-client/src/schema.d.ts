@@ -1331,6 +1331,13 @@ export interface components {
             taxonomy: string;
             /** Concept */
             concept: string;
+            /**
+             * Source
+             * @description instance：公司自訂科目，來自年報 XBRL instance
+             * @default companyfacts
+             * @enum {string}
+             */
+            source: "companyfacts" | "instance";
             /** Label */
             label?: string | null;
             /** Units */
@@ -1348,6 +1355,12 @@ export interface components {
             taxonomy: string;
             /** Concept */
             concept: string;
+            /**
+             * Source
+             * @default companyfacts
+             * @enum {string}
+             */
+            source: "companyfacts" | "instance";
             /** Unit */
             unit: string;
             /**
@@ -2286,6 +2299,48 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** ShareClassCell */
+        ShareClassCell: {
+            /**
+             * Value
+             * @description 與每股盈利列相同的股份基礎（已按確認的分拆調整）
+             */
+            value: string;
+            /**
+             * Raw Value
+             * @description 申報原值
+             */
+            raw_value: string;
+            /** Split Factor */
+            split_factor: string;
+            /** Form */
+            form: string;
+            /** Accession */
+            accession: string;
+            /** Filed */
+            filed: string;
+            /** Index Url */
+            index_url: string;
+            /** Document Url */
+            document_url?: string | null;
+        };
+        /** ShareClassRow */
+        ShareClassRow: {
+            /**
+             * Member
+             * @description 股份類別成員，例如 brka:ClassAMember（XBRL instance 的 StatementClassOfStockAxis）
+             */
+            member: string;
+            /** Label */
+            label: string;
+            /**
+             * Item
+             * @enum {string}
+             */
+            item: "eps_basic" | "eps_diluted";
+            /** Cells */
+            cells: (components["schemas"]["ShareClassCell"] | null)[];
+        };
         /** StandardStatements */
         StandardStatements: {
             /** Ticker */
@@ -2337,6 +2392,11 @@ export interface components {
             years: components["schemas"]["StdYear"][];
             /** Rows */
             rows: components["schemas"]["StdRow"][];
+            /**
+             * Share Classes
+             * @description 按股份類別的每股盈利（只限年度，來自年報 XBRL instance）
+             */
+            share_classes?: components["schemas"]["ShareClassRow"][];
         };
         /** StatementChecks */
         StatementChecks: {

@@ -10,6 +10,7 @@ restated number is a new row from the newer filing.
 from __future__ import annotations
 
 import datetime as dt
+import xml.etree.ElementTree as _ET
 from decimal import Decimal
 from typing import Optional
 
@@ -24,7 +25,7 @@ from libs.sv_data.sources import sec as sec_source
 
 from ..config import get_settings
 from ..i18n import AppError
-from ..models import FiledConceptRow, FiledFactRow, Filer, Filing, RawDocumentRow, SecTicker, Setting
+from ..models import FiledConceptRow, FiledFactRow, Filer, Filing, InstanceFactRow, RawDocumentRow, SecTicker, Setting
 
 KEY = "data_sources"
 TICKERS_MAX_AGE = dt.timedelta(days=7)
@@ -188,6 +189,8 @@ def _save_facts(db: Session, cik: str, parsed, raw_id: int) -> int:
     return len(rows)
 
 
+ET_ERRORS = (_ET.ParseError, ValueError)
+STANDARD_TAXONOMIES = ("us-gaap", "ifrs-full", "dei", "srt", "invest")   # companyfacts holds these; the rest are the filer's own
 FACTS_MAX_AGE = dt.timedelta(days=7)      # light syncs re-read companyfacts at least weekly
 LOCK_TTL = 600
 
@@ -271,6 +274,7 @@ def _sync_sec(db: Session, c: sec_source.SecClient, ticker: str, cik: str, force
                     facts_added = _save_facts(db, cik, parsed, raw.id)
                 filer.facts_document_id = raw.id
         filer.facts = db.scalar(select(func.count()).select_from(FiledFactRow).where(FiledFactRow.cik == cik)) or 0
+        inst = sync_instances(db, c, cik)        # usually nothing to do: each filing's instance is read once
         filer.synced_at, filer.last_error = now, None
         db.flush()
     except SourceNotFound as exc:
@@ -281,7 +285,7 @@ def _sync_sec(db: Session, c: sec_source.SecClient, ticker: str, cik: str, force
         raise
     return {"ticker": ticker, "cik": cik, "name": filer.name, "filings_added": filings_added,
             "facts_added": facts_added, "facts_total": filer.facts, "has_xbrl": has_xbrl,
-            "unchanged": unchanged and not force, "facts_skipped": skip_facts,
+            "unchanged": unchanged and not force, "facts_skipped": skip_facts, **inst,
             "duplicates": parsed.duplicates if parsed else 0, "conflicts": parsed.conflicts if parsed else 0,
             "skipped": parsed.skipped if parsed else 0}
 
@@ -356,6 +360,56 @@ def yahoo_figures(db: Session, ticker: str) -> tuple[Optional[dict], Optional[dt
         except ValueError:
             continue
     return out, row.last_checked_at
+
+
+# ------------------------------------------------------------------ filing instances (alpha.3 step 8)
+
+INSTANCE_FORMS = ("10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A")
+INSTANCE_YEARS = 12
+
+
+def sync_instances(db: Session, c: sec_source.SecClient, cik: str) -> dict:
+    """Read each annual report's own XBRL instance (once per filing, last INSTANCE_YEARS years) and keep what
+    companyfacts lacks: dimensional facts (share class, segment …) and the filer's own concepts."""
+    from libs.sv_data.xbrl import parse_instance
+
+    since = dt.date.today() - dt.timedelta(days=round(365.25 * INSTANCE_YEARS))
+    todo = db.scalars(select(Filing).where(Filing.cik == cik, Filing.form.in_(INSTANCE_FORMS), Filing.filed >= since,
+                                           (Filing.instance_status.is_(None)) | (Filing.instance_status == "error"))
+                      .order_by(Filing.filed.desc())).all()
+    read, stored, missing = 0, 0, 0
+    now = dt.datetime.now(dt.timezone.utc)
+    for f in todo:
+        try:
+            idx = _fetch(c.filing_index, cik, f.accession)
+            keep(db, idx)
+            name = sec_source.instance_name(idx.content)
+            if not name:
+                f.instance_status, missing = "none", missing + 1
+                continue
+            doc = _fetch(c.instance, cik, f.accession, name)
+            raw, _ = keep(db, doc)
+            inst = parse_instance(doc.content)
+        except SourceNotFound:
+            f.instance_status, missing = "none", missing + 1
+            continue
+        except (Upstream, ET_ERRORS):
+            f.instance_status = "error"
+            continue
+        rows = [{"cik": cik, "accession": f.accession, "form": f.form[:16], "filed": f.filed, "taxonomy": x.taxonomy[:40],
+                 "concept": x.concept[:200], "extension": x.extension, "unit": x.unit[:40], "value": x.value,
+                 "period_start": x.period_start, "period_end": x.period_end, "dimensions": [list(d) for d in x.dimensions],
+                 "dims_key": "|".join(f"{a}={m}" for a, m in x.dimensions)[:500], "decimals": (x.decimals or "")[:8] or None,
+                 "raw_document_id": raw.id, "created_at": now}
+                for x in inst.facts if x.dimensions or x.extension]
+        added = 0
+        for chunk in _chunks(rows):
+            added += len(db.execute(pg_insert(InstanceFactRow).values(chunk).on_conflict_do_nothing(
+                constraint="uq_instance_facts_fact").returning(InstanceFactRow.id)).all())
+        f.instance_status, f.instance_document_id = "done", raw.id
+        read, stored = read + 1, stored + added
+    db.flush()
+    return {"instances_read": read, "instance_facts": stored, "instances_missing": missing}
 
 
 # ------------------------------------------------------------------ background and daily
@@ -482,18 +536,28 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
     ruleset version and as_of with it."""
     from sqlalchemy import tuple_
 
-    from libs.sv_data.standard import FactRef, Split, load_ruleset, standardize, template_for_sic
+    from libs.sv_data.standard import (CLASS_AXIS, CLASS_EPS, FactRef, Split, class_eps, class_label, load_company,
+                                       load_ruleset, standardize, template_for_sic, with_company)
 
     from ..models import CorporateAction
 
     template = template_for_sic(filer.sic)
-    rs = load_ruleset(template)                  # general | bank | insurance, chosen by SIC code
+    rs = with_company(load_ruleset(template), load_company(filer.cik))   # template by SIC code, plus company overlay
     rows = db.execute(select(FiledFactRow).where(
         FiledFactRow.cik == filer.cik,
         tuple_(FiledFactRow.taxonomy, FiledFactRow.concept).in_(sorted(rs.concepts)))).scalars()
     facts = [FactRef(id=r.id, taxonomy=r.taxonomy, concept=r.concept, unit=r.unit, value=r.value,
                      period_start=r.period_start, period_end=r.period_end, form=r.form, accession=r.accession,
                      filed=r.filed) for r in rows]
+    # the filer's own concepts named in the company overlay, from each annual report's XBRL instance
+    ext = sorted(c for c in rs.concepts if c[0] not in STANDARD_TAXONOMIES)
+    if ext:
+        facts += [FactRef(id=f"i{r.id}", taxonomy=r.taxonomy, concept=r.concept, unit=r.unit, value=r.value,
+                          period_start=r.period_start, period_end=r.period_end, form=r.form, accession=r.accession,
+                          filed=r.filed)
+                  for r in db.scalars(select(InstanceFactRow).where(
+                      InstanceFactRow.cik == filer.cik, InstanceFactRow.dims_key == "",
+                      tuple_(InstanceFactRow.taxonomy, InstanceFactRow.concept).in_(ext)))]
     # stock splits from the accumulated market data; only those the filings confirm are applied
     def ratio(v: float) -> Decimal:                  # stored as float (market data): 4.0 → 4, 1.5 → 1.5
         d = Decimal(str(v))
@@ -506,7 +570,17 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
     fys = list(reversed(periods))[:years]                        # newest first
     if std.ttm is not None:
         fys = [std.ttm] + fys
+    # earnings per share by share class (annual reports only), on the same share basis as the EPS rows
+    cls = class_eps([(FactRef(id=r.id, taxonomy=r.taxonomy, concept=r.concept, unit=r.unit, value=r.value,
+                              period_start=r.period_start, period_end=r.period_end, form=r.form, accession=r.accession,
+                              filed=r.filed), r.dimensions[0][1])
+                     for r in db.scalars(select(InstanceFactRow).where(
+                         InstanceFactRow.cik == filer.cik, InstanceFactRow.taxonomy == "us-gaap",
+                         InstanceFactRow.concept.in_(sorted(CLASS_EPS)),
+                         InstanceFactRow.dims_key.like(f"{CLASS_AXIS}=%"), InstanceFactRow.dims_key.notlike("%|%")))],
+                    fys, view=view, as_of=as_of, splits=std.splits_applied) if period == "annual" else []
     used = {v.fact.accession for v in std.values.values() if v.fact is not None}
+    used |= {c.fact.accession for c in cls}
     used |= {f.accession for v in std.values.values() for _, f in v.parts if f is not None}
     primary = {a: p for a, p in db.execute(select(Filing.accession, Filing.primary_document).where(Filing.accession.in_(used)))} if used else {}
 
@@ -529,6 +603,15 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
                          "period_end": f.period_end.isoformat(), **filing_urls(filer.cik, f.accession, primary.get(f.accession))}
                         for sign, f in v.parts if f is not None]
         return out
+
+    by_class: dict[tuple[str, str], dict[str, dict]] = {}
+    for c in cls:
+        by_class.setdefault((c.member, c.item), {})[c.fiscal_year] = {
+            "value": format(c.value, "f"), "raw_value": format(c.fact.value, "f"),
+            "split_factor": format(c.split_factor.normalize(), "f"), "form": c.fact.form, "accession": c.fact.accession,
+            "filed": c.fact.filed.isoformat(), **filing_urls(filer.cik, c.fact.accession, primary.get(c.fact.accession))}
+    share_classes = [{"member": m, "label": class_label(m), "item": item, "cells": [cells.get(y.label) for y in fys]}
+                     for (m, item), cells in sorted(by_class.items(), key=lambda kv: (kv[0][1], kv[0][0]))]
 
     from libs.sv_data.checks import grades, load_checks, run_checks
 
@@ -573,4 +656,5 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
                        "fiscal_year": y.fy_label, "quarter": y.quarter} for y in fys],
             "rows": [{"code": code, "statement": st, "unit": rs.item(code).unit, "total": code in rs.totals,
                       "cells": [cell(code, y.label) for y in fys]}
-                     for st in ("income", "balance", "cash_flow") for code in rs.display_order(st)]}
+                     for st in ("income", "balance", "cash_flow") for code in rs.display_order(st)],
+            "share_classes": share_classes}

@@ -145,7 +145,7 @@ export function FiledData({ ticker }: { ticker: string }) {
                 <button key={k} type="button" role="option" aria-selected={k === picked} onClick={() => setPicked(k)}
                         className={`concept${k === picked ? " active" : ""}`}>
                   <span>{c.label ?? c.concept}</span>
-                  <span className="muted small">{c.taxonomy}:{c.concept} · {c.facts}</span>
+                  <span className="muted small">{c.taxonomy}:{c.concept} · {c.facts}{c.source === "instance" && <> · {t("filed.source.instance")}</>}</span>
                 </button>
               );
             })}
@@ -185,7 +185,8 @@ function Facts({ ticker, concept }: { ticker: string; concept: FiledConceptOut }
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <h2 id="facts-h">{concept.label ?? concept.concept}</h2>
-          <span className="muted small">{concept.taxonomy}:{concept.concept} · {concept.first_end} – {concept.last_end}</span>
+          <span className="muted small">{concept.taxonomy}:{concept.concept} · {concept.first_end} – {concept.last_end}
+            {concept.source === "instance" && <> · {t("filed.source.instance")}</>}</span>
         </div>
         <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input type="checkbox" checked={annualOnly} onChange={(e) => setAnnualOnly(e.target.checked)} />{t("filed.annualOnly")}

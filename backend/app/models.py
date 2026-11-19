@@ -276,6 +276,9 @@ class Filing(Base):
     items: Mapped[Optional[str]] = mapped_column(String(200))
     is_xbrl: Mapped[bool] = mapped_column(Boolean, default=False)
     is_inline_xbrl: Mapped[bool] = mapped_column(Boolean, default=False)
+    # the filing's own XBRL instance (alpha.3 step 8): read for dimensional facts and company concepts
+    instance_status: Mapped[Optional[str]] = mapped_column(String(16))     # done | none | error
+    instance_document_id: Mapped[Optional[int]] = mapped_column(ForeignKey("raw_documents.id", name="fk_filings_instance_document"))
 
 
 class FiledConceptRow(Base):
@@ -355,4 +358,33 @@ class Scenario(Base):
     data_version: Mapped[str] = mapped_column(String(32))
     system_version: Mapped[str] = mapped_column(String(32))
     result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class InstanceFactRow(Base):
+    """A number read from a filing's own XBRL instance that companyfacts does not carry: a dimensional fact
+    (e.g. EPS per share class, revenue per segment) or a company extension concept. Plain standard-taxonomy
+    facts are not stored again here — they are already in filed_facts."""
+    __tablename__ = "instance_facts"
+    __table_args__ = (
+        UniqueConstraint("accession", "taxonomy", "concept", "unit", "period_start", "period_end", "dims_key",
+                         name="uq_instance_facts_fact", postgresql_nulls_not_distinct=True),
+        Index("ix_instance_facts_lookup", "cik", "taxonomy", "concept"),
+    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    cik: Mapped[str] = mapped_column(ForeignKey("filers.cik", ondelete="CASCADE"))
+    accession: Mapped[str] = mapped_column(String(20), index=True)
+    form: Mapped[str] = mapped_column(String(16))
+    filed: Mapped[dt.date] = mapped_column(Date)
+    taxonomy: Mapped[str] = mapped_column(String(40))                     # us-gaap … or the filer's own prefix
+    concept: Mapped[str] = mapped_column(String(200))
+    extension: Mapped[bool] = mapped_column(Boolean, default=False)
+    unit: Mapped[str] = mapped_column(String(40))
+    value: Mapped[Decimal] = mapped_column(Numeric)
+    period_start: Mapped[Optional[dt.date]] = mapped_column(Date)
+    period_end: Mapped[dt.date] = mapped_column(Date)
+    dimensions: Mapped[list] = mapped_column(JSON)                        # [[axis, member], …], empty when none
+    dims_key: Mapped[str] = mapped_column(String(500), default="")        # canonical text of dimensions (uniqueness)
+    decimals: Mapped[Optional[str]] = mapped_column(String(8))
+    raw_document_id: Mapped[int] = mapped_column(ForeignKey("raw_documents.id"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)

@@ -6006,6 +6006,16 @@
       "type": "string",
       "title": "Concept"
      },
+     "source": {
+      "type": "string",
+      "enum": [
+       "companyfacts",
+       "instance"
+      ],
+      "title": "Source",
+      "description": "instance：公司自訂科目，來自年報 XBRL instance",
+      "default": "companyfacts"
+     },
      "label": {
       "anyOf": [
        {
@@ -6057,6 +6067,15 @@
      "concept": {
       "type": "string",
       "title": "Concept"
+     },
+     "source": {
+      "type": "string",
+      "enum": [
+       "companyfacts",
+       "instance"
+      ],
+      "title": "Source",
+      "default": "companyfacts"
      },
      "unit": {
       "type": "string",
@@ -8703,6 +8722,105 @@
     ],
     "title": "SecurityOut"
    },
+   "ShareClassCell": {
+    "properties": {
+     "value": {
+      "type": "string",
+      "title": "Value",
+      "description": "與每股盈利列相同的股份基礎（已按確認的分拆調整）"
+     },
+     "raw_value": {
+      "type": "string",
+      "title": "Raw Value",
+      "description": "申報原值"
+     },
+     "split_factor": {
+      "type": "string",
+      "title": "Split Factor"
+     },
+     "form": {
+      "type": "string",
+      "title": "Form"
+     },
+     "accession": {
+      "type": "string",
+      "title": "Accession"
+     },
+     "filed": {
+      "type": "string",
+      "title": "Filed"
+     },
+     "index_url": {
+      "type": "string",
+      "title": "Index Url"
+     },
+     "document_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Document Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "value",
+     "raw_value",
+     "split_factor",
+     "form",
+     "accession",
+     "filed",
+     "index_url"
+    ],
+    "title": "ShareClassCell"
+   },
+   "ShareClassRow": {
+    "properties": {
+     "member": {
+      "type": "string",
+      "title": "Member",
+      "description": "股份類別成員，例如 brka:ClassAMember（XBRL instance 的 StatementClassOfStockAxis）"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "item": {
+      "type": "string",
+      "enum": [
+       "eps_basic",
+       "eps_diluted"
+      ],
+      "title": "Item"
+     },
+     "cells": {
+      "items": {
+       "anyOf": [
+        {
+         "$ref": "#/components/schemas/ShareClassCell"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Cells"
+     }
+    },
+    "type": "object",
+    "required": [
+     "member",
+     "label",
+     "item",
+     "cells"
+    ],
+    "title": "ShareClassRow"
+   },
    "StandardStatements": {
     "properties": {
      "ticker": {
@@ -8814,6 +8932,14 @@
       },
       "type": "array",
       "title": "Rows"
+     },
+     "share_classes": {
+      "items": {
+       "$ref": "#/components/schemas/ShareClassRow"
+      },
+      "type": "array",
+      "title": "Share Classes",
+      "description": "按股份類別的每股盈利（只限年度，來自年報 XBRL instance）"
      }
     },
     "type": "object",

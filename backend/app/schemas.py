@@ -465,6 +465,9 @@ class StatementsSyncResult(BaseModel):
     duplicates: int = 0
     conflicts: int = 0
     skipped: int = 0
+    instances_read: int = Field(0, description="本次讀取的年報 XBRL instance 數目（每份申報只讀一次）")
+    instance_facts: int = Field(0, description="新增的維度數字與公司自訂科目數字")
+    instances_missing: int = Field(0, description="找不到 instance 的年報（不再重試）")
 
 
 class FilerOut(BaseModel):
@@ -486,6 +489,7 @@ class FilerOut(BaseModel):
 class FiledConceptOut(BaseModel):
     taxonomy: str
     concept: str
+    source: Literal["companyfacts", "instance"] = Field("companyfacts", description="instance：公司自訂科目，來自年報 XBRL instance")
     label: Optional[str] = None
     units: list[str]
     facts: int
@@ -496,6 +500,7 @@ class FiledConceptOut(BaseModel):
 class FiledFactOut(BaseModel):
     taxonomy: str
     concept: str
+    source: Literal["companyfacts", "instance"] = "companyfacts"
     unit: str
     value: str = Field(description="申報原值，精確十進位字串（不經浮點數）")
     period_start: Optional[str] = None
@@ -620,6 +625,24 @@ class StatementRatios(BaseModel):
     cagr: list[CagrValue] = Field(default_factory=list, description="至最近財年的 3 年與 5 年複合增長率")
 
 
+class ShareClassCell(BaseModel):
+    value: str = Field(description="與每股盈利列相同的股份基礎（已按確認的分拆調整）")
+    raw_value: str = Field(description="申報原值")
+    split_factor: str
+    form: str
+    accession: str
+    filed: str
+    index_url: str
+    document_url: Optional[str] = None
+
+
+class ShareClassRow(BaseModel):
+    member: str = Field(description="股份類別成員，例如 brka:ClassAMember（XBRL instance 的 StatementClassOfStockAxis）")
+    label: str
+    item: Literal["eps_basic", "eps_diluted"]
+    cells: list[Optional[ShareClassCell]]
+
+
 class StandardStatements(BaseModel):
     ticker: str
     cik: str
@@ -637,6 +660,8 @@ class StandardStatements(BaseModel):
     splits_applied: list[dict] = Field(default_factory=list, description="已套用的股份分拆（日期、比例），只計申報文件確認過的")
     years: list[StdYear]
     rows: list[StdRow]
+    share_classes: list[ShareClassRow] = Field(default_factory=list,
+                                               description="按股份類別的每股盈利（只限年度，來自年報 XBRL instance）")
 
 
 # ---------------------------------------------------------------- portfolio analysis (alpha.4)

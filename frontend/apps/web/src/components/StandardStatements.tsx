@@ -107,6 +107,23 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
                       ))}
                     </tr>
                   ))}
+                  {st === "income" && display === "values" && (d.share_classes ?? []).map((sc) => {
+                    const label = t("std.class.row", { item: t(`std.item.${sc.item}`), cls: sc.label });
+                    return (
+                      <tr key={`${sc.member}-${sc.item}`} className="sub">
+                        <th scope="row" className="l">{label}</th>
+                        {sc.cells.map((c, i) => (
+                          <td key={i} className={d.years[i].kind === "ttm" ? "ttm" : ""}>
+                            {c ? <a href={c.document_url ?? c.index_url} target="_blank" rel="noreferrer" aria-label={`${label} ${d.years[i].label}`}
+                                    title={t("std.class.hint", { cls: sc.member, form: c.form, filed: c.filed })}>
+                              {groupDigits(c.value).replace(/^-/, "−")}
+                              {c.split_factor !== "1" && <sup className="muted" title={t("std.mark.split_adjusted")}>S</sup>}</a>
+                              : <span className="muted">—</span>}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -130,3 +130,24 @@ def test_raw_store_is_content_addressed_and_verified(tmp_path):
     p1.write_bytes(gzip.compress(b"tampered"))
     with pytest.raises(ValueError):
         store.read(rel)
+
+
+def test_instance_name_and_download():
+    import json as _json
+
+    inline = {"directory": {"item": [{"name": "exmp-20241231.htm"}, {"name": "exmp-20241231_htm.xml"}, {"name": "exmp-20241231_cal.xml"},
+                                     {"name": "FilingSummary.xml"}, {"name": "exmp-20241231.xsd"}]}}
+    old = {"directory": {"item": [{"name": "exmp-20151231.xml"}, {"name": "exmp-20151231_lab.xml"}, {"name": "R1.xml"},
+                                  {"name": "FilingSummary.xml"}]}}
+    assert sec.instance_name(_json.dumps(inline).encode()) == "exmp-20241231_htm.xml"
+    assert sec.instance_name(_json.dumps(old).encode()) == "exmp-20151231.xml"
+    assert sec.instance_name(b'{"directory": {"item": [{"name": "a.htm"}]}}') is None
+    base = "https://www.sec.gov/Archives/edgar/data/1234567/000123456725000010"
+    http = FakeHttp({base + "/index.json": (200, _json.dumps(inline).encode()),
+                     base + "/exmp-20241231_htm.xml": (200, (FIX / "instance.xml").read_bytes())})
+    c = sec.SecClient(CONTACT, http, min_interval=0)
+    idx = c.filing_index(1234567, "0001234567-25-000010")
+    doc = c.instance(1234567, "0001234567-25-000010", sec.instance_name(idx.content))
+    assert (doc.kind, doc.key, doc.content_type) == ("instance", "0001234567-25-000010", "application/xml")
+    with pytest.raises(ValueError):
+        c.instance(1234567, "0001234567-25-000010", "../x.xml")

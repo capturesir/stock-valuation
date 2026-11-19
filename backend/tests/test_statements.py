@@ -425,3 +425,55 @@ def test_export_excel_and_csv(client, sec, member):
     assert header[1].startswith("FY2024") and found[0][1] == 130497000000     # exact, full units
     lineage = [row for row in wb["出處"].iter_rows(values_only=True) if row[0] == "營業收入" and row[1] == "FY2024"]
     assert lineage[0][5] == "us-gaap:Revenues" and lineage[0][7] == "0001234567-25-000010"
+
+
+# ------------------------------------------------------------------ alpha.3 step 8: each annual report's XBRL instance
+
+def test_instances_add_share_classes_and_the_filers_own_concepts(client, sec, member, monkeypatch):
+    from libs.sv_data import standard
+
+    from backend.app.models import Filing, InstanceFactRow, RawDocumentRow
+
+    accn = "0001234567-25-000010"
+    base = sec_source.ARCHIVE_URL.format(cik=1234567, accn=accn.replace("-", ""))
+    index = {"directory": {"item": [{"name": "exmp-20241231.htm"}, {"name": "exmp-20241231_htm.xml"}, {"name": "exmp-20241231_lab.xml"}]}}
+    sec.routes[f"{base}/index.json"] = (200, json.dumps(index).encode())
+    sec.routes[f"{base}/exmp-20241231_htm.xml"] = (200, (FIX / "instance.xml").read_bytes().replace(b"2025-", b"2024-"))
+    r = client.post(f"{API}/admin/statements/sync/EXMP")
+    body = r.json()
+    # two 10-Ks in the last 12 years: one instance read; the other filing has no index (404) and is not retried
+    assert (body["instances_read"], body["instances_missing"]) == (1, 1) and body["instance_facts"] == 4
+    with _db() as db:
+        status = dict(db.execute(select(Filing.accession, Filing.instance_status).where(Filing.form == "10-K")).all())
+        assert status == {accn: "done", "0001234567-24-000005": "none", "0001234567-09-000001": None}   # 2009: too old
+        assert {d.kind for d in db.scalars(select(RawDocumentRow))} >= {"filing_index", "instance"}
+        rows = db.scalars(select(InstanceFactRow).order_by(InstanceFactRow.concept, InstanceFactRow.dims_key)).all()
+        # only what companyfacts lacks: dimensional facts and the filer's own concepts
+        assert [(x.concept, x.dims_key, x.extension) for x in rows] == [
+            ("EarningsPerShareBasic", "us-gaap:StatementClassOfStockAxis=brka:ClassAMember", False),
+            ("EarningsPerShareBasic", "us-gaap:StatementClassOfStockAxis=brka:ClassBMember", False),
+            ("InsuranceFloat", "", True),
+            ("Revenues", "us-gaap:StatementBusinessSegmentsAxis=brka:InsuranceMember", False)]
+        assert rows[0].dimensions == [["us-gaap:StatementClassOfStockAxis", "brka:ClassAMember"]] and rows[0].filed.isoformat() == "2025-02-20"
+    n = len(sec.calls)
+    assert client.post(f"{API}/admin/statements/sync/EXMP", params={"force": True}).json()["instances_read"] == 0
+    assert not [u for u in sec.calls[n:] if "/Archives/" in u]                          # each instance is read once
+
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    assert [(c["label"], c["item"], [x and x["value"] for x in c["cells"]]) for c in d["share_classes"]] == [
+        ("Class A", "eps_basic", ["46437", None]), ("Class B", "eps_basic", ["30.96", None])]
+    assert d["share_classes"][0]["cells"][0]["document_url"].endswith("/exmp-20241231.htm")
+    assert member.get(f"{API}/stocks/EXMP/statements", params={"period": "quarterly"}).json()["share_classes"] == []
+
+    # a company overlay names the filer's own concept as a source (here, only to exercise the mechanism)
+    overlay = {"cik": CIK, "version": "1", "items": {"goodwill": {"sources": ["brka:InsuranceFloat"]}}}
+    monkeypatch.setattr(standard, "load_company", lambda cik: overlay if cik == CIK else None)
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    gw = {r["code"]: r for r in d["rows"]}["goodwill"]["cells"][0]
+    assert d["ruleset_version"].endswith(f"+{CIK}.1") and (gw["value"], gw["concept"]) == ("176000000000", "brka:InsuranceFloat")
+
+    concepts = member.get(f"{API}/stocks/EXMP/filed-concepts").json()
+    ext = [c for c in concepts if c["source"] == "instance"]
+    assert [(c["taxonomy"], c["concept"], c["facts"]) for c in ext] == [("brka", "InsuranceFloat", 1)]
+    facts = member.get(f"{API}/stocks/EXMP/filed-facts", params={"taxonomy": "brka", "concept": "InsuranceFloat"}).json()
+    assert [(f["source"], f["value"], f["period_end"], f["accession"]) for f in facts] == [("instance", "176000000000", "2024-12-31", accn)]
