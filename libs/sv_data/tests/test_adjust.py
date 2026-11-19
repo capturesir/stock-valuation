@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 from decimal import Decimal
+from itertools import count
 
 import pytest
 
@@ -11,11 +12,11 @@ from libs.sv_data.standard import FactRef, load_ruleset, standardize
 
 D = dt.date
 RS = load_ruleset("general")
+_ids = count(1)
 
 
-def f(concept, value, start, end, filed, form="10-K", i=[0]):
-    i[0] += 1
-    return FactRef(id=i[0], taxonomy="us-gaap", concept=concept, unit="USD", value=Decimal(value), period_start=start,
+def f(concept, value, start, end, filed, form="10-K"):
+    return FactRef(id=next(_ids), taxonomy="us-gaap", concept=concept, unit="USD", value=Decimal(value), period_start=start,
                    period_end=end, form=form, accession=f"A-{filed}", filed=filed)
 
 
