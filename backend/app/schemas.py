@@ -549,8 +549,8 @@ class StdPart(BaseModel):
 
 class StdCell(BaseModel):
     value: str = Field(description="標準值，精確十進位字串")
-    method: Literal["concept", "formula", "derived", "ttm"] = Field(
-        description="concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月")
+    method: Literal["concept", "formula", "derived", "ttm", "adjusted"] = Field(
+        description="concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月｜adjusted 未申報、由調整方案提供")
     rule_id: str
     concept: Optional[str] = Field(None, description="取自的申報科目（taxonomy:Concept）")
     restated: bool = False
@@ -562,6 +562,8 @@ class StdCell(BaseModel):
     split_factor: str = Field("1", description="申報後發生、經申報文件確認的股份分拆累計比例；每股數字已除以、股數已乘以此數")
     inputs: list[str] = Field(default_factory=list, description="公式用到的標準科目")
     assumed_zero: list[str] = Field(default_factory=list, description="公式中未申報、按零計算的可選項目")
+    adjusted_from: Optional[str] = Field(None, description="調整方案（D12）：調整前的標準值")
+    adjustment: Optional[dict] = Field(None, description="直接調整：reason、basis、by、at；由其他調整推出：from（項目或季度）")
     form: Optional[str] = None
     accession: Optional[str] = None
     filed: Optional[str] = None
@@ -643,6 +645,13 @@ class ShareClassRow(BaseModel):
     cells: list[Optional[ShareClassCell]]
 
 
+class PlanRef(BaseModel):
+    kind: Literal["central", "personal"]
+    id: str
+    version: int
+    label: str
+
+
 class StandardStatements(BaseModel):
     ticker: str
     cik: str
@@ -662,6 +671,72 @@ class StandardStatements(BaseModel):
     rows: list[StdRow]
     share_classes: list[ShareClassRow] = Field(default_factory=list,
                                                description="按股份類別的每股盈利（只限年度，來自年報 XBRL instance）")
+    plan: Optional[PlanRef] = Field(None, description="套用的調整方案（D12）；空值＝系統預設（不調整）")
+    adjustments_not_shown: list[str] = Field(default_factory=list, description="方案中不在所顯示期間的調整（項目 期間）")
+
+
+# ---------------------------------------------------------------- adjustment plans (D12, alpha.3)
+
+class AdjustmentIn(BaseModel):
+    item: str = Field(max_length=40, description="標準科目代碼，例如 net_income")
+    period: str = Field(max_length=16, description="FY2024 或 FY2024 Q2（TTM 不可直接調整，由季度推出）")
+    value: str = Field(max_length=40, description="調整後的數值（精確十進位字串，原始單位，不是百萬）")
+    reason: str = Field(min_length=1, max_length=2000)
+    basis: Optional[str] = Field(None, max_length=2000, description="依據，例如「2024 年報附註 7」或連結")
+
+
+class AdjustmentPlanIn(BaseModel):
+    adjustments: list[AdjustmentIn] = Field(default_factory=list, max_length=500, description="新版本的全部調整（完整一套，不是增量）")
+    note: Optional[str] = Field(None, max_length=2000, description="本版本的說明")
+    base_version: int = Field(ge=0, description="編輯時所依據的版本（新方案為 0）；方案已被更新時回 409")
+    central_version: Optional[int] = Field(None, ge=0, description="個人方案：本版本已合併至中央方案的哪一版")
+
+
+class AdjustmentOut(BaseModel):
+    item: str
+    period: str
+    value: str
+    original_value: Optional[str] = Field(None, description="調整時的標準值（未申報時為空）")
+    reason: str
+    basis: Optional[str] = None
+    adjusted_by: Optional[str] = None
+    adjusted_at: str
+
+
+class AdjustmentVersionOut(BaseModel):
+    plan_id: str
+    kind: Literal["central", "personal"]
+    version: int
+    created_by_name: Optional[str] = None
+    created_at: Optional[str] = None
+    note: Optional[str] = None
+    central_version: Optional[int] = None
+    adjustments: list[AdjustmentOut]
+
+
+class AdjustmentVersionSummary(BaseModel):
+    version: int
+    created_by_name: Optional[str] = None
+    created_at: str
+    note: Optional[str] = None
+    central_version: Optional[int] = None
+    adjustments: int
+
+
+class AdjustmentPlanOut(BaseModel):
+    id: str
+    kind: Literal["central", "personal"]
+    current_version: int
+    source_version: Optional[int] = Field(None, description="個人方案：複製或最後合併的中央方案版本")
+    versions: list[AdjustmentVersionSummary] = Field(description="全部版本，最新在前")
+    current: AdjustmentVersionOut
+
+
+class AdjustmentPlansOut(BaseModel):
+    ticker: str
+    central: Optional[AdjustmentPlanOut] = None
+    personal: Optional[AdjustmentPlanOut] = Field(None, description="只有自己的個人方案")
+    central_updated: bool = Field(description="中央方案在我的個人方案複製或最後合併之後有新版本")
 
 
 # ---------------------------------------------------------------- portfolio analysis (alpha.4)

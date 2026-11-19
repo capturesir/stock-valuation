@@ -388,3 +388,51 @@ class InstanceFactRow(Base):
     decimals: Mapped[Optional[str]] = mapped_column(String(8))
     raw_document_id: Mapped[int] = mapped_column(ForeignKey("raw_documents.id"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class AdjustmentPlan(Base):
+    """D12: one central plan per stock (admin) and one personal plan per user per stock. Every change is a new
+    version; nothing is overwritten. A personal plan starts as a copy of the central plan (or of nothing)."""
+    __tablename__ = "adjustment_plans"
+    __table_args__ = (UniqueConstraint("ticker", "kind", "user_id", name="uq_adjustment_plans_owner",
+                                       postgresql_nulls_not_distinct=True),)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    ticker: Mapped[str] = mapped_column(String(20), index=True)
+    kind: Mapped[str] = mapped_column(String(12))                 # central | personal
+    user_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))   # personal plans only
+    current_version: Mapped[int] = mapped_column(Integer, default=0)
+    source_plan_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("adjustment_plans.id", ondelete="SET NULL", name="fk_adjustment_plans_source"))
+    source_version: Mapped[Optional[int]] = mapped_column(Integer)   # central version copied or last merged
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class AdjustmentPlanVersion(Base):
+    """One saved state of a plan: the complete set of its adjustments at that time."""
+    __tablename__ = "adjustment_plan_versions"
+    __table_args__ = (UniqueConstraint("plan_id", "version", name="uq_adjustment_plan_versions_version"),)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    plan_id: Mapped[str] = mapped_column(ForeignKey("adjustment_plans.id", ondelete="CASCADE"), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    created_by: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_by_name: Mapped[Optional[str]] = mapped_column(String(80))    # kept if the user is deleted
+    note: Mapped[Optional[str]] = mapped_column(Text)
+    central_version: Mapped[Optional[int]] = mapped_column(Integer)       # personal: the central version it is based on
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class AdjustmentRow(Base):
+    """One adjustment in one version: a standard item's value for one fiscal year or quarter."""
+    __tablename__ = "adjustments"
+    __table_args__ = (UniqueConstraint("version_id", "item", "period", name="uq_adjustments_item_period"),)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    version_id: Mapped[int] = mapped_column(ForeignKey("adjustment_plan_versions.id", ondelete="CASCADE"), index=True)
+    item: Mapped[str] = mapped_column(String(40))                 # standard item code, e.g. net_income
+    period: Mapped[str] = mapped_column(String(16))               # FY2024 | FY2024 Q2
+    original_value: Mapped[Optional[Decimal]] = mapped_column(Numeric)   # the standard value when it was adjusted
+    value: Mapped[Decimal] = mapped_column(Numeric)
+    reason: Mapped[str] = mapped_column(Text)
+    basis: Mapped[Optional[str]] = mapped_column(Text)            # e.g. "10-K 2024 note 7" or a link
+    adjusted_by: Mapped[Optional[str]] = mapped_column(String(80))       # who made this adjustment (carried across versions)
+    adjusted_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)

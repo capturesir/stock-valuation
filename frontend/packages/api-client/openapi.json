@@ -3676,6 +3676,22 @@
       }
      },
      {
+      "name": "plan",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "auto",
+        "central",
+        "personal",
+        "none"
+       ],
+       "type": "string",
+       "default": "auto",
+       "title": "Plan"
+      }
+     },
+     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -3955,6 +3971,22 @@
       }
      },
      {
+      "name": "plan",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "auto",
+        "central",
+        "personal",
+        "none"
+       ],
+       "type": "string",
+       "default": "auto",
+       "title": "Plan"
+      }
+     },
+     {
       "name": "authorization",
       "in": "header",
       "required": false,
@@ -3993,6 +4025,331 @@
       "content": {
        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {},
        "text/csv": {}
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/adjustment-plans": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "調整方案：中央方案與我的個人方案（目前版本的全部調整、版本清單），以及中央方案是否在我複製後更新",
+    "operationId": "plans_api_v1_stocks__ticker__adjustment_plans_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdjustmentPlansOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/adjustment-plans/{plan_id}/versions/{version}": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "調整方案的某一版本（全部調整）；中央方案所有人可看，個人方案只限本人",
+    "operationId": "plan_version_api_v1_adjustment_plans__plan_id__versions__version__get",
+    "parameters": [
+     {
+      "name": "plan_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Plan Id"
+      }
+     },
+     {
+      "name": "version",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Version"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdjustmentVersionOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/adjustment-plans/central": {
+   "put": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "保存中央方案的新版本（管理員）：送出完整一套調整；base_version 不是目前版本時回 409",
+    "operationId": "save_central_api_v1_stocks__ticker__adjustment_plans_central_put",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdjustmentPlanIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdjustmentPlansOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/adjustment-plans/personal": {
+   "put": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "保存我的個人方案的新版本：第一次保存即建立（記錄當時的中央方案版本）；central_version 記錄已合併的中央版本",
+    "operationId": "save_personal_api_v1_stocks__ticker__adjustment_plans_personal_put",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AdjustmentPlanIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdjustmentPlansOut"
+        }
+       }
       }
      },
      "422": {
@@ -5185,6 +5542,399 @@
  },
  "components": {
   "schemas": {
+   "AdjustmentIn": {
+    "properties": {
+     "item": {
+      "type": "string",
+      "maxLength": 40,
+      "title": "Item",
+      "description": "標準科目代碼，例如 net_income"
+     },
+     "period": {
+      "type": "string",
+      "maxLength": 16,
+      "title": "Period",
+      "description": "FY2024 或 FY2024 Q2（TTM 不可直接調整，由季度推出）"
+     },
+     "value": {
+      "type": "string",
+      "maxLength": 40,
+      "title": "Value",
+      "description": "調整後的數值（精確十進位字串，原始單位，不是百萬）"
+     },
+     "reason": {
+      "type": "string",
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Reason"
+     },
+     "basis": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 2000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Basis",
+      "description": "依據，例如「2024 年報附註 7」或連結"
+     }
+    },
+    "type": "object",
+    "required": [
+     "item",
+     "period",
+     "value",
+     "reason"
+    ],
+    "title": "AdjustmentIn"
+   },
+   "AdjustmentOut": {
+    "properties": {
+     "item": {
+      "type": "string",
+      "title": "Item"
+     },
+     "period": {
+      "type": "string",
+      "title": "Period"
+     },
+     "value": {
+      "type": "string",
+      "title": "Value"
+     },
+     "original_value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Original Value",
+      "description": "調整時的標準值（未申報時為空）"
+     },
+     "reason": {
+      "type": "string",
+      "title": "Reason"
+     },
+     "basis": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Basis"
+     },
+     "adjusted_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adjusted By"
+     },
+     "adjusted_at": {
+      "type": "string",
+      "title": "Adjusted At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "item",
+     "period",
+     "value",
+     "reason",
+     "adjusted_at"
+    ],
+    "title": "AdjustmentOut"
+   },
+   "AdjustmentPlanIn": {
+    "properties": {
+     "adjustments": {
+      "items": {
+       "$ref": "#/components/schemas/AdjustmentIn"
+      },
+      "type": "array",
+      "maxItems": 500,
+      "title": "Adjustments",
+      "description": "新版本的全部調整（完整一套，不是增量）"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 2000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note",
+      "description": "本版本的說明"
+     },
+     "base_version": {
+      "type": "integer",
+      "minimum": 0.0,
+      "title": "Base Version",
+      "description": "編輯時所依據的版本（新方案為 0）；方案已被更新時回 409"
+     },
+     "central_version": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Central Version",
+      "description": "個人方案：本版本已合併至中央方案的哪一版"
+     }
+    },
+    "type": "object",
+    "required": [
+     "base_version"
+    ],
+    "title": "AdjustmentPlanIn"
+   },
+   "AdjustmentPlanOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "central",
+       "personal"
+      ],
+      "title": "Kind"
+     },
+     "current_version": {
+      "type": "integer",
+      "title": "Current Version"
+     },
+     "source_version": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Version",
+      "description": "個人方案：複製或最後合併的中央方案版本"
+     },
+     "versions": {
+      "items": {
+       "$ref": "#/components/schemas/AdjustmentVersionSummary"
+      },
+      "type": "array",
+      "title": "Versions",
+      "description": "全部版本，最新在前"
+     },
+     "current": {
+      "$ref": "#/components/schemas/AdjustmentVersionOut"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "kind",
+     "current_version",
+     "versions",
+     "current"
+    ],
+    "title": "AdjustmentPlanOut"
+   },
+   "AdjustmentPlansOut": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "central": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AdjustmentPlanOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "personal": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AdjustmentPlanOut"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "只有自己的個人方案"
+     },
+     "central_updated": {
+      "type": "boolean",
+      "title": "Central Updated",
+      "description": "中央方案在我的個人方案複製或最後合併之後有新版本"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "central_updated"
+    ],
+    "title": "AdjustmentPlansOut"
+   },
+   "AdjustmentVersionOut": {
+    "properties": {
+     "plan_id": {
+      "type": "string",
+      "title": "Plan Id"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "central",
+       "personal"
+      ],
+      "title": "Kind"
+     },
+     "version": {
+      "type": "integer",
+      "title": "Version"
+     },
+     "created_by_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created By Name"
+     },
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "central_version": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Central Version"
+     },
+     "adjustments": {
+      "items": {
+       "$ref": "#/components/schemas/AdjustmentOut"
+      },
+      "type": "array",
+      "title": "Adjustments"
+     }
+    },
+    "type": "object",
+    "required": [
+     "plan_id",
+     "kind",
+     "version",
+     "adjustments"
+    ],
+    "title": "AdjustmentVersionOut"
+   },
+   "AdjustmentVersionSummary": {
+    "properties": {
+     "version": {
+      "type": "integer",
+      "title": "Version"
+     },
+     "created_by_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created By Name"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Note"
+     },
+     "central_version": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Central Version"
+     },
+     "adjustments": {
+      "type": "integer",
+      "title": "Adjustments"
+     }
+    },
+    "type": "object",
+    "required": [
+     "version",
+     "created_at",
+     "adjustments"
+    ],
+    "title": "AdjustmentVersionSummary"
+   },
    "AdminUserIn": {
     "properties": {
      "email": {
@@ -7560,6 +8310,38 @@
     ],
     "title": "Plan"
    },
+   "PlanRef": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "central",
+       "personal"
+      ],
+      "title": "Kind"
+     },
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "version": {
+      "type": "integer",
+      "title": "Version"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kind",
+     "id",
+     "version",
+     "label"
+    ],
+    "title": "PlanRef"
+   },
    "PlanTask": {
     "properties": {
      "key": {
@@ -8940,6 +9722,25 @@
       "type": "array",
       "title": "Share Classes",
       "description": "按股份類別的每股盈利（只限年度，來自年報 XBRL instance）"
+     },
+     "plan": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/PlanRef"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "套用的調整方案（D12）；空值＝系統預設（不調整）"
+     },
+     "adjustments_not_shown": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Adjustments Not Shown",
+      "description": "方案中不在所顯示期間的調整（項目 期間）"
      }
     },
     "type": "object",
@@ -9185,6 +9986,24 @@
       "type": "integer",
       "title": "Skipped",
       "default": 0
+     },
+     "instances_read": {
+      "type": "integer",
+      "title": "Instances Read",
+      "description": "本次讀取的年報 XBRL instance 數目（每份申報只讀一次）",
+      "default": 0
+     },
+     "instance_facts": {
+      "type": "integer",
+      "title": "Instance Facts",
+      "description": "新增的維度數字與公司自訂科目數字",
+      "default": 0
+     },
+     "instances_missing": {
+      "type": "integer",
+      "title": "Instances Missing",
+      "description": "找不到 instance 的年報（不再重試）",
+      "default": 0
      }
     },
     "type": "object",
@@ -9212,10 +10031,11 @@
        "concept",
        "formula",
        "derived",
-       "ttm"
+       "ttm",
+       "adjusted"
       ],
       "title": "Method",
-      "description": "concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月"
+      "description": "concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月｜adjusted 未申報、由調整方案提供"
      },
      "rule_id": {
       "type": "string",
@@ -9321,6 +10141,31 @@
       "type": "array",
       "title": "Assumed Zero",
       "description": "公式中未申報、按零計算的可選項目"
+     },
+     "adjusted_from": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adjusted From",
+      "description": "調整方案（D12）：調整前的標準值"
+     },
+     "adjustment": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adjustment",
+      "description": "直接調整：reason、basis、by、at；由其他調整推出：from（項目或季度）"
      },
      "form": {
       "anyOf": [

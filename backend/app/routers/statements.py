@@ -10,16 +10,17 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .. import limits
-from ..auth import Principal, current_principal, require_admin
+from ..auth import Principal, current_principal, require_admin, require_user
 from ..db import get_db
-from ..i18n import http_error, lang_dep
+from ..i18n import AppError, http_error, lang_dep
 from ..models import FiledConceptRow, FiledFactRow, Filer, Filing, InstanceFactRow
-from ..schemas import (DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, StandardStatements,
+from ..schemas import (AdjustmentPlanIn, AdjustmentPlansOut, AdjustmentVersionOut, DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, StandardStatements,
                        StatementsStatus, StatementsSyncResult)
-from ..services import statements
+from ..services import adjustments, statements
 from .common import iso, ticker_or_400
 
 router = APIRouter(tags=["statements"])
+PlanChoice = Literal["auto", "central", "personal", "none"]   # which adjustment plan the statements are shown with
 
 
 @router.get("/admin/data-sources", response_model=DataSourcesOut, summary="數據來源設定：SEC 聯絡資料（管理員）")
@@ -128,10 +129,23 @@ def facts(ticker: str, concept: str = Query(..., max_length=200), taxonomy: str 
             summary="標準化財報：年度或季度（period），最前一欄為近十二個月（TTM）；每個數字附規則與申報出處（view=latest 含重編｜original 首次公布；as_of 只用當日或之前申報的數字）")
 def standard(ticker: str, view: Literal["latest", "original"] = "latest", as_of: dt.date | None = None,
              period: Literal["annual", "quarterly"] = "annual", years: int = Query(10, ge=1, le=40),
+             plan: PlanChoice = "auto", p: Principal = Depends(current_principal),
              db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
     f = _filer_or_404(db, ticker, lang)
     t = ticker_or_400(ticker)
-    return {"ticker": t, **statements.standard_statements(db, f, view=view, as_of=as_of, years=years, ticker=t, period=period)}
+    return {"ticker": t, **statements.standard_statements(db, f, view=view, as_of=as_of, years=years, ticker=t, period=period,
+                                                          plan=_plan(db, t, p, plan))}
+
+
+def _plan(db: Session, t: str, p: Principal, which: str) -> dict | None:
+    """auto: my personal plan, else the central plan, else none (system default)."""
+    if p.user is None:                          # service calls have no personal plan
+        which = "central" if which in ("auto", "central") else "none"
+        if which == "none":
+            return None
+        from ..models import User
+        return adjustments.chosen(db, t, User(id="", display_name=""), "central")
+    return adjustments.chosen(db, t, p.user, which)
 
 
 FRESH = dt.timedelta(hours=6)          # a fetch within this window is not repeated (the daily check keeps it current)
@@ -178,6 +192,7 @@ def fetch(ticker: str, request: Request, response: Response, db: Session = Depen
             summary="匯出標準化財報：Excel（財報、比率與增長、出處、檢查，附系統名稱）或 CSV；數值為精確原值")
 def export(ticker: str, format: Literal["xlsx", "csv"] = "xlsx", view: Literal["latest", "original"] = "latest",
            period: Literal["annual", "quarterly"] = "annual", years: int = Query(10, ge=1, le=40),
+           plan: PlanChoice = "auto", p: Principal = Depends(current_principal),
            lang: str = Depends(lang_dep), db: Session = Depends(get_db)):
     import tempfile
     from pathlib import Path
@@ -186,7 +201,8 @@ def export(ticker: str, format: Literal["xlsx", "csv"] = "xlsx", view: Literal["
 
     f = _filer_or_404(db, ticker, lang)
     t = ticker_or_400(ticker)
-    data = {"ticker": t, **statements.standard_statements(db, f, view=view, years=years, ticker=t, period=period)}
+    data = {"ticker": t, **statements.standard_statements(db, f, view=view, years=years, ticker=t, period=period,
+                                                         plan=_plan(db, t, p, plan))}
     import re
 
     # the download name only: request input never becomes part of a filesystem path
@@ -204,3 +220,57 @@ def export(ticker: str, format: Literal["xlsx", "csv"] = "xlsx", view: Literal["
     branding.stamp_run_files(db, [str(out)])
     return FileResponse(out, filename=f"{stem}.xlsx", background=BackgroundTask(shutil.rmtree, tmp, ignore_errors=True),
                         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+# ------------------------------------------------------------------ adjustment plans (D12)
+
+@router.get("/stocks/{ticker}/adjustment-plans", response_model=AdjustmentPlansOut,
+            summary="調整方案：中央方案與我的個人方案（目前版本的全部調整、版本清單），以及中央方案是否在我複製後更新")
+def plans(ticker: str, user=Depends(require_user), db: Session = Depends(get_db)) -> dict:
+    return adjustments.overview(db, ticker_or_400(ticker), user)
+
+
+@router.get("/adjustment-plans/{plan_id}/versions/{version}", response_model=AdjustmentVersionOut,
+            summary="調整方案的某一版本（全部調整）；中央方案所有人可看，個人方案只限本人")
+def plan_version(plan_id: str, version: int, user=Depends(require_user), db: Session = Depends(get_db),
+                 lang: str = Depends(lang_dep)) -> dict:
+    from ..models import AdjustmentPlan
+
+    plan = db.get(AdjustmentPlan, plan_id)
+    if plan is None or (plan.kind == "personal" and plan.user_id != user.id):
+        raise http_error(404, "plan_not_found", lang)
+    ver = adjustments.version_row(db, plan, version)
+    if ver is None:
+        raise http_error(404, "plan_not_found", lang)
+    return adjustments.version_out(db, plan, ver)
+
+
+def _save(ticker: str, kind: str, body: AdjustmentPlanIn, user, db: Session, lang: str) -> dict:
+    f = _filer_or_404(db, ticker, lang)
+    t = ticker_or_400(ticker)
+    try:
+        adjustments.save(db, f, t, kind, user, [a.model_dump() for a in body.adjustments], body.note, body.base_version,
+                         body.central_version if kind == "personal" else None)
+    except AppError as exc:
+        db.rollback()
+        if exc.code == "plan_conflict":
+            raise http_error(409, exc.code, lang, **exc.params)
+        raise
+    db.commit()
+    return adjustments.overview(db, t, user)
+
+
+@router.put("/stocks/{ticker}/adjustment-plans/central", response_model=AdjustmentPlansOut,
+            summary="保存中央方案的新版本（管理員）：送出完整一套調整；base_version 不是目前版本時回 409")
+def save_central(ticker: str, body: AdjustmentPlanIn, p: Principal = Depends(require_admin), db: Session = Depends(get_db),
+                 lang: str = Depends(lang_dep)) -> dict:
+    if p.user is None:
+        raise http_error(403, "admin_required", lang)
+    return _save(ticker, "central", body, p.user, db, lang)
+
+
+@router.put("/stocks/{ticker}/adjustment-plans/personal", response_model=AdjustmentPlansOut,
+            summary="保存我的個人方案的新版本：第一次保存即建立（記錄當時的中央方案版本）；central_version 記錄已合併的中央版本")
+def save_personal(ticker: str, body: AdjustmentPlanIn, user=Depends(require_user), db: Session = Depends(get_db),
+                  lang: str = Depends(lang_dep)) -> dict:
+    return _save(ticker, "personal", body, user, db, lang)

@@ -245,6 +245,8 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; 
 .tbl.std .cell.active { background: var(--sv-primary-weak); color: var(--sv-primary-strong); }
 .tbl.std sup { font-size: 10px; margin-left: 2px; }
 .tbl.std sup.mark-r { color: var(--sv-secondary-strong); font-weight: 700; }
+.mark-a { color: var(--sv-primary-strong); font-weight: 700; }
+.adjust label { display: flex; flex-direction: column; gap: 2px; max-width: 480px; } .adjust input { width: 100%; }
 .linklike { border: 0; background: none; padding: 0; color: var(--sv-primary); cursor: pointer; font: inherit; text-decoration: underline; }
 .tbl.std th.ttm, .tbl.std td.ttm { background: var(--sv-track); }
 

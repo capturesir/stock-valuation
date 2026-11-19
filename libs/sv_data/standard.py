@@ -307,6 +307,8 @@ class StdValue:
     assumed_zero: list[str] = field(default_factory=list)    # optional formula terms not filed
     parts: list = field(default_factory=list)                # (sign, FactRef) for a derived quarter or TTM
     other_filing: bool = False      # not in the period's anchor filing (that filing does not report this item)
+    adjusted_from: Optional[Decimal] = None        # adjustment plans (D12): the standard value before adjustment
+    adjustment: Optional[dict] = None              # the adjustment applied (reason, basis, by, at), or the items it flowed from
 
 
 @dataclass

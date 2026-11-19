@@ -526,18 +526,12 @@ def filing_urls(cik: str, accession: str, primary: Optional[str]) -> dict:
 
 # ------------------------------------------------------------------ layer ③ standard (computed on read)
 
-def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: Optional[dt.date] = None,
-                        years: int = 10, ticker: Optional[str] = None, period: str = "annual") -> dict:
-    """Standardised statements from the stored filed facts: fiscal years or quarters (newest first),
-    with the trailing twelve months as the first column when four consecutive quarters exist.
-
-    Deterministic: the same filed facts, ruleset version, view and as_of give the same numbers, so the
-    values are computed on read rather than stored; a valuation that uses them will record the
-    ruleset version and as_of with it."""
+def standardized(db: Session, filer: Filer, view: str = "latest", as_of: Optional[dt.date] = None,
+                 ticker: Optional[str] = None):
+    """(Standardized, ruleset, template) for a filer: the standard layer computed from the stored facts."""
     from sqlalchemy import tuple_
 
-    from libs.sv_data.standard import (CLASS_AXIS, CLASS_EPS, FactRef, Split, class_eps, class_label, load_company,
-                                       load_ruleset, standardize, template_for_sic, with_company)
+    from libs.sv_data.standard import FactRef, Split, load_company, load_ruleset, standardize, template_for_sic, with_company
 
     from ..models import CorporateAction
 
@@ -565,7 +559,29 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
 
     splits = [Split(a.date, ratio(a.value)) for a in db.scalars(select(CorporateAction).where(
         CorporateAction.ticker == (ticker or ""), CorporateAction.kind == "split"))]
-    std = standardize(facts, rs, view=view, as_of=as_of, splits=splits)
+    return standardize(facts, rs, view=view, as_of=as_of, splits=splits), rs, template
+
+
+def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: Optional[dt.date] = None,
+                        years: int = 10, ticker: Optional[str] = None, period: str = "annual",
+                        plan: Optional[dict] = None) -> dict:
+    """Standardised statements from the stored filed facts: fiscal years or quarters (newest first),
+    with the trailing twelve months as the first column when four consecutive quarters exist.
+
+    Deterministic: the same filed facts, ruleset version, view and as_of give the same numbers, so the
+    values are computed on read rather than stored; a valuation that uses them will record the
+    ruleset version and as_of with it.
+
+    ``plan`` (D12): {"kind", "id", "version", "label", "adjustments": [libs.sv_data.adjust.Adjustment]}.
+    Its adjustments replace the standard values (and what is computed from them); the checks still run on
+    the unadjusted standard layer, since they judge the filed data."""
+    from libs.sv_data.adjust import apply as apply_adjustments
+    from libs.sv_data.standard import CLASS_AXIS, CLASS_EPS, FactRef, class_eps, class_label
+
+    std, rs, template = standardized(db, filer, view=view, as_of=as_of, ticker=ticker)
+    raw_std = std
+    if plan and plan.get("adjustments"):
+        std = apply_adjustments(std, rs, plan["adjustments"])
     periods = std.quarters if period == "quarterly" else std.fiscal_years
     fys = list(reversed(periods))[:years]                        # newest first
     if std.ttm is not None:
@@ -594,7 +610,9 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
                "split_factor": format(v.split_factor.normalize(), "f"), "assumed_zero": v.assumed_zero,
                "original_value": format(v.original_value, "f") if v.original_value is not None else None,
                "latest_value": format(v.latest_value, "f") if v.latest_value is not None else None,
-               "form": None, "accession": None, "filed": None, "index_url": None, "document_url": None}
+               "form": None, "accession": None, "filed": None, "index_url": None, "document_url": None,
+               "adjusted_from": format(v.adjusted_from, "f") if v.adjusted_from is not None else None,
+               "adjustment": v.adjustment}
         if v.fact is not None:
             out.update(form=v.fact.form, accession=v.fact.accession, filed=v.fact.filed.isoformat(),
                        **filing_urls(filer.cik, v.fact.accession, primary.get(v.fact.accession)))
@@ -617,7 +635,7 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
 
     cs = load_checks(f"checks_{template}")
     yahoo, yahoo_at = yahoo_figures(db, ticker or "")
-    results = run_checks(std, cs, external={"yahoo": yahoo} if yahoo is not None else None)
+    results = run_checks(raw_std, cs, external={"yahoo": yahoo} if yahoo is not None else None)
     shown = {y.label for y in fys}
     grade = grades(results)
     summary: dict[str, dict[str, int]] = {}
@@ -657,4 +675,7 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
             "rows": [{"code": code, "statement": st, "unit": rs.item(code).unit, "total": code in rs.totals,
                       "cells": [cell(code, y.label) for y in fys]}
                      for st in ("income", "balance", "cash_flow") for code in rs.display_order(st)],
-            "share_classes": share_classes}
+            "share_classes": share_classes,
+            "plan": ({k: plan[k] for k in ("kind", "id", "version", "label")} if plan else None),
+            "adjustments_not_shown": sorted(f"{a.item} {a.period}" for a in (plan or {}).get("adjustments") or []
+                                            if a.period not in {y.label for y in fys})}
