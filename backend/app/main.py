@@ -22,6 +22,7 @@ from .routers import branding as branding_router
 from .routers import market as market_router
 from .routers import ops as ops_router
 from .routers import statements as statements_router
+from .routers import analytics as analytics_router
 from .routers import settings as settings_router
 from .routers import stocks, valuations, watchlist
 from .schemas import Health
@@ -125,7 +126,7 @@ def create_app() -> FastAPI:
     app.include_router(branding_router.public, prefix=API)
     secured = [Depends(current_principal)]
     for r in (auth_router.me_router, auth_router.admin, branding_router.admin, stocks.router, watchlist.router, valuations.router,
-              settings_router.router, market_router.router, ops_router.router, statements_router.router):
+              settings_router.router, market_router.router, ops_router.router, statements_router.router, analytics_router.router):
         app.include_router(r, prefix=API, dependencies=secured)
     return app
 

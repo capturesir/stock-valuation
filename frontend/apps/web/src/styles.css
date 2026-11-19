@@ -246,3 +246,28 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; 
 .tbl.std sup.mark-r { color: var(--sv-secondary-strong); font-weight: 700; }
 .linklike { border: 0; background: none; padding: 0; color: var(--sv-primary); cursor: pointer; font: inherit; text-decoration: underline; }
 .tbl.std th.ttm, .tbl.std td.ttm { background: var(--sv-track); }
+
+/* categorical series (comparison chart): fixed order, validated for colour-blind separation on these surfaces
+   (dataviz validator: light #FFFFFF, dark #161C25); lines 9–10 reuse slots 1–2 dashed */
+:root {
+  --sv-series-1: #2a78d6; --sv-series-2: #eb6834; --sv-series-3: #1baf7a; --sv-series-4: #eda100;
+  --sv-series-5: #e87ba4; --sv-series-6: #008300; --sv-series-7: #6250d6; --sv-series-8: #e34948;
+}
+:root[data-theme="dark"] {
+  --sv-series-1: #3987e5; --sv-series-2: #d95926; --sv-series-3: #199e70; --sv-series-4: #c98500;
+  --sv-series-5: #d55181; --sv-series-6: #0ca30c; --sv-series-7: #9085e9; --sv-series-8: #e66767;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sv-series-1: #3987e5; --sv-series-2: #d95926; --sv-series-3: #199e70; --sv-series-4: #c98500;
+    --sv-series-5: #d55181; --sv-series-6: #0ca30c; --sv-series-7: #9085e9; --sv-series-8: #e66767;
+  }
+}
+.cmp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.cmp-legend button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: none;
+  padding: 4px 8px; border-radius: var(--sv-radius-sm); cursor: pointer; color: var(--sv-ink-900); font: inherit; }
+.cmp-legend button[aria-pressed="true"] { border-color: var(--sv-line); background: var(--sv-track); font-weight: 600; }
+.cmp-swatch { width: 18px; height: 0; border-top: 3px solid; display: inline-block; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px; background: var(--sv-track); }
+.chip button { border: 0; background: none; cursor: pointer; padding: 0 2px; color: var(--sv-ink-700); font: inherit; }
+.chip button.on { color: var(--sv-secondary-strong); }

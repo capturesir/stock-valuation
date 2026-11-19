@@ -2743,6 +2743,92 @@
     }
    }
   },
+  "/api/v1/admin/market/check/{ticker}": {
+   "post": {
+    "tags": [
+     "market"
+    ],
+    "summary": "立即檢查一隻證券的完整性：按交易日曆找缺口並重抓；full=true 先重讀全部歷史（管理員）",
+    "operationId": "check_one_api_v1_admin_market_check__ticker__post",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "full",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "boolean",
+       "default": false,
+       "title": "Full"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "additionalProperties": true,
+         "title": "Response Check One Api V1 Admin Market Check  Ticker  Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/admin/market/update-all": {
    "post": {
     "tags": [
@@ -3921,6 +4007,750 @@
      }
     }
    }
+  },
+  "/api/v1/analytics/compare": {
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "走勢比較：最多 10 條線（股票或已保存組合），以起點 100 的總回報指數、相對強弱與指標（顯示貨幣）",
+    "operationId": "compare_api_v1_analytics_compare_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CompareIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CompareOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/analytics/compare/export": {
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "匯出走勢比較：Excel（走勢、指標、期間回報）或 CSV",
+    "operationId": "compare_export_api_v1_analytics_compare_export_post",
+    "parameters": [
+     {
+      "name": "format",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "xlsx",
+        "csv"
+       ],
+       "type": "string",
+       "default": "xlsx",
+       "title": "Format"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CompareIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/comparisons": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "我保存的走勢比較",
+    "operationId": "list_comparisons_api_v1_comparisons_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/SavedComparisonOut"
+         },
+         "title": "Response List Comparisons Api V1 Comparisons Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "保存走勢比較",
+    "operationId": "save_comparison_api_v1_comparisons_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SavedComparisonIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SavedComparisonOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/comparisons/{cid}": {
+   "put": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "更新已保存的走勢比較",
+    "operationId": "update_comparison_api_v1_comparisons__cid__put",
+    "parameters": [
+     {
+      "name": "cid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Cid"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SavedComparisonIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SavedComparisonOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "刪除已保存的走勢比較",
+    "operationId": "delete_comparison_api_v1_comparisons__cid__delete",
+    "parameters": [
+     {
+      "name": "cid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Cid"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/portfolios": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "我的投資組合",
+    "operationId": "list_portfolios_api_v1_portfolios_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/PortfolioOut"
+         },
+         "title": "Response List Portfolios Api V1 Portfolios Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "保存投資組合（權重自動換算為合計 100%）",
+    "operationId": "save_portfolio_api_v1_portfolios_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PortfolioIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PortfolioOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/portfolios/{pid}": {
+   "put": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "修改投資組合",
+    "operationId": "update_portfolio_api_v1_portfolios__pid__put",
+    "parameters": [
+     {
+      "name": "pid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Pid"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PortfolioIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PortfolioOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "刪除投資組合",
+    "operationId": "delete_portfolio_api_v1_portfolios__pid__delete",
+    "parameters": [
+     {
+      "name": "pid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Pid"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -4354,6 +5184,253 @@
      "severity"
     ],
     "title": "CheckFailure"
+   },
+   "CompareIn": {
+    "properties": {
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/CompareLine"
+      },
+      "type": "array",
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "Lines"
+     },
+     "benchmark": {
+      "type": "integer",
+      "maximum": 9.0,
+      "minimum": 0.0,
+      "title": "Benchmark",
+      "description": "lines 中作為 benchmark 的位置",
+      "default": 0
+     },
+     "range": {
+      "type": "string",
+      "enum": [
+       "1y",
+       "2y",
+       "3y",
+       "5y",
+       "10y",
+       "ytd",
+       "max",
+       "custom"
+      ],
+      "title": "Range",
+      "default": "3y"
+     },
+     "start": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start",
+      "description": "自訂起日（range=custom）"
+     },
+     "end": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "End",
+      "description": "自訂止日；預設為最新共同交易日"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 8
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency",
+      "description": "顯示貨幣；預設為用戶偏好（D7）"
+     },
+     "rf": {
+      "type": "number",
+      "maximum": 0.5,
+      "minimum": -0.05,
+      "title": "Rf",
+      "description": "無風險利率（年，0.04 = 4%）",
+      "default": 0.0
+     }
+    },
+    "type": "object",
+    "required": [
+     "lines"
+    ],
+    "title": "CompareIn"
+   },
+   "CompareLine": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "ticker",
+       "portfolio"
+      ],
+      "title": "Kind",
+      "default": "ticker"
+     },
+     "ref": {
+      "type": "string",
+      "maxLength": 40,
+      "title": "Ref",
+      "description": "代號（ticker）或已保存組合的編號（portfolio）"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ref"
+    ],
+    "title": "CompareLine"
+   },
+   "CompareLineOut": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "ref": {
+      "type": "string",
+      "title": "Ref"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "currency": {
+      "type": "string",
+      "title": "Currency",
+      "description": "原交易貨幣（已換算為顯示貨幣）"
+     },
+     "first_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "First Date"
+     },
+     "values": {
+      "items": {
+       "type": "number"
+      },
+      "type": "array",
+      "title": "Values",
+      "description": "以起點為 100 的總回報指數（股息再投資），與 dates 對應"
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "kind",
+     "ref",
+     "label",
+     "currency",
+     "values"
+    ],
+    "title": "CompareLineOut"
+   },
+   "CompareOut": {
+    "properties": {
+     "currency": {
+      "type": "string",
+      "title": "Currency"
+     },
+     "rf": {
+      "type": "number",
+      "title": "Rf"
+     },
+     "frequency": {
+      "type": "string",
+      "enum": [
+       "daily",
+       "weekly"
+      ],
+      "title": "Frequency",
+      "description": "計算回報指標用的頻率；跨交易所時改用每週回報（收市時間不同）"
+     },
+     "benchmark": {
+      "type": "string",
+      "title": "Benchmark"
+     },
+     "window": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Window"
+     },
+     "dates": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Dates"
+     },
+     "lines": {
+      "items": {
+       "$ref": "#/components/schemas/CompareLineOut"
+      },
+      "type": "array",
+      "title": "Lines"
+     },
+     "relative": {
+      "items": {
+       "$ref": "#/components/schemas/RelativeOut"
+      },
+      "type": "array",
+      "title": "Relative"
+     },
+     "metrics": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Metrics",
+      "description": "每條線的指標；相對 benchmark 的指標只限非 benchmark 的線"
+     },
+     "periods": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Periods",
+      "description": "每條線的期間回報（1m、3m、6m、ytd、1y、3y、5y；3y 與 5y 為年化）"
+     }
+    },
+    "type": "object",
+    "required": [
+     "currency",
+     "rf",
+     "frequency",
+     "benchmark",
+     "window",
+     "dates",
+     "lines",
+     "relative",
+     "metrics",
+     "periods"
+    ],
+    "title": "CompareOut"
    },
    "Coverage": {
     "properties": {
@@ -4862,6 +5939,27 @@
      "ai_configured"
     ],
     "title": "Health"
+   },
+   "Holding": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "maxLength": 24,
+      "title": "Ticker"
+     },
+     "weight": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "title": "Weight",
+      "description": "權重；可用百分比或小數，系統會換算成合計 100%"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "weight"
+    ],
+    "title": "Holding"
    },
    "Job": {
     "properties": {
@@ -5797,6 +6895,101 @@
     ],
     "title": "PlanTotal"
    },
+   "PortfolioIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "holdings": {
+      "items": {
+       "$ref": "#/components/schemas/Holding"
+      },
+      "type": "array",
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "Holdings"
+     },
+     "rebalance": {
+      "type": "string",
+      "enum": [
+       "none",
+       "monthly",
+       "quarterly",
+       "yearly"
+      ],
+      "title": "Rebalance",
+      "default": "none"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 2000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "holdings"
+    ],
+    "title": "PortfolioIn"
+   },
+   "PortfolioOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "holdings": {
+      "items": {
+       "$ref": "#/components/schemas/Holding"
+      },
+      "type": "array",
+      "title": "Holdings"
+     },
+     "rebalance": {
+      "type": "string",
+      "title": "Rebalance"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     },
+     "updated_at": {
+      "type": "string",
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "holdings",
+     "rebalance",
+     "updated_at"
+    ],
+    "title": "PortfolioOut"
+   },
    "Prefs": {
     "properties": {
      "display_currency": {
@@ -6079,6 +7272,28 @@
     ],
     "title": "RatioRow"
    },
+   "RelativeOut": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "values": {
+      "items": {
+       "type": "number"
+      },
+      "type": "array",
+      "title": "Values",
+      "description": "相對強弱：標的 ÷ benchmark，起點為 100"
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "values"
+    ],
+    "title": "RelativeOut"
+   },
    "RevisionOut": {
     "properties": {
      "ticker": {
@@ -6348,6 +7563,52 @@
      "methods"
     ],
     "title": "RunOut"
+   },
+   "SavedComparisonIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "settings": {
+      "$ref": "#/components/schemas/CompareIn"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "settings"
+    ],
+    "title": "SavedComparisonIn"
+   },
+   "SavedComparisonOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "settings": {
+      "$ref": "#/components/schemas/CompareIn"
+     },
+     "updated_at": {
+      "type": "string",
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "settings",
+     "updated_at"
+    ],
+    "title": "SavedComparisonOut"
    },
    "SecurityOut": {
     "properties": {

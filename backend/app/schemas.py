@@ -637,3 +637,81 @@ class StandardStatements(BaseModel):
     splits_applied: list[dict] = Field(default_factory=list, description="已套用的股份分拆（日期、比例），只計申報文件確認過的")
     years: list[StdYear]
     rows: list[StdRow]
+
+
+# ---------------------------------------------------------------- portfolio analysis (alpha.4)
+
+class CompareLine(BaseModel):
+    kind: Literal["ticker", "portfolio"] = "ticker"
+    ref: str = Field(max_length=40, description="代號（ticker）或已保存組合的編號（portfolio）")
+
+
+class CompareIn(BaseModel):
+    lines: list[CompareLine] = Field(min_length=1, max_length=10)
+    benchmark: int = Field(0, ge=0, le=9, description="lines 中作為 benchmark 的位置")
+    range: Literal["1y", "2y", "3y", "5y", "10y", "ytd", "max", "custom"] = "3y"
+    start: Optional[str] = Field(None, description="自訂起日（range=custom）")
+    end: Optional[str] = Field(None, description="自訂止日；預設為最新共同交易日")
+    currency: Optional[str] = Field(None, max_length=8, description="顯示貨幣；預設為用戶偏好（D7）")
+    rf: float = Field(0.0, ge=-0.05, le=0.5, description="無風險利率（年，0.04 = 4%）")
+
+
+class CompareLineOut(BaseModel):
+    key: str
+    kind: str
+    ref: str
+    label: str
+    currency: str = Field(description="原交易貨幣（已換算為顯示貨幣）")
+    first_date: Optional[str] = None
+    values: list[float] = Field(description="以起點為 100 的總回報指數（股息再投資），與 dates 對應")
+
+
+class RelativeOut(BaseModel):
+    key: str
+    values: list[float] = Field(description="相對強弱：標的 ÷ benchmark，起點為 100")
+
+
+class CompareOut(BaseModel):
+    currency: str
+    rf: float
+    frequency: Literal["daily", "weekly"] = Field(description="計算回報指標用的頻率；跨交易所時改用每週回報（收市時間不同）")
+    benchmark: str
+    window: dict
+    dates: list[str]
+    lines: list[CompareLineOut]
+    relative: list[RelativeOut]
+    metrics: list[dict] = Field(description="每條線的指標；相對 benchmark 的指標只限非 benchmark 的線")
+    periods: list[dict] = Field(description="每條線的期間回報（1m、3m、6m、ytd、1y、3y、5y；3y 與 5y 為年化）")
+
+
+class SavedComparisonIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    settings: CompareIn
+
+
+class SavedComparisonOut(BaseModel):
+    id: str
+    name: str
+    settings: CompareIn
+    updated_at: str
+
+
+class Holding(BaseModel):
+    ticker: str = Field(max_length=24)
+    weight: float = Field(gt=0, description="權重；可用百分比或小數，系統會換算成合計 100%")
+
+
+class PortfolioIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    holdings: list[Holding] = Field(min_length=1, max_length=10)
+    rebalance: Literal["none", "monthly", "quarterly", "yearly"] = "none"
+    notes: Optional[str] = Field(None, max_length=2000)
+
+
+class PortfolioOut(BaseModel):
+    id: str
+    name: str
+    holdings: list[Holding]
+    rebalance: str
+    notes: Optional[str] = None
+    updated_at: str

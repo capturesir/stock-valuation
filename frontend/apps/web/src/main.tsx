@@ -13,6 +13,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StockPage } from "./pages/StockPage";
 import { WatchlistPage } from "./pages/WatchlistPage";
+import { ComparePage } from "./pages/ComparePage";
 
 const qc = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: true, retry: 1, networkMode: "offlineFirst" } },
@@ -35,6 +36,7 @@ createRoot(document.getElementById("root")!).render(
               <Route index element={<WatchlistPage />} />
               <Route path="stock/:ticker" element={<StockPage />} />
               <Route path="stock/:ticker/:tab" element={<StockPage />} />
+              <Route path="compare" element={<ComparePage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="account" element={<AccountPage />} />
               <Route path="admin" element={<AdminPage />} />
