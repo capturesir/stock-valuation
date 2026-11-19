@@ -1,5 +1,5 @@
-import { ApiError, type OptimizeIn, type OptimizeOut } from "@sv/api-client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ApiError, type OptimizeIn, type OptimizeOut, type RecomputeOut } from "@sv/api-client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FrontierChart } from "../components/FrontierChart";
@@ -42,8 +42,21 @@ export function OptimizePage() {
     objective: obj === "mix" ? mix : { [obj]: 1 }, range, rebalance, currency: currency || undefined,
     rf: Number(rf) / 100 || 0, samples, seed, oos_fraction: oos,
   });
-  const run = useMutation({ mutationFn: () => api.optimize(body()), onMutate: () => setMsg(null) });
-  const r: OptimizeOut | undefined = run.data;
+  const run = useMutation({ mutationFn: () => api.optimize(body()), onMutate: () => { setMsg(null); setLoaded(null); setCheck(null); } });
+  const [loaded, setLoaded] = useState<{ id: string; name: string; result: OptimizeOut } | null>(null);
+  const [check, setCheck] = useState<RecomputeOut | null>(null);
+  const [scName, setScName] = useState("");
+  const r: OptimizeOut | undefined = loaded?.result ?? run.data;
+  const scenarios = useQuery({ queryKey: ["scenarios"], queryFn: api.scenarios });
+  const saveSc = useMutation({ mutationFn: () => api.saveScenario(scName.trim(), body()),
+                               onSuccess: (s) => { setLoaded({ id: s.id, name: s.name, result: s.result }); setMsg(t("opt.savedScenario", { name: s.name }));
+                                                   void qc.invalidateQueries({ queryKey: ["scenarios"] }); },
+                               onError: (e) => setMsg((e as Error).message) });
+  const open = useMutation({ mutationFn: (id: string) => api.scenario(id), onSuccess: (s) => { setLoaded({ id: s.id, name: s.name, result: s.result }); setCheck(null); } });
+  const recompute = useMutation({ mutationFn: (id: string) => api.recomputeScenario(id), onSuccess: (c) => setCheck(c),
+                                  onError: (e) => setMsg((e as Error).message) });
+  const dropSc = useMutation({ mutationFn: (id: string) => api.deleteScenario(id),
+                               onSuccess: () => { setLoaded(null); setCheck(null); void qc.invalidateQueries({ queryKey: ["scenarios"] }); } });
   const savePf = useMutation({
     mutationFn: () => api.savePortfolio({ name: name.trim(), rebalance: r!.rebalance as OptimizeIn["rebalance"],
                                           holdings: Object.entries(r!.weights).filter(([, w]) => w > 0).map(([ticker, weight]) => ({ ticker, weight })) }),
@@ -129,6 +142,46 @@ export function OptimizePage() {
       </section>
 
       {run.error && <div role="alert" className="banner err">{run.error instanceof ApiError ? run.error.message : String(run.error)}</div>}
+
+      <section className="card" aria-labelledby="opt-sc" style={{ gap: 8 }}>
+        <h2 id="opt-sc" style={{ fontSize: "var(--sv-fs-lg)" }}>{t("opt.scenarios")}</h2>
+        <span className="muted small">{t("opt.scenariosIntro")}</span>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <input value={scName} onChange={(e) => setScName(e.target.value)} placeholder={t("opt.scenarioName")} maxLength={80} aria-label={t("opt.scenarioName")} />
+          <button className="btn secondary small" type="button" disabled={!scName.trim() || saveSc.isPending} onClick={() => saveSc.mutate()}>
+            {saveSc.isPending ? t("opt.running") : t("opt.saveScenario")}</button>
+        </div>
+        {(scenarios.data?.length ?? 0) > 0 && (
+          <div className="tbl-wrap">
+            <table className="tbl" style={{ minWidth: 560 }}>
+              <thead><tr><th scope="col" className="l">{t("cmp.name")}</th><th scope="col" className="l">{t("opt.window")}</th>
+                <th scope="col" className="l">{t("opt.bestTitle")}</th><th scope="col" /></tr></thead>
+              <tbody>{scenarios.data!.map((s) => (
+                <tr key={s.id} className={loaded?.id === s.id ? "total" : ""}>
+                  <th scope="row" className="l">{s.name}</th>
+                  <td className="l">{s.window_start} – {s.window_end}</td>
+                  <td className="l" style={{ whiteSpace: "normal" }}>{Object.entries(s.weights).filter(([, w]) => w > 0).map(([tk, w]) => `${tk} ${w}%`).join("、")}</td>
+                  <td style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                    <button className="btn secondary small" type="button" onClick={() => open.mutate(s.id)}>{t("opt.open")}</button>
+                    <button className="btn secondary small" type="button" disabled={recompute.isPending} onClick={() => { open.mutate(s.id); recompute.mutate(s.id); }}>{t("opt.recompute")}</button>
+                    <button className="btn secondary small" type="button" onClick={() => dropSc.mutate(s.id)}>{t("common.remove")}</button>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+        {check && (
+          <div role="status" className={`banner ${check.identical ? "info" : "warn"}`} style={{ flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+            <strong>{t(check.identical ? "opt.check.identical" : check.same_data ? "opt.check.differentSame" : "opt.check.dataChanged")}</strong>
+            <span className="small">{t("opt.check.detail", { a: String(check.original.data_version), b: String(check.recomputed.data_version),
+                                                               sa: String(check.original.system_version), sb: String(check.recomputed.system_version) })}</span>
+            {Object.keys(check.weight_changes ?? {}).length > 0 && <span className="small">{Object.entries(check.weight_changes ?? {})
+              .map(([tk, [a, b]]) => `${tk} ${a}% → ${b}%`).join("、")}</span>}
+          </div>
+        )}
+        {loaded && <span className="small">{t("opt.showingScenario", { name: loaded.name })}</span>}
+      </section>
 
       {r && (
         <>

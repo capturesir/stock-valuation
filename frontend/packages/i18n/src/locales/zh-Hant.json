@@ -775,5 +775,18 @@
   "opt.frontier": "效率前緣",
   "opt.assets": "單一資產",
   "opt.best": "最佳比例",
-  "opt.topTitle": "前幾名候選組合"
+  "opt.topTitle": "前幾名候選組合",
+  "opt.scenarios": "場景",
+  "opt.scenariosIntro": "保存場景時，系統會重新計算一次，並記下輸入、實際使用的數據期間、數據指紋、隨機種子、結果與系統版本；之後可隨時以同一期間重算核對。",
+  "opt.scenarioName": "場景名稱",
+  "opt.saveScenario": "保存場景（以目前設定）",
+  "opt.savedScenario": "已保存場景「{name}」。",
+  "opt.window": "數據期間",
+  "opt.open": "開啟",
+  "opt.recompute": "重算核對",
+  "opt.check.identical": "✓ 重算結果完全相同：數據、權重與得分都一致。",
+  "opt.check.differentSame": "數據相同，但結果不同（系統版本可能已更新）。",
+  "opt.check.dataChanged": "期間內的數據已被修訂（例如來源修正了某日價格），所以結果可能不同。",
+  "opt.check.detail": "數據指紋 {a} → {b}；系統版本 {sa} → {sb}",
+  "opt.showingScenario": "下方顯示的是已保存場景「{name}」的結果。"
 }

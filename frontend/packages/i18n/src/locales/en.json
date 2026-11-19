@@ -775,5 +775,18 @@
   "opt.frontier": "Efficient frontier",
   "opt.assets": "Single assets",
   "opt.best": "Best",
-  "opt.topTitle": "Top candidates"
+  "opt.topTitle": "Top candidates",
+  "opt.scenarios": "Scenarios",
+  "opt.scenariosIntro": "Saving a scenario computes it once more and records the inputs, the exact data window, the data fingerprint, the seed, the result and the system version; you can recompute it over the same window at any time.",
+  "opt.scenarioName": "Scenario name",
+  "opt.saveScenario": "Save scenario (current settings)",
+  "opt.savedScenario": "Saved scenario “{name}”.",
+  "opt.window": "Data window",
+  "opt.open": "Open",
+  "opt.recompute": "Recompute and check",
+  "opt.check.identical": "✓ Recomputed identically: same data, weights and score.",
+  "opt.check.differentSame": "Same data but a different result (the system version may have changed).",
+  "opt.check.dataChanged": "Data in the window has been revised (e.g. the source corrected a price), so the result may differ.",
+  "opt.check.detail": "Data {a} → {b}; system {sa} → {sb}",
+  "opt.showingScenario": "Showing the saved scenario “{name}” below."
 }

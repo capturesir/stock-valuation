@@ -761,3 +761,34 @@ class OptimizeOut(BaseModel):
     data_version: str = Field(description="所用數據的指紋；相同指紋、相同輸入，結果必定相同")
     system_version: str
     bounds: list[dict]
+
+
+class ScenarioIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    inputs: OptimizeIn
+
+
+class ScenarioSummary(BaseModel):
+    id: str
+    name: str
+    created_at: str
+    window_start: str
+    window_end: str
+    data_version: str
+    system_version: str
+    weights: dict[str, int]
+    objective: dict
+
+
+class ScenarioOut(ScenarioSummary):
+    inputs: dict
+    result: OptimizeOut
+
+
+class RecomputeOut(BaseModel):
+    identical: bool = Field(description="權重與得分完全相同")
+    same_data: bool = Field(description="數據指紋相同（期間內沒有任何價格被修訂）")
+    same_system: bool
+    original: dict
+    recomputed: dict
+    weight_changes: dict[str, list[int]] = Field(default_factory=dict, description="權重有變的資產：[原本, 重算]")

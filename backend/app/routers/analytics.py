@@ -12,9 +12,9 @@ from .. import limits
 from ..auth import require_user
 from ..db import get_db
 from ..i18n import AppError, http_error, lang_dep
-from ..models import Comparison, Portfolio, User
-from ..schemas import (CompareIn, CompareOut, OptimizeIn, OptimizeOut, PortfolioIn, PortfolioOut, SavedComparisonIn,
-                       SavedComparisonOut)
+from ..models import Comparison, Portfolio, Scenario, User
+from ..schemas import (CompareIn, CompareOut, OptimizeIn, OptimizeOut, PortfolioIn, PortfolioOut, RecomputeOut, SavedComparisonIn,
+                       SavedComparisonOut, ScenarioIn, ScenarioOut, ScenarioSummary)
 from ..services import analytics
 from .common import iso, ticker_or_400
 
@@ -164,3 +164,60 @@ def optimize(body: OptimizeIn, request: Request, user: User = Depends(require_us
     lim = limits.get(db)
     limits.hit("prices", limits.who(request, user.id), lim["prices_per_minute"], 60)
     return run_optimize(body, user, db)
+
+
+# ------------------------------------------------------------------ saved scenarios (reproducible optimisations)
+
+def _sc_summary(s: Scenario) -> dict:
+    return {"id": s.id, "name": s.name, "created_at": iso(s.created_at), "window_start": s.window_start.isoformat(),
+            "window_end": s.window_end.isoformat(), "data_version": s.data_version, "system_version": s.system_version,
+            "weights": s.result.get("weights", {}), "objective": s.inputs.get("objective", {})}
+
+
+@router.get("/scenarios", response_model=list[ScenarioSummary], summary="我保存的最佳化場景")
+def list_scenarios(user: User = Depends(require_user), db: Session = Depends(get_db)) -> list[dict]:
+    return [_sc_summary(s) for s in db.scalars(select(Scenario).where(Scenario.user_id == user.id).order_by(Scenario.created_at.desc()))]
+
+
+@router.post("/scenarios", response_model=ScenarioOut, status_code=201,
+             summary="保存最佳化場景：伺服器重新計算一次並保存輸入、實際數據期間、數據指紋、種子、結果與系統版本")
+def save_scenario(body: ScenarioIn, request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)) -> dict:
+    lim = limits.get(db)
+    limits.hit("prices", limits.who(request, user.id), lim["prices_per_minute"], 60)
+    result = run_optimize(body.inputs, user, db)
+    inputs = {**body.inputs.model_dump(), "currency": result["currency"]}
+    s = Scenario(user_id=user.id, name=body.name.strip(), inputs=inputs,
+                 window_start=dt.date.fromisoformat(result["window"]["start"]), window_end=dt.date.fromisoformat(result["window"]["end"]),
+                 data_version=result["data_version"], system_version=result["system_version"], result=result)
+    db.add(s)
+    db.flush()
+    return {**_sc_summary(s), "inputs": s.inputs, "result": s.result}
+
+
+@router.get("/scenarios/{sid}", response_model=ScenarioOut, summary="一個已保存場景的完整輸入與結果")
+def get_scenario(sid: str, user: User = Depends(require_user), db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+    s = _own(db, Scenario, sid, user, "scenario_not_found", lang)
+    return {**_sc_summary(s), "inputs": s.inputs, "result": s.result}
+
+
+@router.delete("/scenarios/{sid}", status_code=204, summary="刪除場景")
+def delete_scenario(sid: str, user: User = Depends(require_user), db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> None:
+    db.delete(_own(db, Scenario, sid, user, "scenario_not_found", lang))
+
+
+@router.post("/scenarios/{sid}/recompute", response_model=RecomputeOut,
+             summary="以保存的輸入、同一數據期間與種子重算，核對結果是否完全相同（數據若被修訂會指出）")
+def recompute_scenario(sid: str, request: Request, user: User = Depends(require_user), db: Session = Depends(get_db),
+                       lang: str = Depends(lang_dep)) -> dict:
+    lim = limits.get(db)
+    limits.hit("prices", limits.who(request, user.id), lim["prices_per_minute"], 60)
+    s = _own(db, Scenario, sid, user, "scenario_not_found", lang)
+    inputs = OptimizeIn(**{**s.inputs, "range": "custom", "start": s.window_start.isoformat(), "end": s.window_end.isoformat()})
+    now = run_optimize(inputs, user, db)
+    old_w, new_w = s.result.get("weights", {}), now["weights"]
+    changes = {t: [old_w.get(t, 0), new_w.get(t, 0)] for t in sorted(set(old_w) | set(new_w)) if old_w.get(t, 0) != new_w.get(t, 0)}
+    pick = lambda r: {"weights": r["weights"], "score": r["score"], "metrics": r["metrics"],          # noqa: E731
+                      "data_version": r["data_version"], "system_version": r["system_version"], "window": r["window"]}
+    return {"identical": not changes and now["score"] == s.result.get("score"),
+            "same_data": now["data_version"] == s.data_version, "same_system": now["system_version"] == s.system_version,
+            "original": pick(s.result), "recomputed": pick(now), "weight_changes": changes}
