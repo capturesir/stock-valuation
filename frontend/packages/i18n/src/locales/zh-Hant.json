@@ -848,5 +848,11 @@
   "adj.mineIs": "我的是 {v}",
   "adj.merge": "合併所選 {n} 項",
   "adj.markReviewed": "已查看，保留我的方案",
-  "adj.mergeNote": "合併中央方案 v{v}"
+  "adj.mergeNote": "合併中央方案 v{v}",
+  "run.statements": "財報來源",
+  "run.source.sec_standard": "SEC 標準層",
+  "run.source.yahoo": "Yahoo 財報",
+  "run.source.builtin": "內建規格（人工覆核）",
+  "run.plan.central": "中央方案 v{v}",
+  "run.plan.personal": "{name} 的個人方案 v{v}"
 }

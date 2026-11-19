@@ -32,12 +32,17 @@ def load_config(path: Optional[Path] = None) -> dict:
 
 def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
                valuation_date: str = "2026-11-11", progress=None,
-               should_stop=None, skip_extract: bool = False, apply_adjustments: bool = True) -> dict:
+               should_stop=None, skip_extract: bool = False, apply_adjustments: bool = True,
+               statements: Optional[dict] = None) -> dict:
     """Fetch -> assumptions -> engine -> verify -> Excel / markdown.
 
     ``progress`` is an optional callback ``(step_key, activity=None, skip=None)``
     used by the web UI to show which step is running. The activity strings are
     written locally and cost no model tokens.
+
+    ``statements`` (v2, US filers): the standardised statements from the SEC standard layer with the
+    chosen adjustment plan applied; the generic spec then reads them instead of Yahoo's statements
+    (``standard_input.py``). The built-in specs (NVDA, 1830.HK) are not affected.
     """
     cfg = cfg or load_config()
     ticker = _norm(ticker)
@@ -79,6 +84,13 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     _step("fundamentals", "正在讀取年度財報、估值倍數與分析師預測…")
     fund = yahoo.fundamentals(ticker)
     (case_dir / "yahoo_fundamentals.json").write_text(json.dumps(fund, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
+    statement_source = {"source": "yahoo"}
+    if statements is not None and ticker not in ("NVDA", "1830.HK"):
+        from . import standard_input
+        is_a, bs_a, cf_a, std_gaps, statement_source = standard_input.to_blocks(statements, fund)
+        fund = {**fund, "is_a": is_a, "bs_a": bs_a, "cf_a": cf_a}
+        snap["data_gaps"].extend(std_gaps)
+    snap["statement_source"] = statement_source
     info = fund.get("info") or {}
     snap["company_name"] = info.get("longName") or info.get("shortName")
     snap["beta_reg"] = info.get("beta")
@@ -272,8 +284,14 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     # R16: what the provider actually reported for this run (retries included).
     outj["llm_usage"] = client.usage_summary()
     outj["adjustments_applied"] = applied_adjustments
-    outj["adjustment_plan"] = ({"plan": "v1_shared_file", "items": len(applied_adjustments)} if apply_adjustments
-                               else {"plan": "system_default", "note": "未套用財報調整（系統預設）；中央與個人調整方案開發中（決定 D12）"})
+    std_plan = (snap.get("statement_source") or {}).get("plan")
+    if apply_adjustments:
+        outj["adjustment_plan"] = {"plan": "v1_shared_file", "items": len(applied_adjustments)}
+    elif std_plan:          # v2: the plan was applied to the standard layer before the spec was built (D12)
+        outj["adjustment_plan"] = {"plan": std_plan["kind"], "id": std_plan["id"], "version": std_plan["version"]}
+    else:
+        outj["adjustment_plan"] = {"plan": "system_default", "note": "未套用財報調整（系統預設）"}
+    outj["statement_source"] = snap.get("statement_source") or {"source": "yahoo"}
     Path(result["path"]).write_text(
         json.dumps(outj, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     # write assumptions csv

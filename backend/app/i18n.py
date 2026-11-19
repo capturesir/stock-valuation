@@ -96,6 +96,8 @@ MESSAGES: dict[str, dict[str, str]] = {
     "adjustments_too_many": {"zh-Hant": "一個方案最多 {n} 項調整。", "zh-Hans": "一个方案最多 {n} 项调整。", "en": "A plan may have at most {n} adjustments."},
     "plan_conflict": {"zh-Hant": "方案已被更新至第 {version} 版，請重新載入後再修改。", "zh-Hans": "方案已被更新至第 {version} 版，请重新加载后再修改。",
                       "en": "The plan has been updated to version {version}; reload it before changing it."},
+    "ticker_busy": {"zh-Hant": "{ticker} 正以另一個調整方案估值，請稍後再試。", "zh-Hans": "{ticker} 正以另一个调整方案估值，请稍后再试。",
+                    "en": "{ticker} is being valued with another adjustment plan; try again shortly."},
     "plan_not_found": {"zh-Hant": "找不到此調整方案或版本。", "zh-Hans": "找不到此调整方案或版本。", "en": "Adjustment plan or version not found."},
     "portfolio_not_found": {"zh-Hant": "找不到此投資組合。", "zh-Hans": "找不到此投资组合。", "en": "Portfolio not found."},
     "comparison_not_found": {"zh-Hant": "找不到此比較。", "zh-Hans": "找不到此比较。", "en": "Comparison not found."},

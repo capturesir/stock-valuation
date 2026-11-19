@@ -108,7 +108,8 @@ def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str =
                 source: str = "v2", verify_pass: Optional[bool] = None, calc_path: Optional[str] = None,
                 xlsx_path: Optional[str] = None, run_at: Optional[dt.datetime] = None,
                 ai_cost: float = 0.0, tokens_in: int = 0, tokens_out: int = 0,
-                valuation_date: Optional[str] = None, requested_by: Optional[str] = None) -> Run:
+                valuation_date: Optional[str] = None, requested_by: Optional[str] = None,
+                plan: Optional[dict] = None) -> Run:
     """``valuation_date`` is the day the run was made for. Built-in specs (NVDA, 1830.HK) carry a
     fixed assumption-review date in ``calc["valuation_date"]``, which must not stand in for it."""
     base = calc.get("fair_value_per_share")
@@ -125,6 +126,9 @@ def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str =
         ai_cost_usd=ai_cost, ai_tokens_in=tokens_in, ai_tokens_out=tokens_out,
         calc_json_path=calc_path, xlsx_path=xlsx_path, data_gaps=calc.get("data_gaps") or [],
         requested_by=requested_by,
+        statement_source=(calc.get("statement_source") or {}).get("source") or ("builtin" if calc.get("ticker") in BUILTIN else "yahoo"),
+        ruleset_version=(calc.get("statement_source") or {}).get("ruleset_version"),
+        adjustment_plan=plan, plan_key=plan_key(plan),
     )
     if run_at is not None:
         # store UTC so every row reads back the same way, whatever offset the source used
@@ -157,6 +161,53 @@ def _usage_by_task(usage: dict) -> dict[str, dict]:
         else:
             agg["reported"] = False
     return out
+
+
+BUILTIN = ("NVDA", "1830.HK")          # hand-verified specs: their numbers are fixed in name_specs.py
+
+
+def plan_key(plan: Optional[dict]) -> str:
+    """Part of what makes two valuations the same (D12): ticker, date, AI mode and this."""
+    return f"{plan['kind']}:{plan['id']}:v{plan['version']}" if plan else "system_default"
+
+
+def resolve_plan(db: Session, ticker: str, user_id: Optional[str], choice: str) -> Optional[dict]:
+    """The adjustment plan a valuation will use, or None (system default, or the statements are not
+    from the SEC standard layer: non-US, not fetched yet, a bank or insurer template, or a built-in spec)."""
+    from libs.sv_data.standard import template_for_sic
+
+    from ..models import User
+    from . import adjustments, statements
+
+    filer = statements.filer_for(db, ticker)
+    if ticker in BUILTIN or filer is None or not filer.facts or template_for_sic(filer.sic) != "general":
+        return None
+    user = db.get(User, user_id) if user_id else None
+    if user is None:
+        choice = "central" if choice in ("auto", "central") else "none"
+        user = User(id="", display_name="")
+    p = adjustments.chosen(db, ticker, user, choice)
+    return {k: p[k] for k in ("kind", "id", "version", "label")} if p else None
+
+
+def statements_input(db: Session, ticker: str, plan: Optional[dict]) -> Optional[dict]:
+    """Annual standardised statements (with exactly that plan version applied) for the engine, or None
+    when the valuation keeps reading Yahoo's statements."""
+    from libs.sv_data.standard import template_for_sic
+
+    from ..models import AdjustmentPlan
+    from . import adjustments, statements
+
+    filer = statements.filer_for(db, ticker)
+    if ticker in BUILTIN or filer is None or not filer.facts or template_for_sic(filer.sic) != "general":
+        return None
+    applied = None
+    if plan:
+        row = db.get(AdjustmentPlan, plan["id"])
+        ver = adjustments.version_row(db, row, plan["version"]) if row else None
+        applied = {**plan, "adjustments": adjustments.to_adjustments(adjustments.rows(db, ver))} if ver else None
+    return {"ticker": ticker, **statements.standard_statements(db, filer, years=10, ticker=ticker, period="annual",
+                                                               plan=applied)}
 
 
 def execute(job_id: str, payload: dict) -> None:
@@ -199,12 +250,20 @@ def execute(job_id: str, payload: dict) -> None:
     price = {"model": model, "input": 0.0, "cached_input": 0.0, "output": 0.0} if local else pricing.find_price(model, prices)
     use_llm = bool(payload.get("use_llm"))
     status, error, result = "done", None, None
+    plan = job.get("plan")
+    try:
+        with session() as db:
+            std_input = statements_input(db, job["ticker"], plan)
+    except Exception:          # the standard layer must never stop a valuation: Yahoo's statements still work
+        traceback.print_exc()
+        std_input = None
 
     try:
         result = run_ticker(
             job["ticker"], cfg=cfg, use_llm=use_llm, valuation_date=job["valuation_date"],
             progress=progress, should_stop=lambda: st.is_cancelled(job_id), skip_extract=True,
-            apply_adjustments=False,      # never the shared v1 file (D12); plans arrive in alpha.3
+            apply_adjustments=False,      # never the shared v1 file (D12): plans are applied to the standard layer
+            statements=std_input,
         )
     except ValuationCancelled:
         status, error = "cancelled", "用戶已停止估值（已完成的步驟保留）"
@@ -256,7 +315,8 @@ def execute(job_id: str, payload: dict) -> None:
             run = persist_run(db, calc, status="done", ai_mode=job["mode"], trigger=payload.get("trigger") or "manual",
                               verify_pass=result.get("verify_pass"), calc_path=calc_path,
                               xlsx_path=xlsx_path, ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out,
-                              valuation_date=job["valuation_date"], requested_by=payload.get("requested_by"))
+                              valuation_date=job["valuation_date"], requested_by=payload.get("requested_by"),
+                              plan=plan if std_input is not None else None)
         else:
             run = Run(ticker=job["ticker"], valuation_date=job["valuation_date"], status=status,
                       requested_by=payload.get("requested_by"),

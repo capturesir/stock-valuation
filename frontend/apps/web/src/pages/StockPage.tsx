@@ -171,6 +171,12 @@ export function StockPage() {
               <div><span className="muted small">{t("stock.g")}</span><strong>{f.pct(latest.terminal_g, 2, false)}</strong></div>
               <div><span className="muted small">{t("stock.verify")}</span><strong>{latest.verify_pass == null ? "—" : t(latest.verify_pass ? "stock.verify.pass" : "stock.verify.fail")}</strong></div>
               <div><span className="muted small">{t("history.col.mode")}</span><strong>{t(`run.mode.${latest.ai_mode}`)}</strong></div>
+              <div><span className="muted small">{t("run.statements")}</span>
+                <strong>{t(`run.source.${latest.statement_source ?? "yahoo"}`)}{latest.ruleset_version ? ` · ${latest.ruleset_version}` : ""}</strong></div>
+              {latest.statement_source === "sec_standard" && (
+                <div><span className="muted small">{t("adj.plan")}</span>
+                  <strong>{planText(latest.adjustment_plan as { kind: string; version: number; label: string } | null | undefined, t)}</strong></div>
+              )}
             </div>
           </section>
         </>
@@ -212,4 +218,12 @@ export function StockPage() {
       {drawer && <RunDrawer ticker={ticker} onClose={() => setDrawer(false)} />}
     </main>
   );
+}
+
+
+/** "Central plan v3", "Ann's personal plan v5" or "System default" (D12: shared results say whose plan). */
+function planText(p: { kind: string; version: number; label: string } | null | undefined, t: (k: string, v?: Record<string, string | number>) => string) {
+  if (!p) return t("adj.using.none");
+  if (p.kind === "central") return t("run.plan.central", { v: p.version });
+  return t("run.plan.personal", { name: p.label.replace(/^personal:/, "").replace(/ v\d+$/, ""), v: p.version });
 }

@@ -343,9 +343,12 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     code = market_code(ticker)
     mk = MARKET_DEFAULTS[code]
     gaps: list = list(snap.get("data_gaps") or [])
+    from_sec = (snap.get("statement_source") or {}).get("source") == "sec_standard"
     gaps.append(
-        "本檔為【自動建立的通用規格】：全部數字取自 Yahoo 財報與 Damodaran 檔案，未經人工逐項覆核；"
-        "引用前請自行核對年報與最新公告，並優先以內建規格（NVDA／1830.HK）的標準重做。"
+        ("本檔為【自動建立的通用規格】：財報數字取自 SEC 標準層（見上），市場數據與預測取自 Yahoo，行業參數取自 Damodaran 檔案；"
+         if from_sec else
+         "本檔為【自動建立的通用規格】：全部數字取自 Yahoo 財報與 Damodaran 檔案，")
+        + "未經人工逐項覆核；引用前請自行核對年報與最新公告，並優先以內建規格（NVDA／1830.HK）的標準重做。"
     )
 
     is_a, bs_a, cf_a = fund.get("is_a") or {}, fund.get("bs_a") or {}, fund.get("cf_a") or {}

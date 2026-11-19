@@ -19,7 +19,7 @@ from ..models import Run
 from ..i18n import http_error, lang_dep
 from ..jobs import enqueue, new_job, store, with_position
 from ..schemas import Job, Mode, Plan, ValuateIn
-from ..services import settings_store
+from ..services import settings_store, valuation
 from ..services.valuation import build_steps
 from .common import iso, ticker_or_400, today
 
@@ -68,9 +68,13 @@ async def start(body: ValuateIn, request: Request, response: Response, who: Prin
     st = store()
     active = st.active()
     uid = who.user.id if who.user else None
-    # 1. someone is already valuing this ticker: follow that job instead of starting a second one
+    plan = valuation.resolve_plan(db, t, uid, body.plan)
+    key = valuation.plan_key(plan)
+    # 1. someone is already valuing this ticker: follow that job (same adjustment plan version) instead of a second one
     same = next((j for j in active if j["ticker"] == t), None)
     if same is not None:
+        if valuation.plan_key(same.get("plan")) != key:
+            raise http_error(409, "ticker_busy", lang, ticker=t)
         response.status_code = 200
         return dict(with_position(same, active), joined=True)
     lim = limits.get(db)
@@ -85,7 +89,7 @@ async def start(body: ValuateIn, request: Request, response: Response, who: Prin
     if not body.force and lim["revalue_cooldown_hours"] > 0:
         since = dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=lim["revalue_cooldown_hours"])
         recent = db.scalars(select(Run).where(Run.ticker == t, Run.status == "done", Run.valuation_date == vdate,
-                                              Run.ai_mode == body.mode, Run.run_at >= since)
+                                              Run.ai_mode == body.mode, Run.plan_key == key, Run.run_at >= since)
                             .order_by(Run.run_at.desc()).limit(1)).first()
         if recent is not None:
             raise HTTPException(status_code=409, detail={
@@ -108,6 +112,7 @@ async def start(body: ValuateIn, request: Request, response: Response, who: Prin
     job = new_job(t, body.mode, vdate, tasks, build_steps(tasks),
                   estimate=p["total"] if use_llm else {**p["total"], "cost_usd": 0, "cost_low_usd": 0, "cost_high_usd": 0},
                   budget_usd=p["budget_per_run_usd"], note=note, requested_by=uid)
+    job["plan"] = plan
     st.put(job)
     await enqueue(job, {"use_llm": use_llm, "trigger": "manual", "requested_by": uid})
     return with_position(st.get(job["id"]) or job)

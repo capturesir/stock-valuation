@@ -1753,6 +1753,8 @@ export interface components {
             queue_position?: number | null;
             /** Requested By */
             requested_by?: string | null;
+            /** @description 本次估值套用的調整方案與版本（D12）；空值＝系統預設或財報不是取自 SEC 標準層 */
+            plan?: components["schemas"]["PlanRef"] | null;
         };
         /** JobStep */
         JobStep: {
@@ -2412,6 +2414,23 @@ export interface components {
              * @default []
              */
             data_gaps: string[];
+            /**
+             * Statement Source
+             * @description 財報來源：sec_standard（SEC 標準層）｜yahoo｜builtin（內建規格）
+             */
+            statement_source?: string | null;
+            /**
+             * Ruleset Version
+             * @description SEC 標準層的規則版本（含公司覆蓋）
+             */
+            ruleset_version?: string | null;
+            /**
+             * Adjustment Plan
+             * @description 套用的調整方案 {kind, id, version, label}；空值＝系統預設
+             */
+            adjustment_plan?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** SavedComparisonIn */
         SavedComparisonIn: {
@@ -3109,10 +3128,17 @@ export interface components {
             budget_usd?: number | null;
             /**
              * Force
-             * @description 同一代號、日期、AI 模式近期已估值時仍要重算
+             * @description 同一代號、日期、AI 模式、調整方案版本近期已估值時仍要重算
              * @default false
              */
             force: boolean;
+            /**
+             * Plan
+             * @description 美股財報套用的調整方案（D12）：auto＝我的個人方案 → 中央方案 → 不調整
+             * @default auto
+             * @enum {string}
+             */
+            plan: "auto" | "central" | "personal" | "none";
         };
         /** WatchlistEntry */
         WatchlistEntry: {

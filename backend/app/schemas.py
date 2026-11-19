@@ -53,6 +53,9 @@ class RunOut(BaseModel):
     has_excel: bool
     methods: list[MethodValue]
     data_gaps: list[str] = []
+    statement_source: Optional[str] = Field(None, description="財報來源：sec_standard（SEC 標準層）｜yahoo｜builtin（內建規格）")
+    ruleset_version: Optional[str] = Field(None, description="SEC 標準層的規則版本（含公司覆蓋）")
+    adjustment_plan: Optional[dict] = Field(None, description="套用的調整方案 {kind, id, version, label}；空值＝系統預設")
 
 
 class StockValuations(BaseModel):
@@ -180,7 +183,9 @@ class ValuateIn(BaseModel):
     tasks: Optional[list[str]] = Field(None, description="勾選的 AI 任務（例如 [\"T3\"]）；省略＝該模式的預設")
     valuation_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     budget_usd: Optional[float] = Field(None, ge=0, description="本次上限；省略＝設定頁的每次上限")
-    force: bool = Field(False, description="同一代號、日期、AI 模式近期已估值時仍要重算")
+    force: bool = Field(False, description="同一代號、日期、AI 模式、調整方案版本近期已估值時仍要重算")
+    plan: Literal["auto", "central", "personal", "none"] = Field(
+        "auto", description="美股財報套用的調整方案（D12）：auto＝我的個人方案 → 中央方案 → 不調整")
 
 
 class JobStep(BaseModel):
@@ -196,6 +201,13 @@ class JobStep(BaseModel):
     tokens_in: Optional[int] = None
     tokens_out: Optional[int] = None
     cost_usd: Optional[float] = None
+
+
+class PlanRef(BaseModel):
+    kind: Literal["central", "personal"]
+    id: str
+    version: int
+    label: str
 
 
 class Job(BaseModel):
@@ -223,6 +235,7 @@ class Job(BaseModel):
     joined: bool = Field(False, description="同一代號已在估值：此回應是加入那個工作，而非新開一個")
     queue_position: Optional[int] = Field(None, description="排隊中時，前面還有幾個工作＋1")
     requested_by: Optional[str] = None
+    plan: Optional[PlanRef] = Field(None, description="本次估值套用的調整方案與版本（D12）；空值＝系統預設或財報不是取自 SEC 標準層")
 
 
 # ---------------------------------------------------------------- settings / usage
@@ -643,13 +656,6 @@ class ShareClassRow(BaseModel):
     label: str
     item: Literal["eps_basic", "eps_diluted"]
     cells: list[Optional[ShareClassCell]]
-
-
-class PlanRef(BaseModel):
-    kind: Literal["central", "personal"]
-    id: str
-    version: int
-    label: str
 
 
 class StandardStatements(BaseModel):
