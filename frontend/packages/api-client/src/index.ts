@@ -46,6 +46,8 @@ export type FiledConceptOut = S["FiledConceptOut"];
 export type FiledFactOut = S["FiledFactOut"];
 export type StandardStatements = S["StandardStatements"];
 export type CompareIn = S["CompareIn"];
+export type OptimizeIn = S["OptimizeIn"];
+export type OptimizeOut = S["OptimizeOut"];
 export type CompareOut = S["CompareOut"];
 export type SavedComparisonOut = S["SavedComparisonOut"];
 export type PortfolioIn = S["PortfolioIn"];
@@ -155,6 +157,7 @@ export function createClient(cfg: ClientConfig = {}) {
       req<StatementsSyncResult>("POST", `/admin/statements/sync/${enc(ticker)}${q({ force: force ? "true" : undefined })}`),
     filer: (ticker: string) => req<FilerOut>("GET", `/stocks/${enc(ticker)}/filer`),
     compare: (body: CompareIn) => req<CompareOut>("POST", "/analytics/compare", body),
+    optimize: (body: OptimizeIn) => req<OptimizeOut>("POST", "/analytics/optimize", body),
     compareExport: (body: CompareIn, format: "xlsx" | "csv") => reqBlob(`/analytics/compare/export${q({ format })}`, body),
     comparisons: () => req<SavedComparisonOut[]>("GET", "/comparisons"),
     saveComparison: (name: string, settings: CompareIn, id?: string) =>

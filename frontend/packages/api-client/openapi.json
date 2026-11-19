@@ -4751,6 +4751,81 @@
      }
     }
    }
+  },
+  "/api/v1/analytics/optimize": {
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "投資組合最佳化：上下限、1% 單位、得分條件、隨機抽樣＋SLSQP（固定種子）、效率前緣、樣本外檢驗",
+    "operationId": "optimize_api_v1_analytics_optimize_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/OptimizeIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/OptimizeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -6657,6 +6732,344 @@
      "queue"
     ],
     "title": "OpsStatus"
+   },
+   "OptimizeAsset": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "maxLength": 24,
+      "title": "Ticker"
+     },
+     "min": {
+      "type": "integer",
+      "maximum": 100.0,
+      "minimum": 0.0,
+      "title": "Min",
+      "description": "最低權重（%）",
+      "default": 0
+     },
+     "max": {
+      "type": "integer",
+      "maximum": 100.0,
+      "minimum": 0.0,
+      "title": "Max",
+      "description": "最高權重（%）",
+      "default": 100
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker"
+    ],
+    "title": "OptimizeAsset"
+   },
+   "OptimizeIn": {
+    "properties": {
+     "assets": {
+      "items": {
+       "$ref": "#/components/schemas/OptimizeAsset"
+      },
+      "type": "array",
+      "maxItems": 10,
+      "minItems": 2,
+      "title": "Assets"
+     },
+     "objective": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "propertyNames": {
+       "enum": [
+        "sharpe",
+        "max_drawdown",
+        "return"
+       ]
+      },
+      "type": "object",
+      "title": "Objective",
+      "description": "得分條件與權重；單一條件直接最大化，多個條件先標準化再加權"
+     },
+     "range": {
+      "type": "string",
+      "enum": [
+       "1y",
+       "2y",
+       "3y",
+       "5y",
+       "10y",
+       "ytd",
+       "max",
+       "custom"
+      ],
+      "title": "Range",
+      "default": "5y"
+     },
+     "start": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start"
+     },
+     "end": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "End"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 8
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency",
+      "description": "顯示貨幣；預設為用戶偏好（D7）"
+     },
+     "rebalance": {
+      "type": "string",
+      "enum": [
+       "none",
+       "monthly",
+       "quarterly",
+       "yearly"
+      ],
+      "title": "Rebalance",
+      "description": "再平衡（D8）；預設不再平衡",
+      "default": "none"
+     },
+     "rf": {
+      "type": "number",
+      "maximum": 0.5,
+      "minimum": -0.05,
+      "title": "Rf",
+      "default": 0.0
+     },
+     "seed": {
+      "type": "integer",
+      "maximum": 2147483647.0,
+      "minimum": 0.0,
+      "title": "Seed",
+      "description": "隨機種子；相同輸入與種子，結果相同",
+      "default": 42
+     },
+     "samples": {
+      "type": "integer",
+      "maximum": 50000.0,
+      "minimum": 500.0,
+      "title": "Samples",
+      "default": 20000
+     },
+     "oos_fraction": {
+      "type": "number",
+      "maximum": 0.5,
+      "minimum": 0.0,
+      "title": "Oos Fraction",
+      "description": "樣本外檢驗：最後這部分期間只用作驗證（0 = 不做）",
+      "default": 0.0
+     }
+    },
+    "type": "object",
+    "required": [
+     "assets"
+    ],
+    "title": "OptimizeIn"
+   },
+   "OptimizeOut": {
+    "properties": {
+     "weights": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Weights",
+      "description": "最佳權重（%，合計 100）"
+     },
+     "metrics": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "object",
+      "title": "Metrics",
+      "description": "最佳化期間的指標（return 為年化回報）"
+     },
+     "full_period": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "object",
+      "title": "Full Period"
+     },
+     "score": {
+      "type": "number",
+      "title": "Score"
+     },
+     "breakdown": {
+      "additionalProperties": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "object",
+      "title": "Breakdown"
+     },
+     "top": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Top"
+     },
+     "frontier": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Frontier"
+     },
+     "cloud": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Cloud",
+      "description": "抽樣組合的波動率與回報（作圖用，最多 1,500 個）"
+     },
+     "assets": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Assets"
+     },
+     "out_of_sample": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Out Of Sample"
+     },
+     "samples": {
+      "type": "integer",
+      "title": "Samples"
+     },
+     "seed": {
+      "type": "integer",
+      "title": "Seed"
+     },
+     "refined": {
+      "type": "boolean",
+      "title": "Refined",
+      "description": "SLSQP 精修是否找到比抽樣更好的組合"
+     },
+     "frequency": {
+      "type": "string",
+      "enum": [
+       "daily",
+       "weekly"
+      ],
+      "title": "Frequency"
+     },
+     "currency": {
+      "type": "string",
+      "title": "Currency"
+     },
+     "rebalance": {
+      "type": "string",
+      "title": "Rebalance"
+     },
+     "rf": {
+      "type": "number",
+      "title": "Rf"
+     },
+     "objective": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Objective"
+     },
+     "window": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Window"
+     },
+     "data_version": {
+      "type": "string",
+      "title": "Data Version",
+      "description": "所用數據的指紋；相同指紋、相同輸入，結果必定相同"
+     },
+     "system_version": {
+      "type": "string",
+      "title": "System Version"
+     },
+     "bounds": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Bounds"
+     }
+    },
+    "type": "object",
+    "required": [
+     "weights",
+     "metrics",
+     "full_period",
+     "score",
+     "breakdown",
+     "top",
+     "frontier",
+     "cloud",
+     "assets",
+     "samples",
+     "seed",
+     "refined",
+     "frequency",
+     "currency",
+     "rebalance",
+     "rf",
+     "objective",
+     "window",
+     "data_version",
+     "system_version",
+     "bounds"
+    ],
+    "title": "OptimizeOut"
    },
    "PasswordIn": {
     "properties": {

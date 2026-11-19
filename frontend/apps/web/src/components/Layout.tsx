@@ -54,6 +54,7 @@ export function Layout() {
             <NavLink to="/" end>{t("nav.watchlist")}</NavLink>
             {last && <NavLink to={`/stock/${last}`}>{t("nav.stock")}</NavLink>}
             <NavLink to="/compare">{t("nav.compare")}</NavLink>
+            <NavLink to="/optimize">{t("nav.optimize")}</NavLink>
           </nav>
           <form className="search" role="search" onSubmit={go}>
             <Search size={16} />
