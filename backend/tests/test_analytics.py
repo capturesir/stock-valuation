@@ -65,7 +65,8 @@ def test_portfolios_are_private_and_weights_normalised(client, member, fake_mark
     p = r.json()
     assert p["holdings"] == [{"ticker": "AAA", "weight": 0.6}, {"ticker": "BBB", "weight": 0.4}]
     assert member.get(f"{API}/portfolios").json() == []                    # not visible to another user
-    assert member.delete(f"{API}/portfolios/{p['id']}").status_code == 404
+    r = member.delete(f"{API}/portfolios/{p['id']}")
+    assert r.status_code == 404
     r = member.post(f"{API}/analytics/compare", json={"lines": [{"kind": "portfolio", "ref": p["id"]}]})
     assert r.status_code == 400 and r.json()["detail"]["code"] == "portfolio_not_found"
     d = client.post(f"{API}/analytics/compare", json={"lines": [{"kind": "portfolio", "ref": p["id"]}, {"ref": "AAA"}, {"ref": "BBB"}],
@@ -81,8 +82,10 @@ def test_saved_comparisons(client, member, fake_market):
     assert member.get(f"{API}/comparisons").json() == []
     r = client.put(f"{API}/comparisons/{c['id']}", json={"name": "Renamed", "settings": settings})
     assert r.json()["name"] == "Renamed"
-    assert member.put(f"{API}/comparisons/{c['id']}", json={"name": "x", "settings": settings}).status_code == 404
-    assert client.delete(f"{API}/comparisons/{c['id']}").status_code == 204
+    r = member.put(f"{API}/comparisons/{c['id']}", json={"name": "x", "settings": settings})
+    assert r.status_code == 404
+    r = client.delete(f"{API}/comparisons/{c['id']}")
+    assert r.status_code == 204
     assert client.get(f"{API}/comparisons").json() == []
 
 
