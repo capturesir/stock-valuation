@@ -1,8 +1,9 @@
-import type { StandardStatements as Std, StdCell, StdRow } from "@sv/api-client";
+import type { PlanChoice, StandardStatements as Std, StdCell, StdRow } from "@sv/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { Fragment, useState } from "react";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
+import { AdjustCell, AdjustmentPlans } from "./AdjustmentPlans";
 import { groupDigits } from "./FiledData";
 
 const STATEMENTS: StdRow["statement"][] = ["income", "balance", "cash_flow"];
@@ -16,7 +17,8 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
   const [period, setPeriod] = useState<"annual" | "quarterly">("annual");
   const [display, setDisplay] = useState<"values" | "common">("values");
   const [picked, setPicked] = useState<Picked>(null);
-  const q = useQuery({ queryKey: ["std", ticker, view, period], queryFn: () => api.standardStatements(ticker, view, period) });
+  const [plan, setPlan] = useState<PlanChoice>("auto");
+  const q = useQuery({ queryKey: ["std", ticker, view, period, plan], queryFn: () => api.standardStatements(ticker, view, period, 10, plan) });
   const d = q.data;
   const millions = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const millionsShares = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
@@ -62,13 +64,20 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
               <button key={v} type="button" aria-pressed={display === v} onClick={() => setDisplay(v)}>{t(`std.display.${v}`)}</button>
             ))}
           </div>
-          <a className="btn secondary small" href={api.statementsExportUrl(ticker, "xlsx", view, period)}>{t("std.export.xlsx")}</a>
-          <a className="btn secondary small" href={api.statementsExportUrl(ticker, "csv", view, period)}>{t("std.export.csv")}</a>
+          <div className="seg" role="group" aria-label={t("adj.plan")}>
+            {(["auto", "central", "personal", "none"] as const).map((v) => (
+              <button key={v} type="button" aria-pressed={plan === v} onClick={() => setPlan(v)} title={t(`adj.choice.${v}.hint`)}>{t(`adj.choice.${v}`)}</button>
+            ))}
+          </div>
+          <a className="btn secondary small" href={api.statementsExportUrl(ticker, "xlsx", view, period, plan)}>{t("std.export.xlsx")}</a>
+          <a className="btn secondary small" href={api.statementsExportUrl(ticker, "csv", view, period, plan)}>{t("std.export.csv")}</a>
         </div>
       </div>
       {d.template !== "general" && <div className="banner info" role="note">{t(`std.template.${d.template}`)}</div>}
       {(d.splits_applied ?? []).length > 0 && <span className="small">{t("std.splits", {
         list: (d.splits_applied ?? []).map((s) => t("std.split", { date: String(s.date), ratio: String(s.ratio) })).join("、") })}</span>}
+      <span className="small">{d.plan ? t(`adj.using.${d.plan.kind}`, { v: d.plan.version }) : t("adj.using.none")}
+        {(d.adjustments_not_shown ?? []).length > 0 && <span className="muted"> · {t("adj.notShown", { list: (d.adjustments_not_shown ?? []).join("、") })}</span>}</span>
       <span className="muted small">{t("std.legend")}</span>
       {display === "common" && <span className="small">{t("std.commonNote")}</span>}
 
@@ -101,8 +110,12 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
                               {c.method === "derived" && <sup className="muted" title={t("std.mark.derived")}>Δ</sup>}
                               {c.change === "restated" && <sup className="mark-r" title={t("std.mark.restated")}>R</sup>}
                               {(c.split_factor !== "1" || c.change === "split_adjusted") && <sup className="muted" title={t("std.mark.split_adjusted")}>S</sup>}
+                              {c.adjustment && <sup className="mark-a" title={t("adj.mark")}>A</sup>}
                             </button>
-                          ) : <span className="muted">—</span>}
+                          ) : d.years[i].kind === "ttm" ? <span className="muted">—</span> : (
+                            <button type="button" className={`cell muted${picked?.code === r.code && picked.year === i ? " active" : ""}`}
+                                    onClick={() => setPicked(picked?.code === r.code && picked.year === i ? null : { code: r.code, year: i })}
+                                    aria-label={`${t(`std.item.${r.code}`)} ${d.years[i].label} — ${t("adj.supply")}`}>—</button>)}
                         </td>
                       ))}
                     </tr>
@@ -127,12 +140,13 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
                 </tbody>
               </table>
             </div>
-            {sel && picked && <Lineage d={d} row={sel} year={picked.year} view={view} onShowFiled={onShowFiled} />}
+            {sel && picked && <Lineage d={d} row={sel} year={picked.year} view={view} onShowFiled={onShowFiled} ticker={ticker} />}
           </Fragment>
         );
       })}
       <Ratios d={d} />
       <Checks d={d} />
+      <AdjustmentPlans ticker={ticker} />
     </section>
   );
 }
@@ -253,12 +267,20 @@ function Checks({ d }: { d: Std }) {
   );
 }
 
-function Lineage({ d, row, year, view, onShowFiled }: { d: Std; row: StdRow; year: number; view: "latest" | "original";
-                                                      onShowFiled: (concept: string) => void }) {
+function Lineage({ d, row, year, view, onShowFiled, ticker }: { d: Std; row: StdRow; year: number; view: "latest" | "original";
+                                                              onShowFiled: (concept: string) => void; ticker: string }) {
   const { t } = useI18n();
+  const [editing, setEditing] = useState(false);
   const c = row.cells[year];
   const y = d.years[year];
-  if (!c) return null;
+  const yy = d.years[year];
+  if (!c) return yy.kind === "ttm" ? null : (
+    <div className="banner info" role="region" aria-label={t("std.lineage")} style={{ flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
+      {editing ? <AdjustCell ticker={ticker} row={row} period={yy.label} current={null} onDone={() => setEditing(false)} />
+        : <button type="button" className="btn secondary small" onClick={() => setEditing(true)}>{t("adj.supply")}</button>}
+    </div>
+  );
+  const adj = c.adjustment as { reason?: string; basis?: string | null; by?: string | null; at?: string | null; from?: string[] } | null | undefined;
   const unit = row.unit === "money" ? d.currency ?? "" : row.unit === "per_share" ? t("std.unit.perShare", { ccy: d.currency ?? "" }) : t("filed.unit.shares");
   const label = (code: string) => t(`std.item.${code}`);
   return (
@@ -293,6 +315,17 @@ function Lineage({ d, row, year, view, onShowFiled }: { d: Std; row: StdRow; yea
         <span>{t("std.from.formula", { formula: (c.formula ?? "").split(/\s+/).map((tok) => (tok === "+" || tok === "-" ? (tok === "-" ? "−" : "+") : label(tok.replace("?", "")))).join(" "), rule: c.rule_id })}
           {(c.assumed_zero ?? []).length > 0 && <> · {t("std.assumedZero", { items: (c.assumed_zero ?? []).map(label).join("、") })}</>}</span>
       )}
+      {adj?.reason && (
+        <span><span className="mark-a">A</span> {t("adj.applied", { from: c.adjusted_from != null ? groupDigits(c.adjusted_from) : t("adj.notFiled"),
+                                                                   to: groupDigits(c.value), reason: adj.reason })}
+          {adj.basis && <> · {t("adj.basisIs", { basis: adj.basis })}</>}{adj.by && <> · {adj.by} {adj.at?.slice(0, 10)}</>}
+          {d.plan && <> · {t(`adj.using.${d.plan.kind}`, { v: d.plan.version })}</>}</span>
+      )}
+      {adj?.from && <span>{t("adj.follows", { from: (c.adjusted_from != null ? groupDigits(c.adjusted_from) : "—"),
+                                              items: adj.from.map((x) => (/^FY/.test(x) ? x : t(`std.item.${x}`))).join("、") })}</span>}
+      {y.kind !== "ttm" && (editing
+        ? <AdjustCell ticker={ticker} row={row} period={y.label} current={c.value} onDone={() => setEditing(false)} />
+        : <button type="button" className="btn secondary small" onClick={() => setEditing(true)}>{t("adj.edit")}</button>)}
       {c.change === "restated" && c.original_value != null && c.latest_value != null && (
         <span>{t(`std.change.${c.change}`, { original: groupDigits(c.original_value), latest: groupDigits(c.latest_value) })}
           {" "}{t(view === "latest" ? "std.showing.latest" : "std.showing.original")}</span>

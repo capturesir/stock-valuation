@@ -477,3 +477,56 @@ def test_instances_add_share_classes_and_the_filers_own_concepts(client, sec, me
     assert [(c["taxonomy"], c["concept"], c["facts"]) for c in ext] == [("brka", "InsuranceFloat", 1)]
     facts = member.get(f"{API}/stocks/EXMP/filed-facts", params={"taxonomy": "brka", "concept": "InsuranceFloat"}).json()
     assert [(f["source"], f["value"], f["period_end"], f["accession"]) for f in facts] == [("instance", "176000000000", "2024-12-31", accn)]
+
+
+# ------------------------------------------------------------------ alpha.3 step 9: adjustment plans (D12)
+
+def test_central_and_personal_adjustment_plans_with_versions(client, sec, member):
+    client.post(f"{API}/admin/statements/sync/EXMP")
+    P = f"{API}/stocks/EXMP/adjustment-plans"
+    assert member.get(P).json() == {"ticker": "EXMP", "central": None, "personal": None, "central_updated": False}
+    adj = {"item": "revenue", "period": "FY2024", "value": "130000000000", "reason": "exclude a one-off licence fee", "basis": "10-K note 3"}
+    assert member.put(f"{P}/central", json={"adjustments": [adj], "base_version": 0}).status_code == 403
+    r = client.put(f"{P}/central", json={"adjustments": [adj], "note": "first", "base_version": 0})
+    assert r.status_code == 200, r.text
+    c = r.json()["central"]
+    assert c["current_version"] == 1 and c["versions"][0]["adjustments"] == 1
+    a = c["current"]["adjustments"][0]
+    assert (a["original_value"], a["value"], a["adjusted_by"]) == ("130497000000", "130000000000", "管理員")
+
+    # everyone's statements use the central plan; the standard value stays beside the adjusted one
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    assert d["plan"]["kind"] == "central" and d["plan"]["version"] == 1
+    rev = {r["code"]: r for r in d["rows"]}["revenue"]["cells"][0]
+    assert (rev["value"], rev["adjusted_from"], rev["adjustment"]["reason"]) == ("130000000000", "130497000000", adj["reason"])
+    plain = member.get(f"{API}/stocks/EXMP/statements", params={"plan": "none"}).json()
+    assert plain["plan"] is None and {r["code"]: r for r in plain["rows"]}["revenue"]["cells"][0]["value"] == "130497000000"
+    assert "130000000000" in member.get(f"{API}/stocks/EXMP/statements/export", params={"format": "csv"}).text
+
+    # a personal plan starts from the central one; copied adjustments keep their author
+    mine = {"item": "revenue", "period": "FY2023", "value": "61000000000", "reason": "my view", "basis": None}
+    r = member.put(f"{P}/personal", json={"adjustments": [adj, mine], "base_version": 0})
+    assert r.status_code == 200, r.text
+    me = r.json()["personal"]
+    assert (me["current_version"], me["source_version"]) == (1, 1)
+    assert {x["period"]: x["adjusted_by"] for x in me["current"]["adjustments"]} == {"FY2024": "管理員", "FY2023": "用戶"}
+    d = member.get(f"{API}/stocks/EXMP/statements").json()
+    assert d["plan"]["kind"] == "personal" and {r["code"]: r for r in d["rows"]}["revenue"]["cells"][1]["value"] == "61000000000"
+    assert client.get(f"{API}/stocks/EXMP/statements").json()["plan"]["kind"] == "central"     # personal plans are private
+    assert client.get(f"{API}/adjustment-plans/{me['id']}/versions/1").status_code == 404
+    assert member.get(f"{API}/adjustment-plans/{c['id']}/versions/1").json()["note"] == "first"
+
+    # a save over a newer version is refused; a central update is offered to the personal plan, not pushed
+    assert client.put(f"{P}/central", json={"adjustments": [], "base_version": 0}).status_code == 409
+    assert client.put(f"{P}/central", json={"adjustments": [], "note": "undo", "base_version": 1}).status_code == 200
+    o = member.get(P).json()
+    assert o["central_updated"] is True and len(o["personal"]["current"]["adjustments"]) == 2
+    r = member.put(f"{P}/personal", json={"adjustments": [mine], "base_version": 1, "central_version": 2})
+    o = r.json()
+    assert o["central_updated"] is False and o["personal"]["current_version"] == 2
+    assert [v["version"] for v in o["central"]["versions"]] == [2, 1]                     # every version kept
+    assert member.get(f"{API}/adjustment-plans/{c['id']}/versions/1").json()["adjustments"][0]["value"] == "130000000000"
+
+    for bad in ({**adj, "period": "TTM"}, {**adj, "item": "nope"}, {**adj, "value": "abc"}):
+        r = member.put(f"{P}/personal", json={"adjustments": [bad], "base_version": 2})
+        assert r.status_code == 400 and r.json()["detail"]["code"] == "adjustment_invalid", bad

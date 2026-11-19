@@ -38,19 +38,19 @@ def _num(v: Optional[str]):
 TEXT = {
     "zh-Hant": {"statements": "標準化財報", "ratios": "比率", "growth": "增長", "lineage": "出處", "checks": "檢查",
                 "item": "項目", "period": "期間", "value": "數值", "method": "方法", "rule": "規則", "concept": "申報科目",
-                "form": "申報", "accession": "申報編號", "filed": "申報日", "url": "原文", "change": "變動", "split": "分拆調整",
+                "form": "申報", "accession": "申報編號", "filed": "申報日", "url": "原文", "change": "變動", "split": "分拆調整", "adjusted": "調整（原值；理由）", "plan": "調整方案",
                 "severity": "嚴重程度", "check": "檢查", "values": "比較的數字", "difference": "差異", "cagr": "複合增長",
                 "company": "公司", "chart": "科目表", "view": "數字版本", "generated": "產生時間", "unit": "單位",
                 "view_latest": "最新（含重編）", "view_original": "首次公布", "years": "年"},
     "zh-Hans": {"statements": "标准化财报", "ratios": "比率", "growth": "增长", "lineage": "出处", "checks": "检查",
                 "item": "项目", "period": "期间", "value": "数值", "method": "方法", "rule": "规则", "concept": "申报科目",
-                "form": "申报", "accession": "申报编号", "filed": "申报日", "url": "原文", "change": "变动", "split": "拆分调整",
+                "form": "申报", "accession": "申报编号", "filed": "申报日", "url": "原文", "change": "变动", "split": "拆分调整", "adjusted": "调整（原值；理由）", "plan": "调整方案",
                 "severity": "严重程度", "check": "检查", "values": "比较的数字", "difference": "差异", "cagr": "复合增长",
                 "company": "公司", "chart": "科目表", "view": "数字版本", "generated": "生成时间", "unit": "单位",
                 "view_latest": "最新（含重述）", "view_original": "首次公布", "years": "年"},
     "en": {"statements": "Statements", "ratios": "Ratios", "growth": "Growth", "lineage": "Sources", "checks": "Checks",
            "item": "Item", "period": "Period", "value": "Value", "method": "Method", "rule": "Rule", "concept": "Concept",
-           "form": "Form", "accession": "Accession", "filed": "Filed", "url": "Document", "change": "Change", "split": "Split factor",
+           "form": "Form", "accession": "Accession", "filed": "Filed", "url": "Document", "change": "Change", "split": "Split factor", "adjusted": "Adjusted (was; reason)", "plan": "Adjustment plan",
            "severity": "Severity", "check": "Check", "values": "Numbers compared", "difference": "Difference", "cagr": "Compound growth",
            "company": "Company", "chart": "Chart of accounts", "view": "Version", "generated": "Generated", "unit": "Unit",
            "view_latest": "Latest (restated)", "view_original": "As first reported", "years": "years"},
@@ -78,6 +78,15 @@ def to_csv(data: dict, lang: str) -> bytes:
         w.writerow([f"{_t(lang, f'std.item.{r['code']}', r['code'])} — {tx['growth']}", f"growth.{r['code']}", "pct"] +
                    [c or "" for c in r["cells"]])
     return ("﻿" + out.getvalue()).encode("utf-8")
+
+
+def _adjusted(c: dict) -> str:
+    """Adjustment plans (D12): "was X; reason" for an adjusted value, "was X; ← items" for one that followed."""
+    a = c.get("adjustment")
+    if not a:
+        return ""
+    was = c.get("adjusted_from") or "—"
+    return f"{was}; {a['reason']}" if a.get("reason") else f"{was}; ← {', '.join(a.get('from') or [])}"
 
 
 def to_xlsx(data: dict, lang: str, path: Path) -> Path:
@@ -155,7 +164,7 @@ def to_xlsx(data: dict, lang: str, path: Path) -> Path:
 
     wl = wb.create_sheet(tx["lineage"][:31])
     cols = [tx["item"], tx["period"], tx["value"], tx["method"], tx["rule"], tx["concept"], tx["form"], tx["accession"],
-            tx["filed"], tx["change"], tx["split"], tx["url"]]
+            tx["filed"], tx["change"], tx["split"], tx["url"], tx["adjusted"]]
     for j, h in enumerate(cols, start=1):
         wl.cell(1, j, h).font = bold
     row = 2
@@ -166,11 +175,13 @@ def to_xlsx(data: dict, lang: str, path: Path) -> Path:
             vals = [_t(lang, f"std.item.{r['code']}", r["code"]), _period_label(lang, y), _num(c["value"]), c["method"], c["rule_id"],
                     c.get("concept") or (c.get("formula") or ""), c.get("form") or "", c.get("accession") or "", c.get("filed") or "",
                     c.get("change") or "", c.get("split_factor") if c.get("split_factor") not in (None, "1") else "",
-                    c.get("document_url") or c.get("index_url") or ""]
+                    c.get("document_url") or c.get("index_url") or "", _adjusted(c)]
             for j, v in enumerate(vals, start=1):
                 wl.cell(row, j, v)
             row += 1
-    for j, w_ in enumerate((34, 14, 20, 10, 24, 48, 9, 24, 12, 10, 10, 60), start=1):
+    if data.get("plan"):
+        wl.cell(row + 1, 1, f"{tx['plan']}: {data['plan']['label']}")
+    for j, w_ in enumerate((34, 14, 20, 10, 24, 48, 9, 24, 12, 10, 10, 60, 48), start=1):
         wl.column_dimensions[wl.cell(1, j).column_letter].width = w_
 
     wc = wb.create_sheet(tx["checks"][:31])

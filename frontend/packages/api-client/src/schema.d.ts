@@ -828,6 +828,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/adjustment-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 調整方案：中央方案與我的個人方案（目前版本的全部調整、版本清單），以及中央方案是否在我複製後更新 */
+        get: operations["plans_api_v1_stocks__ticker__adjustment_plans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/adjustment-plans/{plan_id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 調整方案的某一版本（全部調整）；中央方案所有人可看，個人方案只限本人 */
+        get: operations["plan_version_api_v1_adjustment_plans__plan_id__versions__version__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/adjustment-plans/central": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 保存中央方案的新版本（管理員）：送出完整一套調整；base_version 不是目前版本時回 409 */
+        put: operations["save_central_api_v1_stocks__ticker__adjustment_plans_central_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/adjustment-plans/personal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 保存我的個人方案的新版本：第一次保存即建立（記錄當時的中央方案版本）；central_version 記錄已合併的中央版本 */
+        put: operations["save_personal_api_v1_stocks__ticker__adjustment_plans_personal_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analytics/compare": {
         parameters: {
             query?: never;
@@ -1008,6 +1076,149 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AdjustmentIn */
+        AdjustmentIn: {
+            /**
+             * Item
+             * @description 標準科目代碼，例如 net_income
+             */
+            item: string;
+            /**
+             * Period
+             * @description FY2024 或 FY2024 Q2（TTM 不可直接調整，由季度推出）
+             */
+            period: string;
+            /**
+             * Value
+             * @description 調整後的數值（精確十進位字串，原始單位，不是百萬）
+             */
+            value: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Basis
+             * @description 依據，例如「2024 年報附註 7」或連結
+             */
+            basis?: string | null;
+        };
+        /** AdjustmentOut */
+        AdjustmentOut: {
+            /** Item */
+            item: string;
+            /** Period */
+            period: string;
+            /** Value */
+            value: string;
+            /**
+             * Original Value
+             * @description 調整時的標準值（未申報時為空）
+             */
+            original_value?: string | null;
+            /** Reason */
+            reason: string;
+            /** Basis */
+            basis?: string | null;
+            /** Adjusted By */
+            adjusted_by?: string | null;
+            /** Adjusted At */
+            adjusted_at: string;
+        };
+        /** AdjustmentPlanIn */
+        AdjustmentPlanIn: {
+            /**
+             * Adjustments
+             * @description 新版本的全部調整（完整一套，不是增量）
+             */
+            adjustments?: components["schemas"]["AdjustmentIn"][];
+            /**
+             * Note
+             * @description 本版本的說明
+             */
+            note?: string | null;
+            /**
+             * Base Version
+             * @description 編輯時所依據的版本（新方案為 0）；方案已被更新時回 409
+             */
+            base_version: number;
+            /**
+             * Central Version
+             * @description 個人方案：本版本已合併至中央方案的哪一版
+             */
+            central_version?: number | null;
+        };
+        /** AdjustmentPlanOut */
+        AdjustmentPlanOut: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "central" | "personal";
+            /** Current Version */
+            current_version: number;
+            /**
+             * Source Version
+             * @description 個人方案：複製或最後合併的中央方案版本
+             */
+            source_version?: number | null;
+            /**
+             * Versions
+             * @description 全部版本，最新在前
+             */
+            versions: components["schemas"]["AdjustmentVersionSummary"][];
+            current: components["schemas"]["AdjustmentVersionOut"];
+        };
+        /** AdjustmentPlansOut */
+        AdjustmentPlansOut: {
+            /** Ticker */
+            ticker: string;
+            central?: components["schemas"]["AdjustmentPlanOut"] | null;
+            /** @description 只有自己的個人方案 */
+            personal?: components["schemas"]["AdjustmentPlanOut"] | null;
+            /**
+             * Central Updated
+             * @description 中央方案在我的個人方案複製或最後合併之後有新版本
+             */
+            central_updated: boolean;
+        };
+        /** AdjustmentVersionOut */
+        AdjustmentVersionOut: {
+            /** Plan Id */
+            plan_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "central" | "personal";
+            /** Version */
+            version: number;
+            /** Created By Name */
+            created_by_name?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Central Version */
+            central_version?: number | null;
+            /** Adjustments */
+            adjustments: components["schemas"]["AdjustmentOut"][];
+        };
+        /** AdjustmentVersionSummary */
+        AdjustmentVersionSummary: {
+            /** Version */
+            version: number;
+            /** Created By Name */
+            created_by_name?: string | null;
+            /** Created At */
+            created_at: string;
+            /** Note */
+            note?: string | null;
+            /** Central Version */
+            central_version?: number | null;
+            /** Adjustments */
+            adjustments: number;
+        };
         /** AdminUserIn */
         AdminUserIn: {
             /** Email */
@@ -1898,6 +2109,20 @@ export interface components {
             /** Has Name Spec */
             has_name_spec: boolean;
         };
+        /** PlanRef */
+        PlanRef: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "central" | "personal";
+            /** Id */
+            id: string;
+            /** Version */
+            version: number;
+            /** Label */
+            label: string;
+        };
         /** PlanTask */
         PlanTask: {
             /** Key */
@@ -2397,6 +2622,13 @@ export interface components {
              * @description 按股份類別的每股盈利（只限年度，來自年報 XBRL instance）
              */
             share_classes?: components["schemas"]["ShareClassRow"][];
+            /** @description 套用的調整方案（D12）；空值＝系統預設（不調整） */
+            plan?: components["schemas"]["PlanRef"] | null;
+            /**
+             * Adjustments Not Shown
+             * @description 方案中不在所顯示期間的調整（項目 期間）
+             */
+            adjustments_not_shown?: string[];
         };
         /** StatementChecks */
         StatementChecks: {
@@ -2508,6 +2740,24 @@ export interface components {
              * @default 0
              */
             skipped: number;
+            /**
+             * Instances Read
+             * @description 本次讀取的年報 XBRL instance 數目（每份申報只讀一次）
+             * @default 0
+             */
+            instances_read: number;
+            /**
+             * Instance Facts
+             * @description 新增的維度數字與公司自訂科目數字
+             * @default 0
+             */
+            instance_facts: number;
+            /**
+             * Instances Missing
+             * @description 找不到 instance 的年報（不再重試）
+             * @default 0
+             */
+            instances_missing: number;
         };
         /** StdCell */
         StdCell: {
@@ -2518,10 +2768,10 @@ export interface components {
             value: string;
             /**
              * Method
-             * @description concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月
+             * @description concept 申報科目｜formula 公式｜derived 由年初至今數字推算的季度｜ttm 近十二個月｜adjusted 未申報、由調整方案提供
              * @enum {string}
              */
-            method: "concept" | "formula" | "derived" | "ttm";
+            method: "concept" | "formula" | "derived" | "ttm" | "adjusted";
             /** Rule Id */
             rule_id: string;
             /**
@@ -2569,6 +2819,18 @@ export interface components {
              * @description 公式中未申報、按零計算的可選項目
              */
             assumed_zero?: string[];
+            /**
+             * Adjusted From
+             * @description 調整方案（D12）：調整前的標準值
+             */
+            adjusted_from?: string | null;
+            /**
+             * Adjustment
+             * @description 直接調整：reason、basis、by、at；由其他調整推出：from（項目或季度）
+             */
+            adjustment?: {
+                [key: string]: unknown;
+            } | null;
             /** Form */
             form?: string | null;
             /** Accession */
@@ -4635,6 +4897,7 @@ export interface operations {
                 as_of?: string | null;
                 period?: "annual" | "quarterly";
                 years?: number;
+                plan?: "auto" | "central" | "personal" | "none";
             };
             header?: {
                 authorization?: string | null;
@@ -4749,6 +5012,7 @@ export interface operations {
                 view?: "latest" | "original";
                 period?: "annual" | "quarterly";
                 years?: number;
+                plan?: "auto" | "central" | "personal" | "none";
             };
             header?: {
                 authorization?: string | null;
@@ -4769,6 +5033,151 @@ export interface operations {
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
                     "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plans_api_v1_stocks__ticker__adjustment_plans_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentPlansOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    plan_version_api_v1_adjustment_plans__plan_id__versions__version__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentVersionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_central_api_v1_stocks__ticker__adjustment_plans_central_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentPlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentPlansOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_personal_api_v1_stocks__ticker__adjustment_plans_personal_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentPlanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentPlansOut"];
                 };
             };
             /** @description Validation Error */

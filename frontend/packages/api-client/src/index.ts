@@ -58,6 +58,13 @@ export type PortfolioOut = S["PortfolioOut"];
 export type StatementsStatus = S["StatementsStatus"];
 export type StdRow = S["StdRow"];
 export type StdCell = S["StdCell"];
+export type AdjustmentPlansOut = S["AdjustmentPlansOut"];
+export type AdjustmentPlanOut = S["AdjustmentPlanOut"];
+export type AdjustmentVersionOut = S["AdjustmentVersionOut"];
+export type AdjustmentOut = S["AdjustmentOut"];
+export type AdjustmentIn = S["AdjustmentIn"];
+export type AdjustmentPlanIn = S["AdjustmentPlanIn"];
+export type PlanChoice = "auto" | "central" | "personal" | "none";
 
 export interface ClientConfig {
   /** "" = same origin (served behind Caddy); e.g. "https://valuation.example.com" for apps */
@@ -177,8 +184,14 @@ export function createClient(cfg: ClientConfig = {}) {
     statementsStatus: (ticker: string) => req<StatementsStatus>("GET", `/stocks/${enc(ticker)}/statements/status`),
     fetchStatements: (ticker: string) => req<StatementsStatus>("POST", `/stocks/${enc(ticker)}/statements/fetch`),
     filedConcepts: (ticker: string) => req<FiledConceptOut[]>("GET", `/stocks/${enc(ticker)}/filed-concepts`),
-    standardStatements: (ticker: string, view: "latest" | "original" = "latest", period: "annual" | "quarterly" = "annual", years = 10) =>
-      req<StandardStatements>("GET", `/stocks/${enc(ticker)}/statements${q({ view, period, years: period === "quarterly" ? Math.max(years, 12) : years })}`),
+    standardStatements: (ticker: string, view: "latest" | "original" = "latest", period: "annual" | "quarterly" = "annual", years = 10,
+                         plan: PlanChoice = "auto") =>
+      req<StandardStatements>("GET", `/stocks/${enc(ticker)}/statements${q({ view, period, years: period === "quarterly" ? Math.max(years, 12) : years, plan })}`),
+    adjustmentPlans: (ticker: string) => req<AdjustmentPlansOut>("GET", `/stocks/${enc(ticker)}/adjustment-plans`),
+    adjustmentVersion: (planId: string, version: number) =>
+      req<AdjustmentVersionOut>("GET", `/adjustment-plans/${enc(planId)}/versions/${version}`),
+    saveAdjustmentPlan: (ticker: string, kind: "central" | "personal", body: AdjustmentPlanIn) =>
+      req<AdjustmentPlansOut>("PUT", `/stocks/${enc(ticker)}/adjustment-plans/${kind}`, body),
     filedFacts: (ticker: string, concept: string, taxonomy = "us-gaap") =>
       req<FiledFactOut[]>("GET", `/stocks/${enc(ticker)}/filed-facts${q({ concept, taxonomy })}`),
     removeLogo: (variant: "light" | "dark") => req<BrandingOut>("DELETE", `/admin/branding/logo/${variant}`),
@@ -192,8 +205,9 @@ export function createClient(cfg: ClientConfig = {}) {
     valuations: (ticker: string) => req<StockValuations>("GET", `/stocks/${enc(ticker)}/valuations`),
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),
     excelUrl: (runId: string) => `${base}/runs/${enc(runId)}/excel`,
-    statementsExportUrl: (ticker: string, format: "xlsx" | "csv", view: "latest" | "original", period: "annual" | "quarterly") =>
-      `${base}/stocks/${enc(ticker)}/statements/export${q({ format, view, period, years: period === "quarterly" ? 12 : 10 })}`,
+    statementsExportUrl: (ticker: string, format: "xlsx" | "csv", view: "latest" | "original", period: "annual" | "quarterly",
+                          plan: PlanChoice = "auto") =>
+      `${base}/stocks/${enc(ticker)}/statements/export${q({ format, view, period, years: period === "quarterly" ? 12 : 10, plan })}`,
 
     watchlist: () => req<WatchlistEntry[]>("GET", "/watchlist"),
     addToWatchlist: (ticker: string) => req<WatchlistEntry>("POST", "/watchlist", { ticker }),
