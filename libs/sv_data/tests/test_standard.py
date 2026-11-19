@@ -273,3 +273,52 @@ def test_ttm_needs_four_consecutive_quarters():
     facts = [f for f in _year_of_10qs() if f.form != "10-Q" or f.period_end.year == 2025]
     s = standardize(facts, load_ruleset("general"))
     assert s.ttm is None and s.get("revenue", "TTM") is None
+
+
+def test_company_overlay_adds_the_filers_own_concept_after_the_template():
+    from libs.sv_data.standard import load_company, with_company
+
+    base = load_ruleset("general")
+    nv = load_company("0001045810")
+    rs = with_company(base, nv)
+    assert rs.version == f"{base.version}+0001045810.{nv['version']}"
+    assert rs.item("capex").rules[0].sources[-1] == ("nvda", "PurchasesOfPropertyAndEquipmentAndIntangibleAssets")
+    assert with_company(base, None) is base and load_company("0000000001") is None
+    with pytest.raises(RulesError, match="unknown items"):
+        with_company(base, {"cik": "0000000001", "version": "1", "items": {"nope": {"sources": ["x:Y"]}}})
+    with pytest.raises(RulesError, match="bad CIK"):
+        load_company("../x")
+    facts = [fact("NetCashProvidedByUsedInOperatingActivities", 900, *FY23, D(2024, 2, 20)),
+             fact("PurchasesOfPropertyAndEquipmentAndIntangibleAssets", 120, *FY23, D(2024, 2, 20), tx="nvda"),
+             fact("NetCashProvidedByUsedInOperatingActivities", 1000, *FY24, D(2025, 2, 20)),
+             fact("PaymentsToAcquireProductiveAssets", 150, *FY24, D(2025, 2, 20)),
+             fact("PurchasesOfPropertyAndEquipmentAndIntangibleAssets", 999, *FY24, D(2025, 2, 20), tx="nvda")]
+    std = standardize(facts, rs)
+    assert std.get("capex", "FY2023").concept == "nvda:PurchasesOfPropertyAndEquipmentAndIntangibleAssets"
+    assert std.get("capex", "FY2024").value == 150            # the template's concept still comes first
+    assert std.get("free_cash_flow", "FY2023").value == 780
+    assert standardize(facts, base).get("capex", "FY2023") is None
+
+
+def test_earnings_per_share_by_share_class():
+    from libs.sv_data.standard import class_eps, class_label
+
+    assert class_label("brka:EquivalentClassAMember") == "Equivalent Class A"
+    assert class_label("us-gaap:CommonClassBMember") == "Common Class B"
+    years = fiscal_years([fact("NetIncomeLoss", 1, *FY24, D(2025, 2, 20)), fact("NetIncomeLoss", 1, *FY23, D(2024, 2, 20))])
+    A, B = "brka:ClassAMember", "brka:ClassBMember"
+    facts = [(fact("EarningsPerShareBasic", 46000, *FY24, D(2025, 2, 20), unit="USD/shares"), A),
+             (fact("EarningsPerShareBasic", 30.66, *FY24, D(2025, 2, 20), unit="USD/shares"), B),
+             (fact("EarningsPerShareBasic", 30.70, *FY24, D(2026, 2, 20), unit="USD/shares"), B),    # restated next year
+             (fact("EarningsPerShareBasic", 40, *FY23, D(2024, 2, 20), unit="USD/shares"), B),
+             (fact("EarningsPerShareBasic", 9, D(2024, 10, 1), D(2024, 12, 31), D(2025, 2, 20), unit="USD/shares"), B),  # a quarter
+             (fact("EarningsPerShareDiluted", 1, *FY24, D(2025, 2, 20), unit="USD/shares", form="DEF 14A"), B)]
+    got = {(c.member, c.item, c.fiscal_year): c.value for c in class_eps(facts, years)}
+    assert got == {(A, "eps_basic", "FY2024"): Decimal(46000), (B, "eps_basic", "FY2024"): Decimal("30.70"),
+                   (B, "eps_basic", "FY2023"): Decimal(40)}
+    orig = {(c.member, c.fiscal_year): c.value for c in class_eps(facts, years, view="original")}
+    assert orig[(B, "FY2024")] == Decimal("30.66")
+    assert not class_eps(facts, years, as_of=D(2024, 1, 1))
+    split = class_eps(facts, years, splits=[Split(D(2025, 6, 1), Decimal(2))])
+    b23 = next(c for c in split if c.member == B and c.fiscal_year == "FY2023")
+    assert b23.value == 20 and b23.split_factor == 2

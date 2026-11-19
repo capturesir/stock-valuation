@@ -193,6 +193,49 @@ def load_ruleset(name: str = "general") -> Ruleset:
     return ruleset_from_dict(yaml.safe_load((RULES_DIR / f"{name}.yaml").read_text(encoding="utf-8")))
 
 
+def with_company(rs: Ruleset, overlay: Optional[dict]) -> Ruleset:
+    """Apply a company overlay (``rules/companies/<cik>.yaml``): extra source concepts, usually the filer's
+    own extension concepts, tried after the template's sources in every rule of the item. The ruleset
+    version records the overlay (``<version>+<cik>.<overlay version>``) so a valuation shows it was used."""
+    if not overlay:
+        return rs
+    extra = overlay.get("items") or {}
+    codes = {i.code for i in rs.items}
+    if set(extra) - codes:
+        raise RulesError(f"company overlay: unknown items {sorted(set(extra) - codes)}")
+    items = []
+    for item in rs.items:
+        add = []
+        for s in (extra.get(item.code) or {}).get("sources") or []:
+            tx, sep, concept = str(s).partition(":")
+            if not sep or not concept:
+                raise RulesError(f"company overlay {item.code}: source {s!r} needs prefix:Concept")
+            add.append((tx, concept))
+        if add:
+            rules = tuple(Rule(r.id, r.sources + tuple(a for a in add if a not in r.sources), r.formula, r.formula_text,
+                               r.effective_from, r.effective_to) if r.sources else r for r in item.rules)
+            item = Item(item.code, item.statement, item.period, item.unit, rules)
+        items.append(item)
+    return Ruleset(rs.name, f"{rs.version}+{overlay['cik']}.{overlay['version']}", rs.template, tuple(items),
+                   rs.display, rs.totals, rs.anchors)
+
+
+@lru_cache(maxsize=64)
+def load_company(cik: str) -> Optional[dict]:
+    """The company overlay for a CIK, or None."""
+    import yaml
+
+    if not re.fullmatch(r"\d{10}", cik):
+        raise RulesError(f"bad CIK {cik!r}")
+    p = RULES_DIR / "companies" / f"{cik}.yaml"
+    if not p.exists():
+        return None
+    d = yaml.safe_load(p.read_text(encoding="utf-8"))
+    if str(d.get("cik")) != cik:
+        raise RulesError(f"{p.name}: cik does not match the file name")
+    return d
+
+
 def template_for_sic(sic: Optional[str]) -> str:
     """Industry template by SEC SIC code: banks and credit (60xx–61xx), insurance carriers (63xx)."""
     try:
@@ -643,3 +686,55 @@ def standardize(facts: Iterable[FactRef], ruleset: Ruleset, view: str = "latest"
                 out[(item.code, "TTM")] = got
     return Standardized(ruleset.name, ruleset.version, ruleset.template, ccy, view, as_of, years, out, applied,
                         quarters=quarters, ttm=ttm)
+
+
+# ------------------------------------------------------------------ per share class (alpha.3 step 8)
+
+CLASS_AXIS = "us-gaap:StatementClassOfStockAxis"
+CLASS_EPS = {"EarningsPerShareBasic": "eps_basic", "EarningsPerShareBasicAndDiluted": "eps_basic",
+             "EarningsPerShareDiluted": "eps_diluted"}
+
+
+@dataclass(frozen=True)
+class ClassValue:
+    member: str                     # e.g. brka:ClassAMember
+    item: str                       # eps_basic | eps_diluted
+    fiscal_year: str
+    value: Decimal                  # on today's share basis (or as_of's), like the standard EPS rows
+    fact: FactRef
+    split_factor: Decimal
+
+
+def class_label(member: str) -> str:
+    """brka:EquivalentClassAMember → Equivalent Class A; us-gaap:CommonClassBMember → Common Class B."""
+    name = member.partition(":")[2] or member
+    name = re.sub(r"Member$", "", name)
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", " ", name).strip()
+
+
+def class_eps(facts: Iterable[tuple[FactRef, str]], years: Iterable[FiscalYear], view: str = "latest",
+              as_of: Optional[dt.date] = None, splits: Iterable[Split] = ()) -> list[ClassValue]:
+    """Annual earnings per share by share class (``facts``: EPS facts dimensioned only by the class axis,
+    with their member). Picks the newest filing's value (``latest``) or the first (``original``) and puts
+    it on the same share basis as the standard rows (``splits``: the confirmed splits already applied)."""
+    years = [y for y in years if y.kind == "annual"]
+    splits = [s for s in splits if as_of is None or s.date <= as_of]
+    groups: dict[tuple[str, str, str], list[FactRef]] = defaultdict(list)
+    for f, member in facts:
+        item = CLASS_EPS.get(f.concept)
+        if (item is None or f.taxonomy != "us-gaap" or f.form not in STATEMENT_FORMS or f.days is None
+                or not 350 <= f.days <= 380 or (as_of is not None and f.filed > as_of)):
+            continue
+        y = next((y for y in years if _near(f.period_end, y.end)), None)
+        if y is not None:
+            groups[(member, item, y.label)].append(f)
+    out = []
+    for (member, item, label), fs in sorted(groups.items()):
+        fs.sort(key=lambda f: (f.filed, f.accession))
+        f = fs[-1] if view == "latest" else fs[0]
+        k = Decimal(1)
+        for sp in splits:
+            if f.filed < sp.date:
+                k *= sp.ratio
+        out.append(ClassValue(member, item, label, f.value / k, f, k))
+    return out

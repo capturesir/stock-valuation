@@ -788,5 +788,8 @@
   "opt.check.differentSame": "數據相同，但結果不同（系統版本可能已更新）。",
   "opt.check.dataChanged": "期間內的數據已被修訂（例如來源修正了某日價格），所以結果可能不同。",
   "opt.check.detail": "數據指紋 {a} → {b}；系統版本 {sa} → {sb}",
-  "opt.showingScenario": "下方顯示的是已保存場景「{name}」的結果。"
+  "opt.showingScenario": "下方顯示的是已保存場景「{name}」的結果。",
+  "std.class.row": "{item}（{cls}）",
+  "std.class.hint": "按股份類別：{cls}。年報 XBRL instance 的申報數字，{form}，{filed} 申報；點擊開啟 SEC 文件。",
+  "filed.source.instance": "公司自訂科目（年報 XBRL instance）"
 }

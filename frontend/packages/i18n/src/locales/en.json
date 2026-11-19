@@ -788,5 +788,8 @@
   "opt.check.differentSame": "Same data but a different result (the system version may have changed).",
   "opt.check.dataChanged": "Data in the window has been revised (e.g. the source corrected a price), so the result may differ.",
   "opt.check.detail": "Data {a} → {b}; system {sa} → {sb}",
-  "opt.showingScenario": "Showing the saved scenario “{name}” below."
+  "opt.showingScenario": "Showing the saved scenario “{name}” below.",
+  "std.class.row": "{item} ({cls})",
+  "std.class.hint": "By share class: {cls}. As filed in the annual report's XBRL instance, {form}, filed {filed}; select to open the SEC document.",
+  "filed.source.instance": "Company-defined concept (annual report XBRL instance)"
 }

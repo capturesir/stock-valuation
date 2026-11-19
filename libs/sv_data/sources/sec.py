@@ -69,13 +69,14 @@ class SecClient:
         self.contact, self.http, self.min_interval = contact.strip(), http, min_interval
         self._lock, self._last = threading.Lock(), 0.0
 
-    def _get(self, kind: str, key: str, url: str) -> RawDocument:
+    def _get(self, kind: str, key: str, url: str, kind_json: bool = True) -> RawDocument:
         with self._lock:
             wait = self._last + self.min_interval - time.monotonic()
             if wait > 0:
                 time.sleep(wait)
             self._last = time.monotonic()
-        headers = {"User-Agent": self.contact, "Accept": "application/json", "Accept-Encoding": "gzip, deflate"}
+        headers = {"User-Agent": self.contact, "Accept": "application/json" if kind_json else "application/xml",
+                   "Accept-Encoding": "gzip, deflate"}
         status, body, resp_headers = self.http(url, headers)
         if status == 404:
             raise SourceNotFound(SOURCE, url, status)
@@ -83,11 +84,14 @@ class SecClient:
             detail = (body or b"")[:200].decode("utf-8", errors="replace")
             raise SourceError(SOURCE, url, status, detail)
         content = _decode(body or b"", resp_headers)
-        try:
-            json.loads(content)
-        except ValueError as exc:
-            raise SourceError(SOURCE, url, status, f"not JSON: {exc}") from exc
-        return RawDocument(SOURCE, kind, key, url, content, "application/json", status)
+        if kind_json:
+            try:
+                json.loads(content)
+            except ValueError as exc:
+                raise SourceError(SOURCE, url, status, f"not JSON: {exc}") from exc
+        elif not content.lstrip()[:200].lstrip(b"\xef\xbb\xbf").startswith(b"<"):
+            raise SourceError(SOURCE, url, status, "not XML")
+        return RawDocument(SOURCE, kind, key, url, content, "application/json" if kind_json else "application/xml", status)
 
     def company_tickers(self) -> RawDocument:
         return self._get("company_tickers", "all", TICKERS_URL)
@@ -103,6 +107,20 @@ class SecClient:
     def companyfacts(self, cik: int | str) -> RawDocument:
         c = cik10(cik)
         return self._get("companyfacts", c, FACTS_URL.format(cik=c))
+
+    def filing_index(self, cik: int | str, accession: str) -> RawDocument:
+        """The list of files in one filing (EDGAR's index.json)."""
+        if not re.fullmatch(r"\d{10}-\d{2}-\d{6}", accession):
+            raise ValueError(f"unexpected accession number: {accession!r}")
+        url = ARCHIVE_URL.format(cik=int(cik10(cik)), accn=accession.replace("-", "")) + "/index.json"
+        return self._get("filing_index", accession, url)
+
+    def instance(self, cik: int | str, accession: str, name: str) -> RawDocument:
+        """One filing's XBRL instance (XML), by the name instance_name() picked from its index."""
+        if not re.fullmatch(r"[A-Za-z0-9._-]+\.xml", name):
+            raise ValueError(f"unexpected instance file name: {name!r}")
+        url = ARCHIVE_URL.format(cik=int(cik10(cik)), accn=accession.replace("-", "")) + f"/{name}"
+        return self._get("instance", accession, url, kind_json=False)
 
 
 # ------------------------------------------------------------------ parsing (pure functions)
@@ -206,3 +224,19 @@ def parse_submissions(content: bytes) -> Submissions:
 def parse_submissions_page(content: bytes) -> list[FilingEntry]:
     """An older page: the same columns as ``filings.recent``, at the top level."""
     return _filings_from_columns(json.loads(content))
+
+
+LINKBASE_SUFFIXES = ("_cal.xml", "_def.xml", "_lab.xml", "_pre.xml", "_ref.xml")
+
+
+def instance_name(index_json: bytes) -> Optional[str]:
+    """The XBRL instance in a filing's file list: EDGAR's extract of an inline filing ("…_htm.xml"); for older
+    filings, the .xml file that is not a linkbase, FilingSummary.xml or a rendered R page (shortest name)."""
+    items = (json.loads(index_json).get("directory") or {}).get("item") or []
+    names = [str(i.get("name") or "") for i in items]
+    htm = sorted(n for n in names if n.endswith("_htm.xml"))
+    if htm:
+        return htm[0]
+    xml = [n for n in names if n.lower().endswith(".xml") and not n.endswith(LINKBASE_SUFFIXES)
+           and n.lower() != "filingsummary.xml" and not re.fullmatch(r"R\d+\.xml", n)]
+    return sorted(xml, key=lambda n: (len(n), n))[0] if xml else None

@@ -21,7 +21,7 @@ from typing import Optional
 XBRLI = "http://www.xbrl.org/2003/instance"
 XBRLDI = "http://xbrl.org/2006/xbrldi"
 XSI_NIL = "{http://www.w3.org/2001/XMLSchema-instance}nil"
-STANDARD = (("fasb.org/us-gaap", "us-gaap"), ("fasb.org/srt", "srt"), ("xbrl.sec.gov/dei", "dei"),
+STANDARD = (("fasb.org/us-gaap", "us-gaap"), ("xbrl.sec.gov/invest", "invest"), ("fasb.org/srt", "srt"), ("xbrl.sec.gov/dei", "dei"),
             ("xbrl.ifrs.org", "ifrs-full"), ("fasb.org/us-types", "us-types"))
 SKIP_NS = (XBRLI, XBRLDI, "http://www.xbrl.org/2003/linkbase", "http://www.w3.org/1999/xlink")
 

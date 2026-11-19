@@ -237,6 +237,7 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; 
 /* statements tab: standardised table */
 .tbl.std th[scope="row"] { font-weight: 500; white-space: normal; min-width: 180px; }
 .tbl.std tr.total th[scope="row"], .tbl.std tr.total td { font-weight: 700; }
+.tbl.std tr.sub th[scope="row"] { padding-left: 20px; font-weight: 400; color: var(--sv-ink-700); }
 .tbl.std td { padding: 4px 6px; }
 .tbl.std .cell { border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; padding: 6px 4px;
   border-radius: var(--sv-radius-sm); font-variant-numeric: tabular-nums; }
