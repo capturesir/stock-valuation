@@ -13,7 +13,8 @@ from ..auth import require_user
 from ..db import get_db
 from ..i18n import AppError, http_error, lang_dep
 from ..models import Comparison, Portfolio, User
-from ..schemas import CompareIn, CompareOut, PortfolioIn, PortfolioOut, SavedComparisonIn, SavedComparisonOut
+from ..schemas import (CompareIn, CompareOut, OptimizeIn, OptimizeOut, PortfolioIn, PortfolioOut, SavedComparisonIn,
+                       SavedComparisonOut)
 from ..services import analytics
 from .common import iso, ticker_or_400
 
@@ -144,3 +145,22 @@ def update_portfolio(pid: str, body: PortfolioIn, user: User = Depends(require_u
 def delete_portfolio(pid: str, user: User = Depends(require_user), db: Session = Depends(get_db),
                      lang: str = Depends(lang_dep)) -> None:
     db.delete(_own(db, Portfolio, pid, user, "portfolio_not_found", lang))
+
+
+# ------------------------------------------------------------------ optimizer
+
+def run_optimize(body: OptimizeIn, user: User, db: Session) -> dict:
+    from ..services import optimizer
+
+    assets = [{"ticker": ticker_or_400(a.ticker), "min": a.min, "max": a.max} for a in body.assets]
+    currency = (body.currency or (user.prefs or {}).get("display_currency") or "USD").upper()
+    return optimizer.run(db, assets, dict(body.objective), body.range, _date(body.start), _date(body.end), currency,
+                         body.rebalance, body.rf, body.seed, body.samples, body.oos_fraction)
+
+
+@router.post("/analytics/optimize", response_model=OptimizeOut,
+             summary="投資組合最佳化：上下限、1% 單位、得分條件、隨機抽樣＋SLSQP（固定種子）、效率前緣、樣本外檢驗")
+def optimize(body: OptimizeIn, request: Request, user: User = Depends(require_user), db: Session = Depends(get_db)) -> dict:
+    lim = limits.get(db)
+    limits.hit("prices", limits.who(request, user.id), lim["prices_per_minute"], 60)
+    return run_optimize(body, user, db)

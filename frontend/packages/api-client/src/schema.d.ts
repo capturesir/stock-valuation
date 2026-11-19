@@ -934,6 +934,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/optimize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 投資組合最佳化：上下限、1% 單位、得分條件、隨機抽樣＋SLSQP（固定種子）、效率前緣、樣本外檢驗 */
+        post: operations["optimize_api_v1_analytics_optimize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1607,6 +1624,170 @@ export interface components {
             queue: {
                 [key: string]: unknown;
             };
+        };
+        /** OptimizeAsset */
+        OptimizeAsset: {
+            /** Ticker */
+            ticker: string;
+            /**
+             * Min
+             * @description 最低權重（%）
+             * @default 0
+             */
+            min: number;
+            /**
+             * Max
+             * @description 最高權重（%）
+             * @default 100
+             */
+            max: number;
+        };
+        /** OptimizeIn */
+        OptimizeIn: {
+            /** Assets */
+            assets: components["schemas"]["OptimizeAsset"][];
+            /**
+             * Objective
+             * @description 得分條件與權重；單一條件直接最大化，多個條件先標準化再加權
+             */
+            objective?: {
+                [key: string]: number;
+            };
+            /**
+             * Range
+             * @default 5y
+             * @enum {string}
+             */
+            range: "1y" | "2y" | "3y" | "5y" | "10y" | "ytd" | "max" | "custom";
+            /** Start */
+            start?: string | null;
+            /** End */
+            end?: string | null;
+            /**
+             * Currency
+             * @description 顯示貨幣；預設為用戶偏好（D7）
+             */
+            currency?: string | null;
+            /**
+             * Rebalance
+             * @description 再平衡（D8）；預設不再平衡
+             * @default none
+             * @enum {string}
+             */
+            rebalance: "none" | "monthly" | "quarterly" | "yearly";
+            /**
+             * Rf
+             * @default 0
+             */
+            rf: number;
+            /**
+             * Seed
+             * @description 隨機種子；相同輸入與種子，結果相同
+             * @default 42
+             */
+            seed: number;
+            /**
+             * Samples
+             * @default 20000
+             */
+            samples: number;
+            /**
+             * Oos Fraction
+             * @description 樣本外檢驗：最後這部分期間只用作驗證（0 = 不做）
+             * @default 0
+             */
+            oos_fraction: number;
+        };
+        /** OptimizeOut */
+        OptimizeOut: {
+            /**
+             * Weights
+             * @description 最佳權重（%，合計 100）
+             */
+            weights: {
+                [key: string]: number;
+            };
+            /**
+             * Metrics
+             * @description 最佳化期間的指標（return 為年化回報）
+             */
+            metrics: {
+                [key: string]: number | null;
+            };
+            /** Full Period */
+            full_period: {
+                [key: string]: number | null;
+            };
+            /** Score */
+            score: number;
+            /** Breakdown */
+            breakdown: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Top */
+            top: {
+                [key: string]: unknown;
+            }[];
+            /** Frontier */
+            frontier: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Cloud
+             * @description 抽樣組合的波動率與回報（作圖用，最多 1,500 個）
+             */
+            cloud: {
+                [key: string]: unknown;
+            }[];
+            /** Assets */
+            assets: {
+                [key: string]: unknown;
+            }[];
+            /** Out Of Sample */
+            out_of_sample?: {
+                [key: string]: unknown;
+            } | null;
+            /** Samples */
+            samples: number;
+            /** Seed */
+            seed: number;
+            /**
+             * Refined
+             * @description SLSQP 精修是否找到比抽樣更好的組合
+             */
+            refined: boolean;
+            /**
+             * Frequency
+             * @enum {string}
+             */
+            frequency: "daily" | "weekly";
+            /** Currency */
+            currency: string;
+            /** Rebalance */
+            rebalance: string;
+            /** Rf */
+            rf: number;
+            /** Objective */
+            objective: {
+                [key: string]: unknown;
+            };
+            /** Window */
+            window: {
+                [key: string]: unknown;
+            };
+            /**
+             * Data Version
+             * @description 所用數據的指紋；相同指紋、相同輸入，結果必定相同
+             */
+            data_version: string;
+            /** System Version */
+            system_version: string;
+            /** Bounds */
+            bounds: {
+                [key: string]: unknown;
+            }[];
         };
         /** PasswordIn */
         PasswordIn: {
@@ -4735,6 +4916,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    optimize_api_v1_analytics_optimize_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OptimizeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OptimizeOut"];
+                };
             };
             /** @description Validation Error */
             422: {

@@ -13,3 +13,4 @@ Pillow>=13.0.0
 # alpha.4: exchange trading calendars (market-data completeness) and SLSQP (portfolio optimizer)
 exchange-calendars>=4.13
 scipy>=1.16
+numpy>=2.0

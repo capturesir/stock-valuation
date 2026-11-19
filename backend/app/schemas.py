@@ -715,3 +715,49 @@ class PortfolioOut(BaseModel):
     rebalance: str
     notes: Optional[str] = None
     updated_at: str
+
+
+class OptimizeAsset(BaseModel):
+    ticker: str = Field(max_length=24)
+    min: int = Field(0, ge=0, le=100, description="最低權重（%）")
+    max: int = Field(100, ge=0, le=100, description="最高權重（%）")
+
+
+class OptimizeIn(BaseModel):
+    assets: list[OptimizeAsset] = Field(min_length=2, max_length=10)
+    objective: dict[Literal["sharpe", "max_drawdown", "return"], float] = Field(
+        default_factory=lambda: {"sharpe": 1.0}, description="得分條件與權重；單一條件直接最大化，多個條件先標準化再加權")
+    range: Literal["1y", "2y", "3y", "5y", "10y", "ytd", "max", "custom"] = "5y"
+    start: Optional[str] = None
+    end: Optional[str] = None
+    currency: Optional[str] = Field(None, max_length=8, description="顯示貨幣；預設為用戶偏好（D7）")
+    rebalance: Literal["none", "monthly", "quarterly", "yearly"] = Field("none", description="再平衡（D8）；預設不再平衡")
+    rf: float = Field(0.0, ge=-0.05, le=0.5)
+    seed: int = Field(42, ge=0, le=2**31 - 1, description="隨機種子；相同輸入與種子，結果相同")
+    samples: int = Field(20000, ge=500, le=50000)
+    oos_fraction: float = Field(0.0, ge=0.0, le=0.5, description="樣本外檢驗：最後這部分期間只用作驗證（0 = 不做）")
+
+
+class OptimizeOut(BaseModel):
+    weights: dict[str, int] = Field(description="最佳權重（%，合計 100）")
+    metrics: dict[str, Optional[float]] = Field(description="最佳化期間的指標（return 為年化回報）")
+    full_period: dict[str, Optional[float]]
+    score: float
+    breakdown: dict[str, dict]
+    top: list[dict]
+    frontier: list[dict]
+    cloud: list[dict] = Field(description="抽樣組合的波動率與回報（作圖用，最多 1,500 個）")
+    assets: list[dict]
+    out_of_sample: Optional[dict] = None
+    samples: int
+    seed: int
+    refined: bool = Field(description="SLSQP 精修是否找到比抽樣更好的組合")
+    frequency: Literal["daily", "weekly"]
+    currency: str
+    rebalance: str
+    rf: float
+    objective: dict
+    window: dict
+    data_version: str = Field(description="所用數據的指紋；相同指紋、相同輸入，結果必定相同")
+    system_version: str
+    bounds: list[dict]
