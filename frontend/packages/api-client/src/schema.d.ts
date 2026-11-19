@@ -605,6 +605,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/market/check/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 立即檢查一隻證券的完整性：按交易日曆找缺口並重抓；full=true 先重讀全部歷史（管理員） */
+        post: operations["check_one_api_v1_admin_market_check__ticker__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/market/update-all": {
         parameters: {
             query?: never;
@@ -811,6 +828,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analytics/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 走勢比較：最多 10 條線（股票或已保存組合），以起點 100 的總回報指數、相對強弱與指標（顯示貨幣） */
+        post: operations["compare_api_v1_analytics_compare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/compare/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 匯出走勢比較：Excel（走勢、指標、期間回報）或 CSV */
+        post: operations["compare_export_api_v1_analytics_compare_export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comparisons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 我保存的走勢比較 */
+        get: operations["list_comparisons_api_v1_comparisons_get"];
+        put?: never;
+        /** 保存走勢比較 */
+        post: operations["save_comparison_api_v1_comparisons_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/comparisons/{cid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 更新已保存的走勢比較 */
+        put: operations["update_comparison_api_v1_comparisons__cid__put"];
+        post?: never;
+        /** 刪除已保存的走勢比較 */
+        delete: operations["delete_comparison_api_v1_comparisons__cid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 我的投資組合 */
+        get: operations["list_portfolios_api_v1_portfolios_get"];
+        put?: never;
+        /** 保存投資組合（權重自動換算為合計 100%） */
+        post: operations["save_portfolio_api_v1_portfolios_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolios/{pid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 修改投資組合 */
+        put: operations["update_portfolio_api_v1_portfolios__pid__put"];
+        post?: never;
+        /** 刪除投資組合 */
+        delete: operations["delete_portfolio_api_v1_portfolios__pid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -969,6 +1092,120 @@ export interface components {
              * @description 相對差異（0.0074 = 0.74%）
              */
             difference?: string | null;
+        };
+        /** CompareIn */
+        CompareIn: {
+            /** Lines */
+            lines: components["schemas"]["CompareLine"][];
+            /**
+             * Benchmark
+             * @description lines 中作為 benchmark 的位置
+             * @default 0
+             */
+            benchmark: number;
+            /**
+             * Range
+             * @default 3y
+             * @enum {string}
+             */
+            range: "1y" | "2y" | "3y" | "5y" | "10y" | "ytd" | "max" | "custom";
+            /**
+             * Start
+             * @description 自訂起日（range=custom）
+             */
+            start?: string | null;
+            /**
+             * End
+             * @description 自訂止日；預設為最新共同交易日
+             */
+            end?: string | null;
+            /**
+             * Currency
+             * @description 顯示貨幣；預設為用戶偏好（D7）
+             */
+            currency?: string | null;
+            /**
+             * Rf
+             * @description 無風險利率（年，0.04 = 4%）
+             * @default 0
+             */
+            rf: number;
+        };
+        /** CompareLine */
+        CompareLine: {
+            /**
+             * Kind
+             * @default ticker
+             * @enum {string}
+             */
+            kind: "ticker" | "portfolio";
+            /**
+             * Ref
+             * @description 代號（ticker）或已保存組合的編號（portfolio）
+             */
+            ref: string;
+        };
+        /** CompareLineOut */
+        CompareLineOut: {
+            /** Key */
+            key: string;
+            /** Kind */
+            kind: string;
+            /** Ref */
+            ref: string;
+            /** Label */
+            label: string;
+            /**
+             * Currency
+             * @description 原交易貨幣（已換算為顯示貨幣）
+             */
+            currency: string;
+            /** First Date */
+            first_date?: string | null;
+            /**
+             * Values
+             * @description 以起點為 100 的總回報指數（股息再投資），與 dates 對應
+             */
+            values: number[];
+        };
+        /** CompareOut */
+        CompareOut: {
+            /** Currency */
+            currency: string;
+            /** Rf */
+            rf: number;
+            /**
+             * Frequency
+             * @description 計算回報指標用的頻率；跨交易所時改用每週回報（收市時間不同）
+             * @enum {string}
+             */
+            frequency: "daily" | "weekly";
+            /** Benchmark */
+            benchmark: string;
+            /** Window */
+            window: {
+                [key: string]: unknown;
+            };
+            /** Dates */
+            dates: string[];
+            /** Lines */
+            lines: components["schemas"]["CompareLineOut"][];
+            /** Relative */
+            relative: components["schemas"]["RelativeOut"][];
+            /**
+             * Metrics
+             * @description 每條線的指標；相對 benchmark 的指標只限非 benchmark 的線
+             */
+            metrics: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Periods
+             * @description 每條線的期間回報（1m、3m、6m、ytd、1y、3y、5y；3y 與 5y 為年化）
+             */
+            periods: {
+                [key: string]: unknown;
+            }[];
         };
         /** Coverage */
         Coverage: {
@@ -1144,6 +1381,16 @@ export interface components {
              * @default 本系統產出不構成投資建議。
              */
             disclaimer: string;
+        };
+        /** Holding */
+        Holding: {
+            /** Ticker */
+            ticker: string;
+            /**
+             * Weight
+             * @description 權重；可用百分比或小數，系統會換算成合計 100%
+             */
+            weight: number;
         };
         /** Job */
         Job: {
@@ -1447,6 +1694,36 @@ export interface components {
             /** Cost High Usd */
             cost_high_usd: number;
         };
+        /** PortfolioIn */
+        PortfolioIn: {
+            /** Name */
+            name: string;
+            /** Holdings */
+            holdings: components["schemas"]["Holding"][];
+            /**
+             * Rebalance
+             * @default none
+             * @enum {string}
+             */
+            rebalance: "none" | "monthly" | "quarterly" | "yearly";
+            /** Notes */
+            notes?: string | null;
+        };
+        /** PortfolioOut */
+        PortfolioOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Holdings */
+            holdings: components["schemas"]["Holding"][];
+            /** Rebalance */
+            rebalance: string;
+            /** Notes */
+            notes?: string | null;
+            /** Updated At */
+            updated_at: string;
+        };
         /**
          * Prefs
          * @description Per-user preferences. Display currency for portfolios and comparisons (D7); rebalancing (D8).
@@ -1549,6 +1826,16 @@ export interface components {
             /** Cells */
             cells: (components["schemas"]["RatioCell"] | null)[];
         };
+        /** RelativeOut */
+        RelativeOut: {
+            /** Key */
+            key: string;
+            /**
+             * Values
+             * @description 相對強弱：標的 ÷ benchmark，起點為 100
+             */
+            values: number[];
+        };
         /** RevisionOut */
         RevisionOut: {
             /** Ticker */
@@ -1623,6 +1910,22 @@ export interface components {
              * @default []
              */
             data_gaps: string[];
+        };
+        /** SavedComparisonIn */
+        SavedComparisonIn: {
+            /** Name */
+            name: string;
+            settings: components["schemas"]["CompareIn"];
+        };
+        /** SavedComparisonOut */
+        SavedComparisonOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            settings: components["schemas"]["CompareIn"];
+            /** Updated At */
+            updated_at: string;
         };
         /** SecurityOut */
         SecurityOut: {
@@ -3557,6 +3860,44 @@ export interface operations {
             };
         };
     };
+    check_one_api_v1_admin_market_check__ticker__post: {
+        parameters: {
+            query?: {
+                full?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_all_api_v1_admin_market_update_all_post: {
         parameters: {
             query?: never;
@@ -4044,6 +4385,356 @@ export interface operations {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
                     "text/csv": unknown;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compare_api_v1_analytics_compare_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompareIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompareOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    compare_export_api_v1_analytics_compare_export_post: {
+        parameters: {
+            query?: {
+                format?: "xlsx" | "csv";
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompareIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_comparisons_api_v1_comparisons_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedComparisonOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_comparison_api_v1_comparisons_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedComparisonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedComparisonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_comparison_api_v1_comparisons__cid__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                cid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedComparisonIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedComparisonOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_comparison_api_v1_comparisons__cid__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                cid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_portfolios_api_v1_portfolios_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_portfolio_api_v1_portfolios_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortfolioIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_portfolio_api_v1_portfolios__pid__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PortfolioIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortfolioOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_portfolio_api_v1_portfolios__pid__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

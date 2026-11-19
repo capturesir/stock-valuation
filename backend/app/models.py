@@ -312,3 +312,30 @@ class FiledFactRow(Base):
     frame: Mapped[Optional[str]] = mapped_column(String(20))
     raw_document_id: Mapped[int] = mapped_column(ForeignKey("raw_documents.id"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+# ---------------------------------------------------------------- portfolio analysis (alpha.4)
+# Private to each user (decision D10): only the owner sees their portfolios and comparisons.
+
+class Portfolio(Base):
+    """A named set of holdings and target weights, with how it is rebalanced (D8)."""
+    __tablename__ = "portfolios"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    holdings: Mapped[list] = mapped_column(JSON)                  # [{"ticker": "SPY", "weight": 0.6}, …], weights sum to 1
+    rebalance: Mapped[str] = mapped_column(String(12), default="none")   # none | monthly | quarterly | yearly
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class Comparison(Base):
+    """A saved comparison chart: up to 10 lines (tickers or portfolios), one benchmark, period and display settings."""
+    __tablename__ = "comparisons"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    settings: Mapped[dict] = mapped_column(JSON)                  # the CompareIn request, as saved
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)

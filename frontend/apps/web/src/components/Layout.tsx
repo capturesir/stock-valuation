@@ -53,6 +53,7 @@ export function Layout() {
           <nav className="topnav" aria-label={t("nav.main")}>
             <NavLink to="/" end>{t("nav.watchlist")}</NavLink>
             {last && <NavLink to={`/stock/${last}`}>{t("nav.stock")}</NavLink>}
+            <NavLink to="/compare">{t("nav.compare")}</NavLink>
           </nav>
           <form className="search" role="search" onSubmit={go}>
             <Search size={16} />
@@ -87,6 +88,7 @@ export function Layout() {
       <nav className="bottomnav" aria-label={t("nav.main")}>
         <NavLink to="/" end><List size={20} />{t("nav.watchlist")}</NavLink>
         <NavLink to={last ? `/stock/${last}` : "/"}><Trend size={20} />{t("nav.stock")}</NavLink>
+        <NavLink to="/compare"><List size={20} />{t("nav.compare")}</NavLink>
         <NavLink to="/settings"><Gear size={20} />{t("nav.settings")}</NavLink>
         <NavLink to="/account"><Person size={20} />{t("nav.account")}</NavLink>
       </nav>

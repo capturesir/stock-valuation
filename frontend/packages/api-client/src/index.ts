@@ -45,6 +45,11 @@ export type FilerOut = S["FilerOut"];
 export type FiledConceptOut = S["FiledConceptOut"];
 export type FiledFactOut = S["FiledFactOut"];
 export type StandardStatements = S["StandardStatements"];
+export type CompareIn = S["CompareIn"];
+export type CompareOut = S["CompareOut"];
+export type SavedComparisonOut = S["SavedComparisonOut"];
+export type PortfolioIn = S["PortfolioIn"];
+export type PortfolioOut = S["PortfolioOut"];
 export type StatementsStatus = S["StatementsStatus"];
 export type StdRow = S["StdRow"];
 export type StdCell = S["StdCell"];
@@ -98,6 +103,18 @@ export function createClient(cfg: ClientConfig = {}) {
     return data as T;
   }
 
+  /** a POST that answers with a file (exports) */
+  async function reqBlob(path: string, body: unknown): Promise<Blob> {
+    const res = await doFetch(base + path, { method: "POST", headers: headers(true), credentials: cfg.credentials ?? "same-origin",
+                                             body: JSON.stringify(body) });
+    if (res.status === 401) cfg.onUnauthorized?.();
+    if (!res.ok) {
+      const d = (await res.json().catch(() => null))?.detail;
+      throw new ApiError(res.status, d?.code ?? "http_" + res.status, d?.error ?? res.statusText);
+    }
+    return res.blob();
+  }
+
   const q = (params: Record<string, string | number | undefined | null>) => {
     const s = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== "") s.set(k, String(v));
@@ -137,6 +154,15 @@ export function createClient(cfg: ClientConfig = {}) {
     syncStatements: (ticker: string, force = false) =>
       req<StatementsSyncResult>("POST", `/admin/statements/sync/${enc(ticker)}${q({ force: force ? "true" : undefined })}`),
     filer: (ticker: string) => req<FilerOut>("GET", `/stocks/${enc(ticker)}/filer`),
+    compare: (body: CompareIn) => req<CompareOut>("POST", "/analytics/compare", body),
+    compareExport: (body: CompareIn, format: "xlsx" | "csv") => reqBlob(`/analytics/compare/export${q({ format })}`, body),
+    comparisons: () => req<SavedComparisonOut[]>("GET", "/comparisons"),
+    saveComparison: (name: string, settings: CompareIn, id?: string) =>
+      req<SavedComparisonOut>(id ? "PUT" : "POST", id ? `/comparisons/${enc(id)}` : "/comparisons", { name, settings }),
+    deleteComparison: (id: string) => req<void>("DELETE", `/comparisons/${enc(id)}`),
+    portfolios: () => req<PortfolioOut[]>("GET", "/portfolios"),
+    savePortfolio: (body: PortfolioIn, id?: string) => req<PortfolioOut>(id ? "PUT" : "POST", id ? `/portfolios/${enc(id)}` : "/portfolios", body),
+    deletePortfolio: (id: string) => req<void>("DELETE", `/portfolios/${enc(id)}`),
     statementsStatus: (ticker: string) => req<StatementsStatus>("GET", `/stocks/${enc(ticker)}/statements/status`),
     fetchStatements: (ticker: string) => req<StatementsStatus>("POST", `/stocks/${enc(ticker)}/statements/fetch`),
     filedConcepts: (ticker: string) => req<FiledConceptOut[]>("GET", `/stocks/${enc(ticker)}/filed-concepts`),
