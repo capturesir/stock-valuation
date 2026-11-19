@@ -951,6 +951,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/scenarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 我保存的最佳化場景 */
+        get: operations["list_scenarios_api_v1_scenarios_get"];
+        put?: never;
+        /** 保存最佳化場景：伺服器重新計算一次並保存輸入、實際數據期間、數據指紋、種子、結果與系統版本 */
+        post: operations["save_scenario_api_v1_scenarios_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scenarios/{sid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 一個已保存場景的完整輸入與結果 */
+        get: operations["get_scenario_api_v1_scenarios__sid__get"];
+        put?: never;
+        post?: never;
+        /** 刪除場景 */
+        delete: operations["delete_scenario_api_v1_scenarios__sid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scenarios/{sid}/recompute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 以保存的輸入、同一數據期間與種子重算，核對結果是否完全相同（數據若被修訂會指出） */
+        post: operations["recompute_scenario_api_v1_scenarios__sid__recompute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2007,6 +2060,36 @@ export interface components {
             /** Cells */
             cells: (components["schemas"]["RatioCell"] | null)[];
         };
+        /** RecomputeOut */
+        RecomputeOut: {
+            /**
+             * Identical
+             * @description 權重與得分完全相同
+             */
+            identical: boolean;
+            /**
+             * Same Data
+             * @description 數據指紋相同（期間內沒有任何價格被修訂）
+             */
+            same_data: boolean;
+            /** Same System */
+            same_system: boolean;
+            /** Original */
+            original: {
+                [key: string]: unknown;
+            };
+            /** Recomputed */
+            recomputed: {
+                [key: string]: unknown;
+            };
+            /**
+             * Weight Changes
+             * @description 權重有變的資產：[原本, 重算]
+             */
+            weight_changes?: {
+                [key: string]: number[];
+            };
+        };
         /** RelativeOut */
         RelativeOut: {
             /** Key */
@@ -2107,6 +2190,67 @@ export interface components {
             settings: components["schemas"]["CompareIn"];
             /** Updated At */
             updated_at: string;
+        };
+        /** ScenarioIn */
+        ScenarioIn: {
+            /** Name */
+            name: string;
+            inputs: components["schemas"]["OptimizeIn"];
+        };
+        /** ScenarioOut */
+        ScenarioOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Created At */
+            created_at: string;
+            /** Window Start */
+            window_start: string;
+            /** Window End */
+            window_end: string;
+            /** Data Version */
+            data_version: string;
+            /** System Version */
+            system_version: string;
+            /** Weights */
+            weights: {
+                [key: string]: number;
+            };
+            /** Objective */
+            objective: {
+                [key: string]: unknown;
+            };
+            /** Inputs */
+            inputs: {
+                [key: string]: unknown;
+            };
+            result: components["schemas"]["OptimizeOut"];
+        };
+        /** ScenarioSummary */
+        ScenarioSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Created At */
+            created_at: string;
+            /** Window Start */
+            window_start: string;
+            /** Window End */
+            window_end: string;
+            /** Data Version */
+            data_version: string;
+            /** System Version */
+            system_version: string;
+            /** Weights */
+            weights: {
+                [key: string]: number;
+            };
+            /** Objective */
+            objective: {
+                [key: string]: unknown;
+            };
         };
         /** SecurityOut */
         SecurityOut: {
@@ -4951,6 +5095,174 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OptimizeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scenarios_api_v1_scenarios_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_scenario_api_v1_scenarios_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScenarioIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_scenario_api_v1_scenarios__sid__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_scenario_api_v1_scenarios__sid__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recompute_scenario_api_v1_scenarios__sid__recompute_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                sid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecomputeOut"];
                 };
             };
             /** @description Validation Error */

@@ -4826,6 +4826,361 @@
      }
     }
    }
+  },
+  "/api/v1/scenarios": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "我保存的最佳化場景",
+    "operationId": "list_scenarios_api_v1_scenarios_get",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ScenarioSummary"
+         },
+         "title": "Response List Scenarios Api V1 Scenarios Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "保存最佳化場景：伺服器重新計算一次並保存輸入、實際數據期間、數據指紋、種子、結果與系統版本",
+    "operationId": "save_scenario_api_v1_scenarios_post",
+    "parameters": [
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ScenarioIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScenarioOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/scenarios/{sid}": {
+   "get": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "一個已保存場景的完整輸入與結果",
+    "operationId": "get_scenario_api_v1_scenarios__sid__get",
+    "parameters": [
+     {
+      "name": "sid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Sid"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ScenarioOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "刪除場景",
+    "operationId": "delete_scenario_api_v1_scenarios__sid__delete",
+    "parameters": [
+     {
+      "name": "sid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Sid"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/scenarios/{sid}/recompute": {
+   "post": {
+    "tags": [
+     "analytics"
+    ],
+    "summary": "以保存的輸入、同一數據期間與種子重算，核對結果是否完全相同（數據若被修訂會指出）",
+    "operationId": "recompute_scenario_api_v1_scenarios__sid__recompute_post",
+    "parameters": [
+     {
+      "name": "sid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Sid"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RecomputeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -7685,6 +8040,54 @@
     ],
     "title": "RatioRow"
    },
+   "RecomputeOut": {
+    "properties": {
+     "identical": {
+      "type": "boolean",
+      "title": "Identical",
+      "description": "權重與得分完全相同"
+     },
+     "same_data": {
+      "type": "boolean",
+      "title": "Same Data",
+      "description": "數據指紋相同（期間內沒有任何價格被修訂）"
+     },
+     "same_system": {
+      "type": "boolean",
+      "title": "Same System"
+     },
+     "original": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Original"
+     },
+     "recomputed": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Recomputed"
+     },
+     "weight_changes": {
+      "additionalProperties": {
+       "items": {
+        "type": "integer"
+       },
+       "type": "array"
+      },
+      "type": "object",
+      "title": "Weight Changes",
+      "description": "權重有變的資產：[原本, 重算]"
+     }
+    },
+    "type": "object",
+    "required": [
+     "identical",
+     "same_data",
+     "same_system",
+     "original",
+     "recomputed"
+    ],
+    "title": "RecomputeOut"
+   },
    "RelativeOut": {
     "properties": {
      "key": {
@@ -8022,6 +8425,149 @@
      "updated_at"
     ],
     "title": "SavedComparisonOut"
+   },
+   "ScenarioIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Name"
+     },
+     "inputs": {
+      "$ref": "#/components/schemas/OptimizeIn"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "inputs"
+    ],
+    "title": "ScenarioIn"
+   },
+   "ScenarioOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "window_start": {
+      "type": "string",
+      "title": "Window Start"
+     },
+     "window_end": {
+      "type": "string",
+      "title": "Window End"
+     },
+     "data_version": {
+      "type": "string",
+      "title": "Data Version"
+     },
+     "system_version": {
+      "type": "string",
+      "title": "System Version"
+     },
+     "weights": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Weights"
+     },
+     "objective": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Objective"
+     },
+     "inputs": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Inputs"
+     },
+     "result": {
+      "$ref": "#/components/schemas/OptimizeOut"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "created_at",
+     "window_start",
+     "window_end",
+     "data_version",
+     "system_version",
+     "weights",
+     "objective",
+     "inputs",
+     "result"
+    ],
+    "title": "ScenarioOut"
+   },
+   "ScenarioSummary": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     },
+     "window_start": {
+      "type": "string",
+      "title": "Window Start"
+     },
+     "window_end": {
+      "type": "string",
+      "title": "Window End"
+     },
+     "data_version": {
+      "type": "string",
+      "title": "Data Version"
+     },
+     "system_version": {
+      "type": "string",
+      "title": "System Version"
+     },
+     "weights": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "type": "object",
+      "title": "Weights"
+     },
+     "objective": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Objective"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "name",
+     "created_at",
+     "window_start",
+     "window_end",
+     "data_version",
+     "system_version",
+     "weights",
+     "objective"
+    ],
+    "title": "ScenarioSummary"
    },
    "SecurityOut": {
     "properties": {

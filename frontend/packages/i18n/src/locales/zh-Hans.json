@@ -775,5 +775,18 @@
   "opt.frontier": "效率前缘",
   "opt.assets": "单一资产",
   "opt.best": "最佳比例",
-  "opt.topTitle": "前几名候选组合"
+  "opt.topTitle": "前几名候选组合",
+  "opt.scenarios": "场景",
+  "opt.scenariosIntro": "保存场景时，系统会重新计算一次，并记下输入、实际使用的数据期间、数据指纹、随机种子、结果与系统版本；之后可随时以同一期间重算核对。",
+  "opt.scenarioName": "场景名称",
+  "opt.saveScenario": "保存场景（以目前设置）",
+  "opt.savedScenario": "已保存场景“{name}”。",
+  "opt.window": "数据期间",
+  "opt.open": "打开",
+  "opt.recompute": "重算核对",
+  "opt.check.identical": "✓ 重算结果完全相同：数据、权重与得分都一致。",
+  "opt.check.differentSame": "数据相同，但结果不同（系统版本可能已更新）。",
+  "opt.check.dataChanged": "期间内的数据已被修订（例如来源修正了某日价格），所以结果可能不同。",
+  "opt.check.detail": "数据指纹 {a} → {b}；系统版本 {sa} → {sb}",
+  "opt.showingScenario": "下方显示的是已保存场景“{name}”的结果。"
 }

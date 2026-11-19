@@ -104,6 +104,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     "optimize_too_short": {"zh-Hant": "期間太短：最佳化（及樣本外檢驗）每段至少需要 {n} 個共同交易日。",
                            "zh-Hans": "期间太短：最优化（及样本外检验）每段至少需要 {n} 个共同交易日。",
                            "en": "The period is too short: optimisation (and the out-of-sample check) need at least {n} common trading days each."},
+    "scenario_not_found": {"zh-Hant": "找不到此場景。", "zh-Hans": "找不到此场景。", "en": "Scenario not found."},
     "ai_not_configured": {"zh-Hant": "尚未設定 AI 位址與模型。", "zh-Hans": "尚未设置 AI 地址与模型。",
                           "en": "The AI endpoint and model are not set."},
 }

@@ -339,3 +339,20 @@ class Comparison(Base):
     settings: Mapped[dict] = mapped_column(JSON)                  # the CompareIn request, as saved
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class Scenario(Base):
+    """A saved optimisation (roadmap §5.3 保存): the inputs, the exact data window and data fingerprint used,
+    the seed, the full result as computed by the server, and the system version — enough to recompute it
+    and say whether the answer is the same. Private to the owner (D10)."""
+    __tablename__ = "scenarios"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(80))
+    inputs: Mapped[dict] = mapped_column(JSON)          # the optimisation request, with currency resolved
+    window_start: Mapped[dt.date] = mapped_column(Date)  # the exact data window used (a "5y" range moves; this does not)
+    window_end: Mapped[dt.date] = mapped_column(Date)
+    data_version: Mapped[str] = mapped_column(String(32))
+    system_version: Mapped[str] = mapped_column(String(32))
+    result: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
