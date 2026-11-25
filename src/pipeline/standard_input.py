@@ -19,6 +19,8 @@ import datetime as dt
 from decimal import Decimal
 from typing import Optional
 
+from .gaps import Gap
+
 # standard item -> (block, Yahoo row name); sign -1 where Yahoo reports a cash outflow as negative
 ROWS: dict[str, tuple[str, str, int]] = {
     "revenue": ("is_a", "Total Revenue", 1),
@@ -112,14 +114,13 @@ def to_blocks(std: dict, yahoo_fund: dict) -> tuple[dict, dict, dict, list[str],
                 filled.add(name)
         used.append(y["label"])
     plan = std.get("plan")
-    plan_text = (f"中央方案 v{plan['version']}" if plan and plan["kind"] == "central"
-                 else f"個人方案 v{plan['version']}" if plan else "系統預設（不調整）")
-    gaps.append(f"美股財報取自 SEC 標準層（規則 {std['ruleset']} {std['ruleset_version']}；{plan_text}）："
-                f"{'、'.join(used) or '—'}；每個數字可在「財報」分頁追回申報文件。")
+    plan_text = (Gap("plan_central", v=plan["version"]) if plan and plan["kind"] == "central"
+                 else Gap("plan_personal", v=plan["version"]) if plan else Gap("plan_none"))
+    gaps.append(Gap("sec_standard", ruleset=std["ruleset"], version=std["ruleset_version"], plan=plan_text, years=used or ["—"]))
     if dropped:
-        gaps.append(f"以下財年有錯誤級別的檢查未通過、且調整方案未處理，未用於估值：{'、'.join(dropped)}。")
+        gaps.append(Gap("grade_c_dropped", years=dropped))
     if filled:
-        gaps.append(f"標準層未涵蓋的項目仍取自 Yahoo 同一財年：{'、'.join(sorted(filled))}。")
+        gaps.append(Gap("yahoo_fill", items=sorted(filled)))
     source = {"source": "sec_standard", "ruleset": std["ruleset"], "ruleset_version": std["ruleset_version"],
               "view": std.get("view"), "as_of": std.get("as_of"), "years": used, "dropped": dropped,
               "plan": plan, "grades": {k: v for k, v in grades.items() if k in used}}

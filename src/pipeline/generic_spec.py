@@ -26,6 +26,7 @@ from ..engine import method_a as MA
 from ..engine.fcff_engine import D
 from ..fetch import yahoo
 from . import rules
+from .gaps import Gap
 
 # Yahoo "industry" (lower-case) -> Damodaran industry name in betaGlobal.xls.
 # Only exact-ish matches are listed; anything else falls back to a derivation.
@@ -204,10 +205,7 @@ def resolve_industry(ticker: str, info: dict, tax: float, d_over_e: float, gaps:
     if industry:
         _register_industry(industry)
         MA.register_ticker(ticker, industry)
-        gaps.append(
-            f"行業按 Yahoo「{info.get('industry') or info.get('sector')}」對應 Damodaran「{industry}」；"
-            "未逐公司核對 indname.xls，若分類有誤會改變 β 與 WACC。"
-        )
+        gaps.append(Gap("industry_mapped", yahoo=info.get('industry') or info.get('sector'), industry=industry))
         return industry
 
     # No Damodaran industry matched: derive the unlevered beta from the regression beta.
@@ -221,7 +219,7 @@ def resolve_industry(ticker: str, info: dict, tax: float, d_over_e: float, gaps:
     # Guard the derivation: an absurd βU means the inputs were inconsistent
     # (units, missing debt, extreme D/E) and would distort WACC silently.
     if not (0.05 <= bu <= 3.0):
-        gaps.append(f"由迴歸 Beta 還原的 βU {bu:.4f} 不合理，已改用迴歸 Beta {float(reg):.3f} 作 βU。")
+        gaps.append(Gap("beta_unlevered_unreasonable", bu=bu, reg=float(reg)))
         bu = float(reg)
     label = f"未分類（{info.get('industry') or info.get('sector') or ticker}）"
 
@@ -231,7 +229,7 @@ def resolve_industry(ticker: str, info: dict, tax: float, d_over_e: float, gaps:
         "未能對應 Damodaran 行業，屬估算值。",
     )
     MA.register_ticker(ticker, label)
-    gaps.append(f"未能對應 Damodaran 行業，β 以 Yahoo 迴歸 Beta 還原（βU≈{bu:.3f}），與方法 A 標準不同，屬估算值。")
+    gaps.append(Gap("beta_derived", bu=bu))
     return label
 
 
@@ -344,12 +342,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     mk = MARKET_DEFAULTS[code]
     gaps: list = list(snap.get("data_gaps") or [])
     from_sec = (snap.get("statement_source") or {}).get("source") == "sec_standard"
-    gaps.append(
-        ("本檔為【自動建立的通用規格】：財報數字取自 SEC 標準層（見上），市場數據與預測取自 Yahoo，行業參數取自 Damodaran 檔案；"
-         if from_sec else
-         "本檔為【自動建立的通用規格】：全部數字取自 Yahoo 財報與 Damodaran 檔案，")
-        + "未經人工逐項覆核；引用前請自行核對年報與最新公告，並優先以內建規格（NVDA／1830.HK）的標準重做。"
-    )
+    gaps.append(Gap("generic_spec_sec" if from_sec else "generic_spec_yahoo"))
 
     is_a, bs_a, cf_a = fund.get("is_a") or {}, fund.get("bs_a") or {}, fund.get("cf_a") or {}
     dates = sorted(is_a.keys(), reverse=True) if isinstance(is_a, dict) else []
@@ -363,7 +356,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         raise GenericSpecError(f"{ticker} 取不到年度營收，無法建立模型。")
     ebit, ebit_name = _op_income(is_a, d0)
     if ebit_name == "EBIT":
-        gaps.append("Yahoo 無營業利潤，暫用其 EBIT（＝稅前利潤＋利息，含非經營收益），利潤率可能偏高或偏低。")
+        gaps.append(Gap("ebit_from_yahoo"))
     if ebit is None:
         raise GenericSpecError(f"{ticker} 取不到年度 EBIT／營業利潤，無法建立模型。")
 
@@ -390,7 +383,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     if not basic:
         basic = info.get("impliedSharesOutstanding") or info.get("sharesOutstanding")
         basic_src = "Yahoo 目前已發行股數（資產負債表無股數）"
-        gaps.append("資產負債表沒有股數，改用 Yahoo 目前已發行股數；多類別股份的公司須核對是否包含全部類別。")
+        gaps.append(Gap("shares_from_info"))
     if not basic:
         raise GenericSpecError(f"{ticker} 取不到股數，無法換算每股理論價。")
     dil_avg, bas_avg = _val(is_a, d0, "Diluted Average Shares"), _val(is_a, d0, "Basic Average Shares")
@@ -400,7 +393,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     shares_basis = (f"市場數據：{basic_src} {float(basic) / 1e6:,.3f}m ＋ 攤薄 {dilution / 1e6:,.3f}m"
                     f"（{d0} 攤薄加權平均 − 基本加權平均）＝ {shares_m:,.3f}m 攤薄股數")
     if not (dil_avg and bas_avg):
-        gaps.append("Yahoo 沒有攤薄／基本加權平均股數，未計期權與可換股證券的攤薄。")
+        gaps.append(Gap("no_dilution"))
 
     cash, _ = _first(bs_a, bs0, ["Cash Cash Equivalents And Short Term Investments", "Cash And Cash Equivalents"])
     if cash is None:
@@ -417,9 +410,9 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     dtl, _ = _first(bs_a, bs0, ["Non Current Deferred Taxes Liabilities"])
     nci, _ = _first(bs_a, bs0, ["Minority Interest"])
 
-    for label, v in (("D&A", da), ("資本開支", capex), ("無風險利率", snap.get("rf", {}).get("value"))):
+    for gap_code, v in (("missing_da", da), ("missing_capex", capex), ("missing_rf", snap.get("rf", {}).get("value"))):
         if v is None:
-            gaps.append(f"Yahoo 未提供{label}，已用替代值或規則假設，請核對年報。")
+            gaps.append(Gap(gap_code))
 
     # Tax follows where profits are earned, approximated like the CRP by the reporting currency
     # (CNOOC is registered in Hong Kong but taxed as a mainland resident enterprise at 25%).
@@ -428,11 +421,11 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     marginal = MARGINAL_TAX.get(country)
     if marginal is None:
         marginal = DEFAULT_MARGINAL_TAX
-        gaps.append(f"未收錄「{country or '未知'}」的法定稅率，邊際稅率暫用 {marginal:.0%}。")
+        gaps.append(Gap("tax_country_unknown", country=country or "—", marginal=marginal))
     eff_raw = tax
     tax = marginal if tax is None or not (0.0 <= float(tax) <= 0.5) else float(tax)
     if eff_raw is None or not (0.0 <= float(eff_raw) <= 0.5):
-        gaps.append(f"有效稅率不可用或不合理（{eff_raw}），首年起即用邊際稅率 {marginal:.1%}。")
+        gaps.append(Gap("effective_tax_invalid", eff=str(eff_raw), marginal=marginal))
     da_pct = (da / rev) if da else 0.05
     cpx_pct = (capex / rev) if capex else max(da_pct, 0.02)
 
@@ -473,18 +466,19 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     from ..fetch import rf as _rfmod
     crp_country = _rfmod.COUNTRY.get(model_ccy) if _rfmod.COUNTRY.get(model_ccy) in MA.CRP else code
     if crp_country not in MA.CRP:
-        gaps.append(f"Damodaran CRP 未收錄 {crp_country} 市場，暫用美國 CRP＝0，請人工確認國家風險。")
+        gaps.append(Gap("crp_missing", market=crp_country))
         crp_country = "US"
     crp = MA.crp(crp_country, f"（通用規格：按報表貨幣 {model_ccy} 推定業務所在地；跨國業務應按收入地域加權）"
                  if crp_country != "US" else "")
     if crp_country != code and code in MA.CRP:
-        gaps.append(f"國家風險按報表貨幣 {model_ccy} 推定為 {MA.CRP[crp_country][2]}，而非上市地 {MA.CRP[code][2]}。")
+        gaps.append(Gap("crp_by_currency", currency=model_ccy, country=crp_country, country_name=MA.CRP[crp_country][2],
+                        listing=code, listing_name=MA.CRP[code][2]))
     e_mkt_model = snap["price"] * fx_mkt_to_model * shares_m
 
     kd = (interest / debt) if interest and debt and debt > 0 else None
     if kd is None or not (0 < kd < 0.5):
         kd = snap["rf"]["value"] + MA.DEFAULT_SPREAD.get(code, 0.005)
-        gaps.append("利息費用／總債務不可用，Kd 以 Rf＋Damodaran 該國違約息差代替。")
+        gaps.append(Gap("kd_fallback"))
     # keep units consistent: debt is in currency units, E is in millions.
     # (Using the raw debt here inflated D/E by 1e6, collapsed βU to ~0 and sent
     # Alibaba's WACC to 3.5% — caught by the fresh-ticker acceptance test.)
@@ -518,8 +512,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     wacc_est = _d["wacc"]["value"]
     ronic, ronic_note = ronic_rule(roic, wacc_est)
     if is_financial(info):
-        method_warning = ("⚠ 金融業（銀行、保險、券商等）：債務是業務原料而非融資，FCFF 與 WACC 的定義並不適用；"
-                          "此結果只作參考（決定 D5），應以 DDM／剩餘收益／P/B–ROE 估值（開發中）。")
+        method_warning = Gap("financial_method")
         gaps.insert(0, method_warning)
     else:
         method_warning = None
@@ -553,11 +546,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
             else:
                 g0 = g_from_stmt
                 if g_from_yahoo is not None:
-                    gaps.append(
-                        f"Yahoo 0y 的 yearAgoRevenue（{float(prev_rev0) / 1e6:,.0f} 百萬）與財報營收"
-                        f"（{rev / 1e6:,.0f} 百萬）規模不符，已改用「共識營收 ÷ 最新年度營收」"
-                        f"計算首年增長（{g0:+.1%}）。"
-                    )
+                    gaps.append(Gap("consensus_scale_mismatch", prev_m=float(prev_rev0) / 1e6, rev_m=rev / 1e6, g0=g0))
         if y1.get("avg") and y0.get("avg"):
             g1 = float(y1["avg"]) / float(y0["avg"]) - 1
         if g0 is not None:
@@ -569,12 +558,12 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     if g0 is None:
         g0 = rev_cagr if rev_cagr is not None else terminal_g
         g0 = max(min(g0, 0.6), -0.3)
-        gaps.append(f"無營收共識，首年增長用近 {len(hist_rev) - 1} 年營收 CAGR {g0:.2%}。")
+        gaps.append(Gap("growth_from_cagr", years=len(hist_rev) - 1, g0=g0))
     # consensus series can jump wildly (e.g. a low base year); clamp before use
     def _clamp_g(x, label):
         lo, hi = -0.5, 1.5
         if x is not None and not (lo <= x <= hi):
-            gaps.append(f"營收共識{label} {x:.1%} 超出合理範圍（{lo:.0%}～{hi:.0%}），已截斷為邊界值。")
+            gaps.append(Gap("consensus_clamped", label=label, x=x, lo=lo, hi=hi))
             return max(min(x, hi), lo)
         return x
 
@@ -593,11 +582,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     steady_capex_pct = max(steady_capex_pct, da_pct * 0.8)
     if cpx_pct > steady_capex_pct + 0.01:
         capex_pcts = rules.fade_levels(cpx_pct, steady_capex_pct, n)
-        gaps.append(
-            f"資本開支：歷史 {len(cpx_hist) or 1} 年平均佔營收 {cpx_pct:.2%}，遠高於維持性水平"
-            f"（D&A {da_pct:.2%}＋增長所需再投資，推算 {steady_capex_pct:.2%}）；"
-            "已按此比例直線過渡至可持續水平，避免把投資高峰期永久化而得出負企業價值。"
-        )
+        gaps.append(Gap("capex_fade", years=len(cpx_hist) or 1, cpx=cpx_pct, da=da_pct, steady=steady_capex_pct))
     else:
         capex_pcts = [cpx_pct] * n
 
@@ -625,7 +610,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         try:
             res = _propose_paths(client, facts)
         except Exception as e:  # never fail the run because of the AI step
-            res, llm_note = None, f"AI 提案失敗：{e}"
+            res, llm_note = None, Gap("ai_failed", error=str(e))
         if res is not None:
             ok, why = _validate_paths(res, growths, margins, terminal_g, n)
             if ok:
@@ -638,7 +623,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
                 margin_notes = [f"AI 提案：{res.get('rationale', {}).get('margins') or '見來源'}"] * n
                 snap["assumption_source"] = "llm"
             else:
-                llm_note = f"AI 提案未採用：{why}"
+                llm_note = Gap("ai_rejected", why=why)
         if llm_note:
             gaps.append(llm_note)
 
@@ -651,10 +636,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     # The 9% floor scenario must not carry the capex super-cycle for ever: with
     # BYD's 18.8% the floor came out at -18 HKD per share, which is not a floor.
     if floor_pct > steady_capex_pct:
-        gaps.append(
-            f"9%靜態地板：歷史 Capex 均值 {floor_pct:.2%} 高於可持續水平 {steady_capex_pct:.2%}，"
-            "地板改用可持續比例（否則零增長情境會得出負每股價值）。"
-        )
+        gaps.append(Gap("floor_steady", floor=floor_pct, steady=steady_capex_pct))
         floor_pct = steady_capex_pct
 
     # ---- FX: model currency (statements) vs market currency (price)
@@ -678,8 +660,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
                        "basis": f"市場數據：{bs0} 總債務（含資本租賃）", "source_name": "Yahoo Finance balance sheet",
                        "url": _url(ticker, "balance-sheet"), "data_date": bs0})
     if dtl:
-        gaps.append(f"遞延稅項負債 {dtl / 1e6:,.0f} 百萬未在橋接扣減：經營性遞延稅屬權益等價項（McKinsey），"
-                    "Damodaran 亦不扣減；若預期在可見將來以現金清償，應人工扣減。")
+        gaps.append(Gap("dtl_not_deducted", m=dtl / 1e6))
     if nci:
         bridge.append({"item": "非控股權益", "value": abs(nci) / 1e6, "sign": "+" if nci < 0 else "-",
                        "basis": f"市場數據：{bs0} 非控股權益 {nci / 1e6:.3f}m",
@@ -707,13 +688,9 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
                        "basis": f"市場數據：{bs0} 長期準備；{industry} 行業主要為資產棄置及環境復原義務，未來現金流出不在 FCFF 預測內，屬類債務項",
                        "source_name": "Yahoo Finance balance sheet", "url": _url(ticker, "balance-sheet"), "data_date": bs0})
     elif provisions:
-        gaps.append(f"長期準備 {provisions / 1e6:,.0f} 百萬未扣減：可能含經營性準備（如保修），其成本已在利潤內；"
-                    "若屬棄置、重組或訴訟等類債務項，應人工扣減。")
-    gaps.append(
-        f"預測自 {years[0]} 起（基準財年 {d0} 已入帳）；財年結算日按 {base_end.isoformat()} 推定，"
-        "若公司改變年結日或已公布中期業績，須重跑。"
-    )
-    gaps.append("通用規格未做分部、地域收入拆分；CRP 按上市地推定，未按風險來源調整。")
+        gaps.append(Gap("provisions_not_deducted", m=provisions / 1e6))
+    gaps.append(Gap("forecast_start", year=str(years[0]), base=str(d0), end=base_end.isoformat()))
+    gaps.append(Gap("no_segments"))
 
     cons_growths: list = [None] * n
     if g0 is not None:
@@ -858,22 +835,22 @@ def _validate_paths(res: dict, rules_growths: list, rules_margins: list, termina
     g = res.get("revenue_growth")
     m = res.get("ebit_margins")
     if not isinstance(g, list) or len(g) != n:
-        return False, f"revenue_growth 長度不是 {n}"
+        return False, Gap("ai_bad_length", field="revenue_growth", n=n)
     if not isinstance(m, list) or len(m) != n:
-        return False, f"ebit_margins 長度不是 {n}"
+        return False, Gap("ai_bad_length", field="ebit_margins", n=n)
     try:
         g = [float(x) for x in g]
         m = [float(x) for x in m]
     except (TypeError, ValueError):
-        return False, "路徑含非數字"
+        return False, Gap("ai_not_numbers")
     if any(math.isnan(x) or x < -0.6 or x > 3.0 for x in g):
-        return False, "增長路徑超出 −60%～300% 合理範圍"
+        return False, Gap("ai_growth_range")
     if any(math.isnan(x) or x < -0.5 or x > 0.95 for x in m):
-        return False, "利潤率路徑超出 −50%～95% 合理範圍"
+        return False, Gap("ai_margin_range")
     if abs(g[0] - rules_growths[0]) > 0.12:
-        return False, f"首年增長 {g[0]:.1%} 與資料推算 {rules_growths[0]:.1%} 相差超過 12 個百分點"
+        return False, Gap("ai_first_growth", g=g[0], rules=rules_growths[0])
     if abs(m[0] - rules_margins[0]) > 0.10:
-        return False, f"首年利潤率 {m[0]:.1%} 與最近年度 {rules_margins[0]:.1%} 相差超過 10 個百分點"
+        return False, Gap("ai_first_margin", m=m[0], rules=rules_margins[0])
     tg = res.get("terminal_g")
     if tg is not None:
         # A non-numeric value here used to raise outside the AI try-block and
@@ -881,11 +858,11 @@ def _validate_paths(res: dict, rules_growths: list, rules_margins: list, termina
         try:
             tg = float(tg)
         except (TypeError, ValueError):
-            return False, f"終值 g 不是數字（{tg!r}）"
+            return False, Gap("ai_tg_not_number", tg=repr(tg))
         if math.isnan(tg) or tg < -0.02:
-            return False, f"終值 g {tg} 超出合理範圍（不低於 −2%）"
+            return False, Gap("ai_tg_range", tg=str(tg))
         if tg > terminal_g + 1e-9:
-            return False, f"終值 g {tg:.2%} 高於規則上限 {terminal_g:.2%}"
+            return False, Gap("ai_tg_above", tg=tg, cap=terminal_g)
         res["terminal_g"] = tg
     res["revenue_growth"] = g
     res["ebit_margins"] = m

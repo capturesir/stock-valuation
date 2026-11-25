@@ -64,7 +64,7 @@ def stock_profile(ticker: str, request: Request, p: Principal = Depends(current_
 
 
 @router.get("/stocks/{ticker}/valuations", response_model=StockValuations, summary="估值紀錄（走勢圖資料）")
-def valuations(ticker: str, db: Session = Depends(get_db)) -> dict:
+def valuations(ticker: str, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
     t = ticker_or_400(ticker)
     runs = db.scalars(select(Run).where(Run.ticker == t).order_by(Run.run_at)).all()
     done = [r for r in runs if r.status == "done"]
@@ -75,9 +75,9 @@ def valuations(ticker: str, db: Session = Depends(get_db)) -> dict:
     return {
         "ticker": t, "company": company,
         "currency": next((r.trading_ccy for r in reversed(done) if r.trading_ccy), None),
-        "runs": [run_out(r) for r in runs],
-        "latest": run_out(done[-1]) if done else None,
-        "previous": run_out(done[-2]) if len(done) > 1 else None,
+        "runs": [run_out(r, lang) for r in runs],
+        "latest": run_out(done[-1], lang) if done else None,
+        "previous": run_out(done[-2], lang) if len(done) > 1 else None,
     }
 
 

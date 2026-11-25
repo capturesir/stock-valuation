@@ -328,3 +328,21 @@ def test_each_run_keeps_its_own_files(configured, monkeypatch, tmp_path):
     assert len(runs) == 2
     bodies = [configured.get(f"/api/v1/runs/{r['id']}/excel").text for r in runs]
     assert sorted(bodies) == ["excel of run 1", "excel of run 2"]
+
+
+def test_data_gaps_are_shown_in_the_readers_language(client):
+    """alpha.3 step 10: gaps are stored as code + parameters and rendered per Accept-Language."""
+    from src.pipeline.gaps import Gap, encode
+
+    from backend.app.db import session
+    from backend.app.services.valuation import persist_run
+
+    gaps = [Gap("growth_from_cagr", years=3, g0=0.0512), "手寫備註"]
+    calc = {**_fake_calc("0883.HK"), "data_gaps": list(gaps), "data_gap_codes": encode(gaps)}
+    with session() as db:
+        persist_run(db, calc, valuation_date="2026-11-17")
+        db.commit()
+    zh = client.get("/api/v1/stocks/0883.HK/valuations").json()["latest"]["data_gaps"]
+    en = client.get("/api/v1/stocks/0883.HK/valuations", headers={"Accept-Language": "en"}).json()["latest"]["data_gaps"]
+    assert zh == ["無營收共識，首年增長用近 3 年營收 CAGR 5.12%。", "手寫備註"]
+    assert en == ["No revenue consensus; first-year growth uses the 3-year revenue CAGR of 5.12%.", "手寫備註"]

@@ -1,0 +1,262 @@
+{
+ "industry_mapped": {
+  "zh-Hant": "行業按 Yahoo「{yahoo}」對應 Damodaran「{industry}」；未逐公司核對 indname.xls，若分類有誤會改變 β 與 WACC。",
+  "zh-Hans": "行业按 Yahoo「{yahoo}」对应 Damodaran「{industry}」；未逐公司核对 indname.xls，若分类有误会改变 β 与 WACC。",
+  "en": "Industry mapped from Yahoo “{yahoo}” to Damodaran “{industry}”; not checked company by company against indname.xls, and a wrong class changes β and WACC."
+ },
+ "beta_unlevered_unreasonable": {
+  "zh-Hant": "由迴歸 Beta 還原的 βU {bu:.4f} 不合理，已改用迴歸 Beta {reg:.3f} 作 βU。",
+  "zh-Hans": "由回归 Beta 还原的 βU {bu:.4f} 不合理，已改用回归 Beta {reg:.3f} 作 βU。",
+  "en": "The βU of {bu:.4f} unlevered from the regression beta is not plausible; the regression beta {reg:.3f} is used as βU."
+ },
+ "beta_derived": {
+  "zh-Hant": "未能對應 Damodaran 行業，β 以 Yahoo 迴歸 Beta 還原（βU≈{bu:.3f}），與方法 A 標準不同，屬估算值。",
+  "zh-Hans": "未能对应 Damodaran 行业，β 以 Yahoo 回归 Beta 还原（βU≈{bu:.3f}），与方法 A 标准不同，属估算值。",
+  "en": "No Damodaran industry matched; β is unlevered from Yahoo's regression beta (βU≈{bu:.3f}), which departs from Method A and is an estimate."
+ },
+ "generic_spec_sec": {
+  "zh-Hant": "本檔為【自動建立的通用規格】：財報數字取自 SEC 標準層（見上），市場數據與預測取自 Yahoo，行業參數取自 Damodaran 檔案；未經人工逐項覆核；引用前請自行核對年報與最新公告，並優先以內建規格（NVDA／1830.HK）的標準重做。",
+  "zh-Hans": "本档为【自动建立的通用规格】：财报数字取自 SEC 标准层（见上），市场数据与预测取自 Yahoo，行业参数取自 Damodaran 文件；未经人工逐项复核；引用前请自行核对年报与最新公告，并优先以内建规格（NVDA／1830.HK）的标准重做。",
+  "en": "This is an automatically built generic spec: statement figures come from the SEC standard layer (see above), market data and forecasts from Yahoo, industry parameters from Damodaran's files. Not reviewed item by item; check the annual report and latest announcements before relying on it, and prefer redoing it to the standard of the built-in specs (NVDA, 1830.HK)."
+ },
+ "generic_spec_yahoo": {
+  "zh-Hant": "本檔為【自動建立的通用規格】：全部數字取自 Yahoo 財報與 Damodaran 檔案，未經人工逐項覆核；引用前請自行核對年報與最新公告，並優先以內建規格（NVDA／1830.HK）的標準重做。",
+  "zh-Hans": "本档为【自动建立的通用规格】：全部数字取自 Yahoo 财报与 Damodaran 文件，未经人工逐项复核；引用前请自行核对年报与最新公告，并优先以内建规格（NVDA／1830.HK）的标准重做。",
+  "en": "This is an automatically built generic spec: every figure comes from Yahoo's statements and Damodaran's files, not reviewed item by item; check the annual report and latest announcements before relying on it, and prefer redoing it to the standard of the built-in specs (NVDA, 1830.HK)."
+ },
+ "ebit_from_yahoo": {
+  "zh-Hant": "Yahoo 無營業利潤，暫用其 EBIT（＝稅前利潤＋利息，含非經營收益），利潤率可能偏高或偏低。",
+  "zh-Hans": "Yahoo 无营业利润，暂用其 EBIT（＝税前利润＋利息，含非经营收益），利润率可能偏高或偏低。",
+  "en": "Yahoo has no operating income; its EBIT (pretax income + interest, including non-operating items) is used, so the margin may be too high or too low."
+ },
+ "shares_from_info": {
+  "zh-Hant": "資產負債表沒有股數，改用 Yahoo 目前已發行股數；多類別股份的公司須核對是否包含全部類別。",
+  "zh-Hans": "资产负债表没有股数，改用 Yahoo 目前已发行股数；多类别股份的公司须核对是否包含全部类别。",
+  "en": "The balance sheet has no share count; Yahoo's current shares outstanding are used. For companies with several share classes, check that every class is included."
+ },
+ "no_dilution": {
+  "zh-Hant": "Yahoo 沒有攤薄／基本加權平均股數，未計期權與可換股證券的攤薄。",
+  "zh-Hans": "Yahoo 没有摊薄／基本加权平均股数，未计期权与可转换证券的摊薄。",
+  "en": "Yahoo has no diluted/basic weighted average shares; dilution from options and convertibles is not counted."
+ },
+ "missing_da": {
+  "zh-Hant": "Yahoo 未提供D&A，已用替代值或規則假設，請核對年報。",
+  "zh-Hans": "Yahoo 未提供D&A，已用替代值或规则假设，请核对年报。",
+  "en": "Yahoo did not provide D&A; a substitute or rule-based assumption is used. Check the annual report."
+ },
+ "missing_capex": {
+  "zh-Hant": "Yahoo 未提供資本開支，已用替代值或規則假設，請核對年報。",
+  "zh-Hans": "Yahoo 未提供资本开支，已用替代值或规则假设，请核对年报。",
+  "en": "Yahoo did not provide capital expenditure; a substitute or rule-based assumption is used. Check the annual report."
+ },
+ "missing_rf": {
+  "zh-Hant": "Yahoo 未提供無風險利率，已用替代值或規則假設，請核對年報。",
+  "zh-Hans": "Yahoo 未提供无风险利率，已用替代值或规则假设，请核对年报。",
+  "en": "The risk-free rate was not available; a substitute or rule-based assumption is used."
+ },
+ "tax_country_unknown": {
+  "zh-Hant": "未收錄「{country}」的法定稅率，邊際稅率暫用 {marginal:.0%}。",
+  "zh-Hans": "未收录「{country}」的法定税率，边际税率暂用 {marginal:.0%}。",
+  "en": "No statutory tax rate on file for “{country}”; a marginal rate of {marginal:.0%} is used."
+ },
+ "effective_tax_invalid": {
+  "zh-Hant": "有效稅率不可用或不合理（{eff}），首年起即用邊際稅率 {marginal:.1%}。",
+  "zh-Hans": "有效税率不可用或不合理（{eff}），首年起即用边际税率 {marginal:.1%}。",
+  "en": "The effective tax rate is unavailable or implausible ({eff}); the marginal rate of {marginal:.1%} is used from the first year."
+ },
+ "crp_missing": {
+  "zh-Hant": "Damodaran CRP 未收錄 {market} 市場，暫用美國 CRP＝0，請人工確認國家風險。",
+  "zh-Hans": "Damodaran CRP 未收录 {market} 市场，暂用美国 CRP＝0，请人工确认国家风险。",
+  "en": "Damodaran's CRP table has no {market} market; the US CRP of 0 is used. Confirm the country risk manually."
+ },
+ "crp_by_currency": {
+  "zh-Hant": "國家風險按報表貨幣 {currency} 推定為 {country_name}，而非上市地 {listing_name}。",
+  "zh-Hans": "国家风险按报表货币 {currency} 推定为 {country_name}，而非上市地 {listing_name}。",
+  "en": "Country risk is taken from the reporting currency {currency} ({country}), not the listing market ({listing})."
+ },
+ "kd_fallback": {
+  "zh-Hant": "利息費用／總債務不可用，Kd 以 Rf＋Damodaran 該國違約息差代替。",
+  "zh-Hans": "利息费用／总债务不可用，Kd 以 Rf＋Damodaran 该国违约息差代替。",
+  "en": "Interest expense / total debt is not usable; Kd is Rf plus Damodaran's default spread for the country."
+ },
+ "financial_method": {
+  "zh-Hant": "⚠ 金融業（銀行、保險、券商等）：債務是業務原料而非融資，FCFF 與 WACC 的定義並不適用；此結果只作參考（決定 D5），應以 DDM／剩餘收益／P/B–ROE 估值（開發中）。",
+  "zh-Hans": "⚠ 金融业（银行、保险、券商等）：债务是业务原料而非融资，FCFF 与 WACC 的定义并不适用；此结果只作参考（决定 D5），应以 DDM／剩余收益／P/B–ROE 估值（开发中）。",
+  "en": "⚠ Financial company (bank, insurer, broker …): debt is raw material, not financing, so FCFF and WACC do not apply. This result is for reference only (decision D5); use DDM, residual income or P/B–ROE (in development)."
+ },
+ "consensus_scale_mismatch": {
+  "zh-Hant": "Yahoo 0y 的 yearAgoRevenue（{prev_m:,.0f} 百萬）與財報營收（{rev_m:,.0f} 百萬）規模不符，已改用「共識營收 ÷ 最新年度營收」計算首年增長（{g0:+.1%}）。",
+  "zh-Hans": "Yahoo 0y 的 yearAgoRevenue（{prev_m:,.0f} 百万）与财报营收（{rev_m:,.0f} 百万）规模不符，已改用「共识营收 ÷ 最新年度营收」计算首年增长（{g0:+.1%}）。",
+  "en": "Yahoo's 0y yearAgoRevenue ({prev_m:,.0f} m) does not match the reported revenue ({rev_m:,.0f} m) in scale; first-year growth uses consensus revenue ÷ latest annual revenue ({g0:+.1%})."
+ },
+ "growth_from_cagr": {
+  "zh-Hant": "無營收共識，首年增長用近 {years} 年營收 CAGR {g0:.2%}。",
+  "zh-Hans": "无营收共识，首年增长用近 {years} 年营收 CAGR {g0:.2%}。",
+  "en": "No revenue consensus; first-year growth uses the {years}-year revenue CAGR of {g0:.2%}."
+ },
+ "consensus_clamped": {
+  "zh-Hant": "營收共識{label} {x:.1%} 超出合理範圍（{lo:.0%}～{hi:.0%}），已截斷為邊界值。",
+  "zh-Hans": "营收共识{label} {x:.1%} 超出合理范围（{lo:.0%}～{hi:.0%}），已截断为边界值。",
+  "en": "Revenue consensus {label} of {x:.1%} is outside the plausible range ({lo:.0%} to {hi:.0%}) and was capped."
+ },
+ "capex_fade": {
+  "zh-Hant": "資本開支：歷史 {years} 年平均佔營收 {cpx:.2%}，遠高於維持性水平（D&A {da:.2%}＋增長所需再投資，推算 {steady:.2%}）；已按此比例直線過渡至可持續水平，避免把投資高峰期永久化而得出負企業價值。",
+  "zh-Hans": "资本开支：历史 {years} 年平均占营收 {cpx:.2%}，远高于维持性水平（D&A {da:.2%}＋增长所需再投资，推算 {steady:.2%}）；已按此比例直线过渡至可持续水平，避免把投资高峰期永久化而得出负企业价值。",
+  "en": "Capex averaged {cpx:.2%} of revenue over {years} years, far above the maintenance level (D&A {da:.2%} plus reinvestment for growth, {steady:.2%}); it fades in a straight line to the sustainable level so an investment peak is not made permanent (which would give a negative enterprise value)."
+ },
+ "ai_failed": {
+  "zh-Hant": "AI 提案失敗：{error}",
+  "zh-Hans": "AI 提案失败：{error}",
+  "en": "The AI proposal failed: {error}"
+ },
+ "ai_rejected": {
+  "zh-Hant": "AI 提案未採用：{why}",
+  "zh-Hans": "AI 提案未采用：{why}",
+  "en": "The AI proposal was not used: {why}"
+ },
+ "ai_bad_length": {
+  "zh-Hant": "{field} 長度不是 {n}",
+  "zh-Hans": "{field} 长度不是 {n}",
+  "en": "{field} does not have {n} values"
+ },
+ "ai_not_numbers": {
+  "zh-Hant": "路徑含非數字",
+  "zh-Hans": "路径含非数字",
+  "en": "the path contains non-numbers"
+ },
+ "ai_growth_range": {
+  "zh-Hant": "增長路徑超出 −60%～300% 合理範圍",
+  "zh-Hans": "增长路径超出 −60%～300% 合理范围",
+  "en": "the growth path is outside the −60% to 300% range"
+ },
+ "ai_margin_range": {
+  "zh-Hant": "利潤率路徑超出 −50%～95% 合理範圍",
+  "zh-Hans": "利润率路径超出 −50%～95% 合理范围",
+  "en": "the margin path is outside the −50% to 95% range"
+ },
+ "ai_first_growth": {
+  "zh-Hant": "首年增長 {g:.1%} 與資料推算 {rules:.1%} 相差超過 12 個百分點",
+  "zh-Hans": "首年增长 {g:.1%} 与数据推算 {rules:.1%} 相差超过 12 个百分点",
+  "en": "first-year growth of {g:.1%} is more than 12 points from the data-based {rules:.1%}"
+ },
+ "ai_first_margin": {
+  "zh-Hant": "首年利潤率 {m:.1%} 與最近年度 {rules:.1%} 相差超過 10 個百分點",
+  "zh-Hans": "首年利润率 {m:.1%} 与最近年度 {rules:.1%} 相差超过 10 个百分点",
+  "en": "first-year margin of {m:.1%} is more than 10 points from the latest year's {rules:.1%}"
+ },
+ "ai_tg_not_number": {
+  "zh-Hant": "終值 g 不是數字（{tg}）",
+  "zh-Hans": "终值 g 不是数字（{tg}）",
+  "en": "terminal g is not a number ({tg})"
+ },
+ "ai_tg_range": {
+  "zh-Hant": "終值 g {tg} 超出合理範圍（不低於 −2%）",
+  "zh-Hans": "终值 g {tg} 超出合理范围（不低于 −2%）",
+  "en": "terminal g {tg} is out of range (not below −2%)"
+ },
+ "ai_tg_above": {
+  "zh-Hant": "終值 g {tg:.2%} 高於規則上限 {cap:.2%}",
+  "zh-Hans": "终值 g {tg:.2%} 高于规则上限 {cap:.2%}",
+  "en": "terminal g {tg:.2%} is above the rule's cap of {cap:.2%}"
+ },
+ "floor_steady": {
+  "zh-Hant": "9%靜態地板：歷史 Capex 均值 {floor:.2%} 高於可持續水平 {steady:.2%}，地板改用可持續比例（否則零增長情境會得出負每股價值）。",
+  "zh-Hans": "9%静态地板：历史 Capex 均值 {floor:.2%} 高于可持续水平 {steady:.2%}，地板改用可持续比例（否则零增长情景会得出负每股价值）。",
+  "en": "9% static floor: average historical capex of {floor:.2%} is above the sustainable {steady:.2%}, so the floor uses the sustainable ratio (otherwise the zero-growth case gives a negative value per share)."
+ },
+ "dtl_not_deducted": {
+  "zh-Hant": "遞延稅項負債 {m:,.0f} 百萬未在橋接扣減：經營性遞延稅屬權益等價項（McKinsey），Damodaran 亦不扣減；若預期在可見將來以現金清償，應人工扣減。",
+  "zh-Hans": "递延税项负债 {m:,.0f} 百万未在桥接扣减：经营性递延税属权益等价项（McKinsey），Damodaran 亦不扣减；若预期在可见将来以现金清偿，应人工扣减。",
+  "en": "Deferred tax liabilities of {m:,.0f} m are not deducted in the bridge: operating deferred taxes are equity equivalents (McKinsey) and Damodaran does not deduct them either; deduct manually if they will be settled in cash soon."
+ },
+ "provisions_not_deducted": {
+  "zh-Hant": "長期準備 {m:,.0f} 百萬未扣減：可能含經營性準備（如保修），其成本已在利潤內；若屬棄置、重組或訴訟等類債務項，應人工扣減。",
+  "zh-Hans": "长期准备 {m:,.0f} 百万未扣减：可能含经营性准备（如保修），其成本已在利润内；若属弃置、重组或诉讼等类债务项，应人工扣减。",
+  "en": "Long-term provisions of {m:,.0f} m are not deducted: they may be operating (e.g. warranties, already in profit); deduct manually if they are debt-like (decommissioning, restructuring, litigation)."
+ },
+ "forecast_start": {
+  "zh-Hant": "預測自 {year} 起（基準財年 {base} 已入帳）；財年結算日按 {end} 推定，若公司改變年結日或已公布中期業績，須重跑。",
+  "zh-Hans": "预测自 {year} 起（基准财年 {base} 已入账）；财年结算日按 {end} 推定，若公司改变年结日或已公布中期业绩，须重跑。",
+  "en": "The forecast starts at {year} (base year {base} is booked); the fiscal year end is taken as {end}. Re-run if the company changes its year end or has published interim results."
+ },
+ "no_segments": {
+  "zh-Hant": "通用規格未做分部、地域收入拆分；CRP 按上市地推定，未按風險來源調整。",
+  "zh-Hans": "通用规格未做分部、地域收入拆分；CRP 按上市地推定，未按风险来源调整。",
+  "en": "The generic spec has no segment or geographic revenue split; CRP is inferred, not weighted by where the risk is."
+ },
+ "rf_currency_mismatch": {
+  "zh-Hant": "未能取得模型貨幣 {currency} 的無風險利率（{error}），暫用上市地利率 {rate:.2%}；現金流貨幣與折現率貨幣不一致，理論價可信度低。",
+  "zh-Hans": "未能取得模型货币 {currency} 的无风险利率（{error}），暂用上市地利率 {rate:.2%}；现金流货币与折现率货币不一致，理论价可信度低。",
+  "en": "No risk-free rate for the model currency {currency} ({error}); the listing market's rate of {rate:.2%} is used. Cash flows and discount rate are in different currencies, so the value is low-confidence."
+ },
+ "rf_cross_check": {
+  "zh-Hant": "無風險利率：{text}",
+  "zh-Hans": "无风险利率：{text}",
+  "en": "Risk-free rate: {text}"
+ },
+ "builtin_date": {
+  "zh-Hant": "內建規格的估值日固定為 {calc_date}（該日為假設覆核日）；本次以 {valuation_date} 執行，折現起點與輸出內部估值日仍為 {calc_date}。",
+  "zh-Hans": "内建规格的估值日固定为 {calc_date}（该日为假设复核日）；本次以 {valuation_date} 执行，折现起点与输出内部估值日仍为 {calc_date}。",
+  "en": "The built-in spec's valuation date is fixed at {calc_date} (its assumption review date); this run is for {valuation_date}, but discounting still starts at {calc_date}."
+ },
+ "extra_sheets_failed": {
+  "zh-Hant": "附加研究分頁未能寫入 Excel：{error}",
+  "zh-Hans": "附加研究分页未能写入 Excel：{error}",
+  "en": "The extra research sheets could not be written to Excel: {error}"
+ },
+ "floor_above_static": {
+  "zh-Hant": "9%靜態（{fv9:.2f}）高於靜態（{fvs:.2f}）：靜態情境以基準 WACC 折現、Capex＝D&A，9%地板以固定 9% 折現並用地板 Capex 比例；兩者假設不同，不是計算錯誤。",
+  "zh-Hans": "9%静态（{fv9:.2f}）高于静态（{fvs:.2f}）：静态情景以基准 WACC 折现、Capex＝D&A，9%地板以固定 9% 折现并用地板 Capex 比例；两者假设不同，不是计算错误。",
+  "en": "The 9% static case ({fv9:.2f}) is above the static case ({fvs:.2f}): the static case discounts at the base WACC with capex = D&A, the 9% floor at a fixed 9% with the floor capex ratio. Different assumptions, not an error."
+ },
+ "tight_spread": {
+  "zh-Hant": "WACC {wacc:.2%} 與終值 g {g:.2%} 只相差 {spread:.2%}，終值佔企業價值的比重與對假設的敏感度都會極高；理論價只宜作方向參考。",
+  "zh-Hans": "WACC {wacc:.2%} 与终值 g {g:.2%} 只相差 {spread:.2%}，终值占企业价值的比重与对假设的敏感度都会极高；理论价只宜作方向参考。",
+  "en": "WACC {wacc:.2%} and terminal g {g:.2%} are only {spread:.2%} apart: the terminal value dominates and is very sensitive to the assumptions, so treat the value as directional only."
+ },
+ "sensitivity_upward": {
+  "zh-Hant": "敏感度表：WACC {wacc:.2%} 與終值 g {g:.2%} 太接近，無法以基準 WACC 為中心向下取值；改為由基準 WACC 向上取值，並略去高於基準 g 的欄。",
+  "zh-Hans": "敏感度表：WACC {wacc:.2%} 与终值 g {g:.2%} 太接近，无法以基准 WACC 为中心向下取值；改为由基准 WACC 向上取值，并略去高于基准 g 的栏。",
+  "en": "Sensitivity table: WACC {wacc:.2%} is too close to terminal g {g:.2%} to step down from the base WACC; it steps upward instead and drops columns above the base g."
+ },
+ "erp_stale": {
+  "zh-Hant": "ERP：估值月份 {month} 的 Damodaran 隱含 ERP 尚未取得，暫用 {data_date} 的 {erp:.2%}（方法 A 要求按月更新）。",
+  "zh-Hans": "ERP：估值月份 {month} 的 Damodaran 隐含 ERP 尚未取得，暂用 {data_date} 的 {erp:.2%}（方法 A 要求按月更新）。",
+  "en": "ERP: Damodaran's implied ERP for {month} is not available yet; {erp:.2%} from {data_date} is used (Method A updates it monthly)."
+ },
+ "negative_value": {
+  "zh-Hant": "理論價為負或無效（{value}），代表 FCFF 五情境模型不適用於此公司（例如仍大幅虧損、資本結構極端或基準年異常）；此結果不可用作估值參考。",
+  "zh-Hans": "理论价为负或无效（{value}），代表 FCFF 五情景模型不适用于此公司（例如仍大幅亏损、资本结构极端或基准年异常）；此结果不可用作估值参考。",
+  "en": "The value is negative or invalid ({value}): the five-scenario FCFF model does not fit this company (e.g. heavy losses, an extreme capital structure or an unusual base year). Do not use this result."
+ },
+ "sec_standard": {
+  "zh-Hant": "美股財報取自 SEC 標準層（規則 {ruleset} {version}；{plan}）：{years}；每個數字可在「財報」分頁追回申報文件。",
+  "zh-Hans": "美股财报取自 SEC 标准层（规则 {ruleset} {version}；{plan}）：{years}；每个数字可在「财报」分页追回申报文件。",
+  "en": "US statements come from the SEC standard layer (ruleset {ruleset} {version}; {plan}): {years}. Every figure can be traced to its filing on the Statements tab."
+ },
+ "plan_central": {
+  "zh-Hant": "中央方案 v{v}",
+  "zh-Hans": "中央方案 v{v}",
+  "en": "central plan v{v}"
+ },
+ "plan_personal": {
+  "zh-Hant": "個人方案 v{v}",
+  "zh-Hans": "个人方案 v{v}",
+  "en": "personal plan v{v}"
+ },
+ "plan_none": {
+  "zh-Hant": "系統預設（不調整）",
+  "zh-Hans": "系统默认（不调整）",
+  "en": "system default (no adjustments)"
+ },
+ "grade_c_dropped": {
+  "zh-Hant": "以下財年有錯誤級別的檢查未通過、且調整方案未處理，未用於估值：{years}。",
+  "zh-Hans": "以下财年有错误级别的检查未通过、且调整方案未处理，未用于估值：{years}。",
+  "en": "These fiscal years failed an error-level check that the adjustment plan does not address, and are not used: {years}."
+ },
+ "yahoo_fill": {
+  "zh-Hant": "標準層未涵蓋的項目仍取自 Yahoo 同一財年：{items}。",
+  "zh-Hans": "标准层未涵盖的项目仍取自 Yahoo 同一财年：{items}。",
+  "en": "Items the standard layer does not cover still come from Yahoo for the same fiscal year: {items}."
+ }
+}
