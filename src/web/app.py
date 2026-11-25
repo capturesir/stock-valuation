@@ -14,22 +14,11 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from ..pipeline.orchestrator import check_filings
-from ..signals.export_signals import (
-    GENERATED_BY,
-    ProductionPathError,
-    SignalExportError,
-    SignalValidationError,
-    build_single_document,
-    dumps_doc,
-    export_signals,
-    load_calc_file,
-    summarize_signal,
-)
 from . import jobs as jobmod
 from . import research
 from . import services
@@ -41,7 +30,6 @@ from .sheets import EXPECTED_SHEETS, render_workbook
 WEB_DIR = Path(__file__).resolve().parent
 STATIC_DIR = WEB_DIR / "static"
 # src/web/app.py -> src/web -> src -> project root; docs/ sits at the root.
-DOCS_DIR = WEB_DIR.parents[1] / "docs"
 # R01–R03: the page keeps the original seven tabs. The research sheets added for
 # the Excel download are data for the in-page blocks, not extra tabs.
 UI_SHEETS = list(EXPECTED_SHEETS)
@@ -110,45 +98,8 @@ class CheckFilingsBody(BaseModel):
     date: str | None = None
 
 
-class ExportSignalsBody(BaseModel):
-    ticker: str = Field(..., min_length=1)
-    date: str | None = None
-
-
 def _http_error(status: int, message: str, **extra) -> HTTPException:
     return HTTPException(status_code=status, detail={"error": message, **extra})
-
-
-def _signals_from_rec(rec: dict) -> dict:
-    """Build an in-memory single-ticker signals document from a valuation record."""
-    js = rec.get("json")
-    if not js:
-        raise FileNotFoundError("找不到對應的估值 JSON。")
-    path = Path(js)
-    if not path.is_file():
-        raise FileNotFoundError(f"找不到對應的估值 JSON（{path.name}）。")
-    calc = load_calc_file(path)
-    date = rec.get("valuation_date") or calc.get("valuation_date")
-    if not date:
-        raise ValueError("缺少估值日，無法組成 signal_id。")
-    md = rec.get("md")
-    if not md:
-        folder = path.parent
-        found = sorted(folder.glob("*_valuation.md"))
-        if not found:
-            raise FileNotFoundError("找不到對應的估值說明 Markdown。")
-        md = str(found[-1])
-    return build_single_document(calc, date, md)
-
-
-def _signals_filename(doc: dict) -> str:
-    sigs = doc.get("signals") or []
-    if len(sigs) == 1:
-        return f"{sigs[0]['signal_id']}_signals.json"
-    date = doc.get("price_date") or "signals"
-    return f"signals_{date}.json"
-
-
 
 
 @app.get("/")
@@ -413,20 +364,6 @@ def api_package():
     return FileResponse(path, media_type="application/zip", filename=Path(path).name)
 
 
-@app.get("/api/guide.pdf")
-def api_guide():
-    """R25: the illustrated user guide that ships with this version.
-
-    Only files this project produced are served. Falling back to "any PDF in
-    docs/" handed out a third-party guide that documented a different version.
-    """
-    candidates = sorted(DOCS_DIR.glob("*使用指南*.pdf"))
-    if not candidates:
-        raise _http_error(404, "docs/ 內沒有本版使用指南 PDF（*使用指南*.pdf）。")
-    return FileResponse(candidates[-1], media_type="application/pdf",
-                        filename=candidates[-1].name)
-
-
 @app.post("/api/check-filings")
 def api_check_filings(body: CheckFilingsBody):
     ticker = services.norm_ticker(body.ticker)
@@ -462,94 +399,6 @@ def api_check_filings(body: CheckFilingsBody):
             )
     return out
 
-
-
-@app.get("/api/jobs/{job_id}/signals")
-def api_job_signals(job_id: str):
-    job = jobmod.store.get(job_id)
-    if not job:
-        raise _http_error(404, "找不到此工作。")
-    if job.get("status") != "done" or not (job.get("result") or {}).get("json"):
-        raise _http_error(409, "估值尚未完成，或沒有可匯出的估值 JSON。", job_status=job.get("status"))
-    rec = job["result"]
-    try:
-        doc = _signals_from_rec(rec)
-    except (SignalExportError, FileNotFoundError, ValueError) as exc:
-        raise _http_error(400, str(exc))
-    name = _signals_filename(doc)
-    return Response(
-        content=dumps_doc(doc),
-        media_type="application/json; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{name}"'},
-    )
-
-
-@app.get("/api/workbook/signals")
-def api_workbook_signals(ticker: str = Query(..., min_length=1), date: str | None = None):
-    try:
-        rec = services.resolve_workbook(ticker, date)
-    except FileNotFoundError as exc:
-        raise _http_error(404, str(exc))
-    except ValueError as exc:
-        raise _http_error(400, str(exc))
-    try:
-        doc = _signals_from_rec(rec)
-    except (SignalExportError, FileNotFoundError, ValueError) as exc:
-        raise _http_error(400, str(exc))
-    name = _signals_filename(doc)
-    return Response(
-        content=dumps_doc(doc),
-        media_type="application/json; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{name}"'},
-    )
-
-
-@app.post("/api/export-signals")
-def api_export_signals(body: ExportSignalsBody):
-    """Explicit user action: merge one ticker into package out/signals.json."""
-    ticker = services.norm_ticker(body.ticker)
-    if not ticker:
-        raise _http_error(400, "請輸入股票代號。")
-    try:
-        date = services.validate_date(body.date)
-        rec = services.resolve_workbook(ticker, date)
-    except FileNotFoundError as exc:
-        raise _http_error(404, str(exc))
-    except ValueError as exc:
-        raise _http_error(400, str(exc))
-    run_date = rec.get("valuation_date") or date
-    if not run_date:
-        raise _http_error(400, "缺少估值日，無法匯出訊號。")
-    report_paths = {}
-    if rec.get("md"):
-        report_paths[ticker] = rec["md"]
-    elif rec.get("json"):
-        report_paths[ticker] = rec["json"]  # placeholder, exporter will prefer sibling md if needed
-    try:
-        result = export_signals(
-            tickers=[ticker],
-            run_date=run_date,
-            dest="out/signals.json",
-            merge=True,
-            generated_by=GENERATED_BY,
-            force_dest=False,
-            report_paths=report_paths if rec.get("md") else None,
-        )
-    except SignalValidationError as exc:
-        raise _http_error(400, str(exc), errors=exc.errors)
-    except ProductionPathError as exc:
-        raise _http_error(403, str(exc))
-    except SignalExportError as exc:
-        raise _http_error(400, str(exc))
-    incoming = result["incoming"]
-    return {
-        "ok": True,
-        "dest": str(result["dest"]),
-        "dated": str(result["dated"]),
-        "summary": [summarize_signal(s) for s in incoming],
-        "doc": result["doc"],
-        "disclaimer": "此為研究訊號檔，並非投資建議或下單指令。",
-    }
 
 
 def main() -> None:

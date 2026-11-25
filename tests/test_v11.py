@@ -62,16 +62,6 @@ def test_settings_page_is_served_when_present(client, tmp_path, monkeypatch):
     assert "no-cache" in r.headers.get("cache-control", "")
 
 
-def test_guide_pdf_only_serves_our_own_guide(client, tmp_path, monkeypatch):
-    monkeypatch.setattr(appmod, "DOCS_DIR", tmp_path)
-    (tmp_path / "someone-elses-guide.pdf").write_bytes(b"%PDF-1.4 x")
-    assert client.get("/api/guide.pdf").status_code == 404
-    (tmp_path / "使用指南-v1.1.pdf").write_bytes(b"%PDF-1.4 y")
-    r = client.get("/api/guide.pdf")
-    assert r.status_code == 200
-    assert r.headers["content-type"] == "application/pdf"
-
-
 # --------------------------------------------------------------- review ----
 
 def test_review_lists_every_item_with_amounts_first():

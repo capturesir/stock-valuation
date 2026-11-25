@@ -40,9 +40,6 @@
     resultPanel: $("result-panel"),
     resultSummary: $("result-summary"),
     btnDownload: $("btn-download"),
-    btnDlSignals: $("btn-dl-signals"),
-    btnExportSignals: $("btn-export-signals"),
-    signalsMsg: $("signals-msg"),
     tabs: $("sheet-tabs"),
     sheetView: $("sheet-view"),
     sheetNote: $("sheet-note"),
@@ -63,7 +60,6 @@
   let currentJobId = null;
   let currentWorkbook = null;
   let currentMeta = null;
-  let currentSignalsDl = null;
   let currentTabIndex = 0;
 
   function todayISO() {
@@ -722,51 +718,6 @@
   }
 
 
-  function signalsUrl(meta, downloadUrl) {
-    const ticker = meta && meta.ticker;
-    const date = meta && meta.valuation_date;
-    if (downloadUrl && /\/api\/jobs\/[^/]+\/download/.test(downloadUrl)) {
-      return downloadUrl.replace(/\/download(?:\?.*)?$/, "/signals");
-    }
-    if (!ticker) return null;
-    let url = `/api/workbook/signals?ticker=${encodeURIComponent(ticker)}`;
-    if (date) url += `&date=${encodeURIComponent(date)}`;
-    return url;
-  }
-
-
-  if (els.btnExportSignals) {
-    els.btnExportSignals.addEventListener("click", async () => {
-      const meta = currentMeta || {};
-      const ticker = meta.ticker;
-      if (!ticker) return;
-      els.btnExportSignals.disabled = true;
-      if (els.signalsMsg) {
-        els.signalsMsg.textContent = "正在匯出訊號…";
-        els.signalsMsg.classList.remove("hidden");
-      }
-      try {
-        const data = await api("/api/export-signals", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ticker, date: meta.valuation_date || null }),
-        });
-        const lines = (data.summary || []).join("\n");
-        const dest = data.dest || "out/signals.json";
-        const note = data.disclaimer || "此為研究訊號檔，並非投資建議或下單指令。";
-        if (els.signalsMsg) {
-          els.signalsMsg.textContent = `已寫入 ${dest}` + (lines ? "\n" + lines : "") + "\n" + note;
-        }
-      } catch (err) {
-        if (els.signalsMsg) {
-          els.signalsMsg.textContent = err.message || "匯出訊號失敗。";
-        }
-      } finally {
-        els.btnExportSignals.disabled = false;
-      }
-    });
-  }
-
   function showWorkbook(workbook, meta, downloadUrl, research, usage) {
     currentWorkbook = workbook;
     show(els.resultPanel);
@@ -804,26 +755,6 @@
       const fname = (meta.xlsx && String(meta.xlsx).split(/[\\/]/).pop()) || "valuation.xlsx";
       els.btnDownload.setAttribute("download", fname);
       show(els.btnDownload);
-    }
-    const sigUrl = signalsUrl(meta, downloadUrl);
-    currentSignalsDl = sigUrl;
-    if (sigUrl && els.btnDlSignals) {
-      els.btnDlSignals.href = sigUrl;
-      const ticker = (meta && meta.ticker) || "ticker";
-      const vdate = (meta && meta.valuation_date) || "";
-      const idDate = vdate ? vdate.replaceAll("-", "") : "";
-      els.btnDlSignals.setAttribute("download", (idDate ? idDate + "-" + ticker : ticker) + "_signals.json");
-      show(els.btnDlSignals);
-    } else if (els.btnDlSignals) {
-      hide(els.btnDlSignals);
-    }
-    if (els.btnExportSignals) {
-      if (meta && meta.ticker) show(els.btnExportSignals);
-      else hide(els.btnExportSignals);
-    }
-    if (els.signalsMsg) {
-      els.signalsMsg.textContent = "";
-      hide(els.signalsMsg);
     }
     const warns = (workbook && workbook.warnings) || [];
     els.sheetNote.textContent = warns.length
