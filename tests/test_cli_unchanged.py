@@ -8,16 +8,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 RUN_HELP = """\
-usage: cli.py run [-h] --ticker TICKER [--date DATE] [--no-llm]
-                  [--export-signals] [--email]
+usage: cli.py run [-h] --ticker TICKER [--date DATE] [--no-llm] [--email]
 
 options:
-  -h, --help        show this help message and exit
+  -h, --help       show this help message and exit
   --ticker TICKER
-  --date DATE       估值日 YYYY-MM-DD（澳門）
-  --no-llm          即使設定了 API 也不呼叫模型，只用規則後備
-  --export-signals  驗證通過後合併匯出 B 組相容訊號檔至 out/signals.json
-  --email           驗證通過後，按本機設定把報告電郵至部署者指定的收件信箱
+  --date DATE      估值日 YYYY-MM-DD（澳門）
+  --no-llm         即使設定了 API 也不呼叫模型，只用規則後備
+  --email          驗證通過後，按本機設定把報告電郵至部署者指定的收件信箱
 """
 
 CHECK_HELP = """\

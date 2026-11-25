@@ -4,7 +4,7 @@
 - 日期：2026-11-18（亞洲／澳門時間，UTC+8）
 - 語言：繁體中文（介面另支援简体中文、English）
 - 倉庫：[https://github.com/capturesir/stock-valuation](https://github.com/capturesir/stock-valuation)
-- 本系統把既有 A 組 FCFF 框架（方法 A 折現率、五情境、可驗證 Excel、B 組相容訊號檔）打包成可在 **Windows、macOS 與 Linux** 本機運行、並改接其他大語言模型（含本地 OpenAI 相容伺服器）的程式集。
+- 本系統把既有 A 組 FCFF 框架（方法 A 折現率、五情境、可驗證 Excel）打包成可在 **Windows、macOS 與 Linux** 本機運行、並改接其他大語言模型（含本地 OpenAI 相容伺服器）的程式集。
 
 ## v2（預覽版）快速開始
 
@@ -33,9 +33,9 @@ docker compose up -d --build
 
 ---
 
-- **本系統產出不構成投資建議。** 官方理論價由本機 Python 引擎按已列來源與假設計算，不是模型的記憶或心算。訊號檔是研究用輸出，不是下單指令。
+- **本系統產出不構成投資建議。** 官方理論價由本機 Python 引擎按已列來源與假設計算，不是模型的記憶或心算。
 
-完整作業規則見 [`docs/估值框架作業手冊.md`](docs/估值框架作業手冊.md)。B 組相容訊號格式見 [`docs/signals-format.md`](docs/signals-format.md)。本 README 說明如何從 GitHub 部署，以及如何用網頁或命令列使用本系統。
+本 README 說明如何從 GitHub 部署，以及如何用網頁或命令列使用本系統。
 
 ---
 
@@ -50,7 +50,7 @@ docker compose up -d --build
 
 官方理論價一律以「摘要」頁、calc JSON 與 `verify_fcff` 為準。「計算」頁是 Excel／網頁用公式即時重算，用來核對，兩者應相符（容許 ±0.5%）。
 
-本系統**不會**自動把代號寫入正式關注名單。臨時估值預設不進關注名單。若要產出與 B 組自動交易系統相容的訊號檔，須另外執行 `export-signals` 或在網頁按「匯出訊號」，預設只寫到本套件的 `out/signals.json`。
+本系統**不會**自動把代號寫入正式關注名單。臨時估值預設不進關注名單。
 
 目前有兩級規格，系統按代號自動選擇：
 
@@ -165,7 +165,7 @@ python -m pytest tests/ -q
 - 沒有設定語言模型也可以估值，系統會走規則後備。
 - 沒有設定電郵也可以估值，系統只在本機寫出 Excel 與說明，不會寄信，也沒有預設的私人信箱。
 - 本介面預設只綁定本機 `127.0.0.1:8765`，不會對外開放。
-- 說明裡的路徑以正斜線寫（例如 `out/signals.json`），在 Windows、macOS、Linux 的 Python 與 Git 都可使用。
+- 說明裡的路徑以正斜線寫（例如 `out/history/NVDA.json`），在 Windows、macOS、Linux 的 Python 與 Git 都可使用。
 
 ### 2.3 啟動網頁（建議的使用方式）
 
@@ -411,13 +411,11 @@ python -m src.web.app
 
 使用流程：
 
-![先查詢、確認後才估值的流程](docs/figures/fig-15-12-web-flow.png)
 
 ### 3.1 首頁
 
 開啟後會看到代號輸入欄。先輸入股票代號，再按「查詢」。
 
-![本機網頁首頁](docs/figures/fig-15-06-web-home.png)
 
 ### 3.2 查詢美股與港股
 
@@ -427,15 +425,12 @@ python -m src.web.app
 
 NVIDIA（`NVDA`）查詢結果示例：
 
-![NVDA 查詢結果](docs/figures/fig-15-07-nvda-lookup.png)
 
 完美醫療（`1830.HK`）查詢結果示例：
 
-![1830.HK 查詢結果](docs/figures/fig-15-08-1830-lookup.png)
 
 代號不存在或無法取得報價時，頁面會顯示錯誤，不會開始估值：
 
-![查詢失敗示例](docs/figures/fig-15-11-bad-ticker.png)
 
 「檢查財報」對應 `check-filings`；勾選「如需要則重跑」則對應 `--rerun-if-needed`。估值日、「不使用語言模型」分別對應 `--date`、`--no-llm`。
 
@@ -473,7 +468,7 @@ AI 正在提出增長與利潤率假設（deepseek-flash）…
 
 想用程式監看同一份進度：`GET /api/jobs/<id>` 會回傳 `steps`（每步 key／label／status／note／error）、`progress`（0–100）、`activity`（單行現況）、`phase`（fetch／ai／calc／done／error）、`cancellable`。
 
-**停止**：估值進行中時，「估值」旁邊會出現「停止」。按下後按鈕變成「停止中…」，系統在**目前這一步結束後**停止（通常是幾秒內；若正在等 AI 回覆，就要等該次請求結束），狀態變為 `cancelled`，該步標 `■`，不會產出 Excel／訊號，也不會覆寫上次結果。合作的停止點在每個步驟邊界，API 為 `POST /api/jobs/<id>/cancel`。
+**停止**：估值進行中時，「估值」旁邊會出現「停止」。按下後按鈕變成「停止中…」，系統在**目前這一步結束後**停止（通常是幾秒內；若正在等 AI 回覆，就要等該次請求結束），狀態變為 `cancelled`，該步標 `■`，不會產出 Excel，也不會覆寫上次結果。合作的停止點在每個步驟邊界，API 為 `POST /api/jobs/<id>/cancel`。
 
 **錯誤**：任何一步出錯，該步會標 `!` 並直接在行內顯示錯誤文字（例如「取得市價：Yahoo chart HTTP 404」），上方紅色橫幅也會顯示同一訊息。頁面上方有「錯誤紀錄（最近 3 次）」按鈕，可展開最近三次執行的結果：代號、時間、完成／失敗／已停止、出錯或停止的步驟、錯誤訊息。紀錄存於 `out/_run_history.json`（已列入 `.gitignore`，只保留最近 3 次），API 為 `GET /api/errors`。
 
@@ -481,7 +476,6 @@ AI 正在提出增長與利潤率假設（deepseek-flash）…
 
 完成後，網頁會把 Excel 的七個分頁呈現出來，並可一鍵「下載 Excel」。各分頁用途如下：
 
-![Excel／網頁七個分頁](docs/figures/fig-15-13-sheets.png)
 
 | 分頁 | 看什麼 |
 | --- | --- |
@@ -495,11 +489,9 @@ AI 正在提出增長與利潤率假設（deepseek-flash）…
 
 NVIDIA 估值完成後的分頁示意：
 
-![NVDA 估值完成後的分頁](docs/figures/fig-15-09-nvda-sheets.png)
 
 摘要頁示例（官方基準理論價 US$874.98）：
 
-![NVDA 摘要頁](docs/figures/fig-15-02-nvda-summary.png)
 
 語言模型仍只讀環境變數 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`；未設定時與 CLI 相同，改用規則後備。
 
@@ -516,7 +508,7 @@ NVIDIA 估值完成後的分頁示意：
 | 估值前 | 「這次估值 AI 會做什麼」：工作項目、請求數與數量、略過原因；也可先按「AI 工作預覽」 | R13–R14 |
 | 執行中 | 步驟、進度條、剩餘估時（最近十次中位數，標示樣本；超出會明說；資料不足會明說） | R15 |
 | 頁首「AI 設定」 | 更換 API 位址／模型／金鑰，即時生效，金鑰只顯示末四碼 | R12 |
-| 頁首「使用指南 PDF」「下載專案」 | 圖文指南與完整專案壓縮檔 | R24–R25 |
+| 頁首「下載專案」 | 完整專案壓縮檔 | R24 |
 
 走一遍覆核流程：
 
@@ -533,8 +525,6 @@ NVIDIA 估值完成後的分頁示意：
 下載的 Excel 共 13 張工作表：原七張不變，另加 財報覆核、金額調整紀錄、歷史與預測並列、
 預測理由、AI 用量、估值歷史（R23）。
 
-完整圖文步驟見 [`docs/使用指南-v1.1.pdf`](docs/使用指南-v1.1.pdf)。
-
 ---
 
 ## 4. 如何閱讀理論價：「摘要」才是官方數字
@@ -547,11 +537,10 @@ NVIDIA 估值完成後的分頁示意：
 
 修正後的 NVIDIA「計算」頁示例：公式價 US$875.10，JSON 官方價 US$874.98，差距 0.0144%，核對相符。
 
-![修正後的 NVDA 計算頁，核對相符](docs/figures/fig-readme-nvda-calc-after-fix.png)
 
 閱讀建議：
 
-- 對外引用、寫報告、產訊號，一律用「摘要」的基準理論價（本例為 US$874.98）。
+- 對外引用、寫報告，一律用「摘要」的基準理論價（本例為 US$874.98）。
 - 「計算」頁用來檢查假設是否被正確搬進試算表；若核對不相符，不要把公式價當成第二個官方價，應先查 ΔNWC 與其他輸入是否與 JSON 一致。
 - 極小的殘差（例如本例 0.0144%）來自年度切割／四捨五入，只要在 ±0.5% 內即可視為相符。
 
@@ -575,15 +564,12 @@ python -m src.pipeline.cli check-filings --ticker 1830.HK
 # 若偵測到更新檔，自動重跑
 python -m src.pipeline.cli check-filings --ticker NVDA --rerun-if-needed
 
-# 從已有估值輸出，匯出 B 組相容訊號檔（見第 9 節）
-python -m src.pipeline.cli export-signals --ticker NVDA --ticker 1830.HK
-
 # 可選：按第 2.4 節的本機設定寄出報告（未設定則不要加 --email）
 python -m src.pipeline.cli run --ticker NVDA --email
 python -m src.pipeline.cli send-report --ticker NVDA
 ```
 
-結束碼：`0` 正常（估值驗證通過，檢查結果為不必重跑，訊號匯出成功，或電郵已寄出）；`2` 估值失敗（驗證不通過、無法建立模型如財報關鍵項目不足或公司虧損，或訊號檔驗證失敗）；`10` 需要重跑；`3` 檢查被攔截或出錯；`4` 已要求寄信但設定不齊全或寄送失敗（本機檔案仍保留）。
+結束碼：`0` 正常（估值驗證通過，檢查結果為不必重跑，或電郵已寄出）；`2` 估值失敗（驗證不通過、無法建立模型如財報關鍵項目不足或公司虧損）；`10` 需要重跑；`3` 檢查被攔截或出錯；`4` 已要求寄信但設定不齊全或寄送失敗（本機檔案仍保留）。
 
 `run` 的輸出摘要含以下行，便於腳本解析：
 
@@ -718,7 +704,6 @@ flowchart TD
     J --> K[寫入 cases/state.json 供日後 check-filings]
 ```
 
-![腳本與語言模型的分工](docs/figures/fig-10-02-llm-vs-script.png)
 
 | 步驟 | 類型 |
 | --- | --- |
@@ -726,7 +711,6 @@ flowchart TD
 | 讀財報文字、提案逐年假設、從來源文本擷取具名投行目標價 | API（`src/llm/`＋`prompts/`） |
 | WACC、FCFF 折現、五情境、驗證、Excel、增長表「本框架」各欄 | 確定性腳本，**禁止**用心算或模型直接給理論價 |
 | 檢查新財報、決定是否重跑 | 確定性腳本（`src/filings/detect.py`） |
-| 訊號檔的方向、信心與升幅 | 確定性腳本（`src/signals/`），見第 9 節 |
 
 **所有數字必須來自來源，不是 LLM 的記憶。** 取不到就在 `data_gaps` 直寫「沒有取到」與已試來源。
 
@@ -757,48 +741,13 @@ flowchart TD
 
 ---
 
-## 9. 交易訊號匯出（B 組相容，schema_version 1.0）
-
-估值完成後，可另外匯出與 B 組自動交易系統相同格式的訊號檔，方便日後自行接上交易框架。完整欄位、計算規則與讀取方式見 [`docs/signals-format.md`](docs/signals-format.md)。模板與 JSON Schema 分別為 [`docs/signals_schema_v1.json`](docs/signals_schema_v1.json)、[`docs/signals.schema.json`](docs/signals.schema.json)。
-
-預設寫到本套件的 `out/signals.json` 及日期副本 `out/signals/YYYY-MM-DD.json`。這是研究用訊號檔，不是投資建議，也不是下單指令。估值本身預設仍不會自動匯出。
-
-```bash
-# 從已有估值輸出匯出（可重複 --ticker，或用逗號分隔）
-python -m src.pipeline.cli export-signals --ticker NVDA --ticker 1830.HK
-python -m src.pipeline.cli export-signals --ticker NVDA,1830.HK --date 2026-11-11
-python -m src.pipeline.cli export-signals --from-json out/2026-11-11_NVDA/NVDA_latest.json
-python -m src.pipeline.cli export-signals --ticker NVDA --no-merge
-
-# 估值驗證通過後才合併寫入 out/signals.json（預設關閉）
-python -m src.pipeline.cli run --ticker NVDA --export-signals
-```
-
-本機網頁在估值完成或載入既有結果後，可「下載訊號 JSON」（只下載、不寫檔），或按「匯出訊號」才寫入 `out/signals.json`。
-
-方向與信心由理論價相對市價的差距決定（基礎公式，與正式訊號檔相同）：升幅 ≥ 15% 為 `BUY`，≤ −15% 為 `SELL`，其餘為 `HOLD`。買／賣信心為 `min(90, 40 + round(|upside|))`，持有為 `max(0, 50 − round(|upside|))`。本套件不套用 A 組正式流程中額外的信心上限、資料缺口扣分或「是否啟用訊號」覆核閘門；若日後要自行加上，見格式說明。
-
-以本次驗證為例（市價日期 2026-11-10）：
-
-| 代號 | 方向 | 信心 | 升幅 | 理論價 | 市價 |
-| --- | --- | --- | --- | --- | --- |
-| NVDA | BUY | 90 | +418.1% | 874.98 美元 | 168.89 |
-| 1830.HK | BUY | 90 | +269.8% | 5.51 港元 | 1.49 |
-
----
-
-## 10. 目錄說明
+## 9. 目錄說明
 
 ```
 stock-valuation/
   README.md
   requirements.txt
   config.example.yaml          # 複製為本機 config.yaml，不要提交金鑰
-  docs/估值框架作業手冊.md
-  docs/signals-format.md       # B 組相容訊號格式
-  docs/signals.schema.json
-  docs/signals_schema_v1.json
-  docs/figures/                # 本 README 的圖文截圖
   prompts/                     # API 步驟的版本化提示詞
   scripts/                     # check_llm.py（部署時檢查 AI 接線）
   src/engine/                  # fcff_engine、method_a、verify_fcff
@@ -807,29 +756,27 @@ stock-valuation/
   src/llm/                     # 唯一的模型 HTTP 客戶端
   src/pipeline/                # 指揮流程、規則後備、內建規格（name_specs）、通用規格（generic_spec）
                                # adjustments.py：財報金額調整與套用；runlog.py：每次估值一筆紀錄
-  src/signals/                 # B 組相容訊號匯出
   src/web/                     # 本機網頁介面（不改變 CLI）
                                # research.py：覆核／歷史／AI 計劃；settings.py：AI 設定
                                # package.py：專案壓縮檔；static/research.js：圖表與覆核區塊
   src/export/                  # Excel、繁中 Markdown、可選電郵
                                # xlsx_extra.py：Excel 六張研究分頁
-  tests/                       # 介面、CLI、ΔNWC、通用規格、訊號匯出、電郵設定、v1.1 研究層
+  tests/                       # 介面、CLI、ΔNWC、通用規格、電郵設定、v1.1 研究層
   data/damodaran/              # betaGlobal.xls（2026-01-05）
   cases/<ticker>/              # 當次抓取快照與 state.json（方便重現）
                                # adjustments.json：本機修改紀錄（gitignored）
   out/YYYY-MM-DD_<ticker>/     # JSON、Excel、說明、假設 CSV
   out/history/<ticker>.json    # 每次估值一筆（累積圖表用，gitignored）
-  docs/使用指南-v1.1.pdf        # 圖文使用指南（對應本版介面）
   deploy/                      # 常駐啟動：launchd plist、start 腳本與說明
 ```
 
 ---
 
-## 11. 驗證測試：1830.HK、NVDA 與通用規格（2026-11-11，澳門時間）
+## 10. 驗證測試：1830.HK、NVDA 與通用規格（2026-11-11，澳門時間）
 
-兩隻都是打包時**從未估值過**的代號，全程用真實抓取資料，**規則後備**（環境沒有 `LLM_BASE_URL`／`LLM_API_KEY`，故未呼叫任何雲端或本地模型）。沒有寫入正式關注名單或正式訊號檔。獨立驗證 `verify_fcff` 均為 **PASS**。晚間修正 ΔNWC 匯出後，Excel「計算」頁與官方理論價核對相符；官方理論價不變。
+兩隻都是打包時**從未估值過**的代號，全程用真實抓取資料，**規則後備**（環境沒有 `LLM_BASE_URL`／`LLM_API_KEY`，故未呼叫任何雲端或本地模型）。沒有寫入正式關注名單。獨立驗證 `verify_fcff` 均為 **PASS**。晚間修正 ΔNWC 匯出後，Excel「計算」頁與官方理論價核對相符；官方理論價不變。
 
-### 11.1 完美醫療健康管理（1830.HK）
+### 10.1 完美醫療健康管理（1830.HK）
 
 公司名稱由 Yahoo 及披露易／IR 確認：**Perfect Medical Health Management Limited（完美醫療健康管理有限公司）**，提供醫療、醫學美容及健康服務，業務在香港、中國內地、澳門、澳洲及新加坡。
 
@@ -851,7 +798,7 @@ stock-valuation/
 
 `check-filings`：最新相關公告為 2026-11-09 正面盈利預告（已納入本次假設）。中期業績尚未刊登。之後若再跑檢查而遇到披露易 JSONP 攔截，屬已知限制，須人手打開披露易。
 
-### 11.2 NVIDIA Corporation（NVDA）
+### 10.2 NVIDIA Corporation（NVDA）
 
 | 項目 | 數值 |
 | --- | --- |
@@ -871,19 +818,19 @@ stock-valuation/
 
 `check-filings`：最新業績檔為 10-Q，呈交 2026-08-26、報告期 2026-07-26；尚無更新的 10-Q／10-K／業績 8-K。
 
-### 11.3 本次是否用了 LLM？
+### 10.3 本次是否用了 LLM？
 
 沒有。執行時環境沒有設定 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`，兩次測試均為 `assumption_source = rules_fallback`。這正是「用量上限或沒有模型時仍要得出估值」的設計目標。
 
 補充（同日稍後）：另以 OpenAI 相容的 DeepSeek 端點（`LLM_MODEL=deepseek-flash`，模型版本 DeepSeek-V4.1-Flash）重跑 NVDA 與 1830.HK，兩者皆 `assumption_source = llm`、`verify_fcff` 通過。上文記錄的是「沒有金鑰」情況下的驗證；兩條路徑都可用，見第 6 節的 DeepSeek 例子。
 
-自動化測試（含 CLI 回歸、網頁分頁、ΔNWC 核對、訊號匯出、電郵設定）在虛擬環境已啟動後，Windows、macOS、Linux 都用同一句：
+自動化測試（含 CLI 回歸、網頁分頁、ΔNWC 核對、電郵設定）在虛擬環境已啟動後，Windows、macOS、Linux 都用同一句：
 
 ```bash
 python -m pytest tests/ -q
 ```
 
-### 11.4 通用規格實測（2026-11-11／12，澳門時間）
+### 10.4 通用規格實測（2026-11-11／12，澳門時間）
 
 同一套指令、同一個引擎，對三種原本沒有內建規格的情況各跑一次：
 
@@ -897,7 +844,7 @@ python -m pytest tests/ -q
 | `9988.HK`（阿里巴巴） | 港股，Yahoo 行業「Internet Retail」在 Damodaran 沒有直接對應（β 需由迴歸值還原） | 用 AI：基準 176.91 HKD（市價 100.60，0.57×）、WACC 7.85%、悲觀 147.40／樂觀 206.93／靜態 85.81／9%靜態 68.03、`VERIFY=PASS`；不用 AI：數字相同、`rules_fallback` | 修正前此例因 D/E 單位不一致（債務用原幣、市值用百萬）把 β 壓成 0，WACC 只有 3.53%、理論價 909 HKD（9 倍）；現已修正並加守門，還原出的 βU 不合理時改用迴歸 β |
 | `7203.T`（豐田） | 日股，Yahoo 0y 共識的 `yearAgoRevenue` 口徑錯誤 | 不用 AI：基準 3,369.76 JPY（市價 3,408，1.01×）、WACC 7.57%、`VERIFY=PASS` | 修正前把 18.3 兆當成去年營收（實際 50.7 兆），首年增長 +197%、理論價 9,077（市價 2.66 倍）；現改以「共識營收 ÷ 財報營收」計算並在資料缺口說明 |
 
-### 11.5 每次改動後如何重做驗收（建議流程）
+### 10.5 每次改動後如何重做驗收（建議流程）
 
 用一個**從未估值過**的代號做端到端驗收，才算這次改動成功：
 
@@ -921,7 +868,7 @@ python -m pytest tests/ -q
 
 ---
 
-## 12. 已知限制
+## 11. 已知限制
 
 - 內建（人工覆核）規格只有 NVDA 與 1830.HK；其他代號會自動建立通用規格並可完成估值，但未經逐項覆核、信心低，必須先看「資料缺口」再引用。若某代號財報關鍵項目不足（例如缺年度營收、EBIT 或股數），系統會拒絕建立模型並顯示原因，不會硬湊數字。
 - 通用規格的三個已知限制：不會拆分部／地域收入，CRP 按上市地推定（港股若收入主要來自內地應改 CRP 中國）；行業按 Yahoo 行業字串對應 Damodaran，未能對應時會以 Yahoo 迴歸 β 還原 βU 並標示為估算；財報貨幣與交易貨幣不同時（如 0883.HK 以人民幣列帳、港元交易）會用 Yahoo 匯率換算，匯率日與市價日相同。
@@ -941,13 +888,12 @@ python -m pytest tests/ -q
   不會影響既有 Excel 與 JSON。
 - 本機網頁沒有登入機制，預設只綁 `127.0.0.1`。若改成對外開放（`VALUATION_WEB_HOST=0.0.0.0`），
   同網段任何人都能修改 AI 設定與財報調整，請勿在不受信任的網絡這樣做。
-- 使用指南 PDF 每版只服務本專案產生的檔（`docs/*使用指南*.pdf`）；其他放在 `docs/` 的 PDF 不會被當成指南發出。
 - 內建規格（NVDA、1830.HK）的折現起點固定在 2026-11-11（假設覆核日）。用其他估值日執行時，
   資料夾與檔名會用你選的日期，但模型內部估值日仍是 2026-11-11，並在「資料缺口」明確說明；
   若要更新假設，應重做該代號的規格而不是只改日期。
 
 ---
 
-## 13. 免責
+## 12. 免責
 
 產出供專業投資者作內部研究草稿。不是買入、賣出或持有任何證券的建議。請自行核對來源與假設，尤其是資料缺口已列明、或規則路徑與街貨目標價差距很大的情況。
