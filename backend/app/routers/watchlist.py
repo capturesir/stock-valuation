@@ -45,7 +45,7 @@ def _fetch_statements(db: Session, ticker: str) -> None:
         statements.submit(ticker)
 
 
-def _entry(db: Session, w: WatchlistItem) -> dict:
+def _entry(db: Session, w: WatchlistItem, lang: str = "zh-Hant") -> dict:
     latest = db.scalars(select(Run).where(Run.ticker == w.ticker, Run.status == "done")
                         .order_by(Run.run_at.desc()).limit(1)).first()
     status = "never_valued"
@@ -59,18 +59,20 @@ def _entry(db: Session, w: WatchlistItem) -> dict:
         elif latest.price is not None and bull is not None and latest.price > bull:
             status = "above_bull"
     return {"ticker": w.ticker, "company": w.company or (latest.company if latest else None),
-            "added_at": iso(w.added_at), "latest": run_out(latest) if latest else None, "status": status}
+            "added_at": iso(w.added_at), "latest": run_out(latest, lang) if latest else None, "status": status}
 
 
 @router.get("/watchlist", response_model=list[WatchlistEntry], summary="觀察名單")
-def list_watchlist(user: User = Depends(require_user), db: Session = Depends(get_db)) -> list[dict]:
+def list_watchlist(user: User = Depends(require_user), db: Session = Depends(get_db),
+                   lang: str = Depends(lang_dep)) -> list[dict]:
     items = db.scalars(select(WatchlistItem).where(WatchlistItem.user_id == user.id)
                        .order_by(WatchlistItem.added_at)).all()
-    return [_entry(db, w) for w in items]
+    return [_entry(db, w, lang) for w in items]
 
 
 @router.post("/watchlist", response_model=WatchlistEntry, status_code=201, summary="加入觀察名單")
-def add(body: WatchlistIn, user: User = Depends(require_user), db: Session = Depends(get_db)) -> dict:
+def add(body: WatchlistIn, user: User = Depends(require_user), db: Session = Depends(get_db),
+        lang: str = Depends(lang_dep)) -> dict:
     t = ticker_or_400(body.ticker)
     w = db.scalar(select(WatchlistItem).where(WatchlistItem.user_id == user.id, WatchlistItem.ticker == t))
     if w is None:
@@ -82,7 +84,7 @@ def add(body: WatchlistIn, user: User = Depends(require_user), db: Session = Dep
             db.commit()                      # the background sync runs in its own transaction
             market_jobs.submit_sync(t)
         _fetch_statements(db, t)
-    return _entry(db, w)
+    return _entry(db, w, lang)
 
 
 @router.delete("/watchlist/{ticker}", status_code=204, summary="移出觀察名單（不刪除估值紀錄）")

@@ -29,7 +29,9 @@ def iso(ts: dt.datetime) -> str:
     return ts.astimezone(ZoneInfo(get_settings().timezone)).isoformat(timespec="seconds")
 
 
-def run_out(r: Run) -> dict:
+def run_out(r: Run, lang: str = "zh-Hant") -> dict:
+    from src.pipeline.gaps import text as gap_text
+
     return {
         "id": r.id, "ticker": r.ticker, "company": r.company, "run_at": iso(r.run_at),
         "valuation_date": r.valuation_date, "status": r.status, "trigger": r.trigger, "ai_mode": r.ai_mode,
@@ -41,7 +43,7 @@ def run_out(r: Run) -> dict:
         "has_excel": bool(r.xlsx_path and Path(r.xlsx_path).is_file()),
         "methods": [{"method": m.method, "scenario": m.scenario, "value": m.value, "weight": m.weight}
                     for m in r.methods],
-        "data_gaps": list(r.data_gaps or []),
+        "data_gaps": [gap_text(g, lang) for g in (r.data_gaps or [])],      # code + params → the reader's language
         "statement_source": r.statement_source, "ruleset_version": r.ruleset_version, "adjustment_plan": r.adjustment_plan,
     }
 

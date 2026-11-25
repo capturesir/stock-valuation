@@ -124,7 +124,7 @@ def persist_run(db: Session, calc: dict, *, status: str = "done", ai_mode: str =
         terminal_g=(calc.get("terminal") or {}).get("g"),
         verify_pass=verify_pass, assumption_source=calc.get("assumption_source"),
         ai_cost_usd=ai_cost, ai_tokens_in=tokens_in, ai_tokens_out=tokens_out,
-        calc_json_path=calc_path, xlsx_path=xlsx_path, data_gaps=calc.get("data_gaps") or [],
+        calc_json_path=calc_path, xlsx_path=xlsx_path, data_gaps=calc.get("data_gap_codes") or calc.get("data_gaps") or [],
         requested_by=requested_by,
         statement_source=(calc.get("statement_source") or {}).get("source") or ("builtin" if calc.get("ticker") in BUILTIN else "yahoo"),
         ruleset_version=(calc.get("statement_source") or {}).get("ruleset_version"),
@@ -274,6 +274,7 @@ def execute(job_id: str, payload: dict) -> None:
     calc = (result or {}).get("json") or {}
     usage = _usage_by_task(calc.get("llm_usage") or {})
     gaps = " ".join(calc.get("data_gaps") or [])
+    gap_codes = {g.get("code") for g in calc.get("data_gap_codes") or [] if isinstance(g, dict)}
     total_cost, total_in, total_out = 0.0, 0, 0
     for s in steps:
         if s["status"] == "active":
@@ -286,9 +287,9 @@ def execute(job_id: str, payload: dict) -> None:
             s.update(tokens_in=u["tokens_in"], tokens_out=u["tokens_out"], cost_usd=round(c, 6),
                      usage_reported=u["reported"])
             total_cost, total_in, total_out = total_cost + c, total_in + u["tokens_in"], total_out + u["tokens_out"]
-            if "AI 提案失敗" in gaps:
+            if "ai_failed" in gap_codes or "AI 提案失敗" in gaps:
                 s.update(status="failed", note="AI 請求失敗，已改用規則後備", note_code="ai_failed")
-            elif "AI 提案未採用" in gaps:
+            elif "ai_rejected" in gap_codes or "AI 提案未採用" in gaps:
                 s.update(note="AI 提案超出資料推算範圍，已退回規則值（費用已產生）", note_code="ai_rejected")
             elif not u["reported"]:
                 s.update(note="服務商未回報用量，費用按 0 計", note_code="usage_unreported")

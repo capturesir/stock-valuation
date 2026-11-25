@@ -12,6 +12,7 @@ from ..fetch import yahoo, rf as rfmod, sec, hkex
 from ..filings import detect
 from . import name_specs, generic_spec, tickers
 from .model_builder import build_and_run
+from .gaps import Gap, encode as encode_gaps
 from ..export.workbook import build_workbook
 from ..export.report_md import write_report
 
@@ -110,13 +111,12 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
         if not rfd.get("ok"):
             listing = rfmod.hk_10y(cfg) if ticker.endswith(".HK") else rfmod.ust_10y()
             if listing.get("ok"):
-                snap["data_gaps"].append(
-                    f"未能取得模型貨幣 {model_ccy} 的無風險利率（{rfd.get('error')}），暫用上市地利率 "
-                    f"{listing.get('value', 0):.2%}；現金流貨幣與折現率貨幣不一致，理論價可信度低。")
+                snap["data_gaps"].append(Gap("rf_currency_mismatch", currency=model_ccy, error=str(rfd.get("error")),
+                                             rate=float(listing.get("value", 0))))
                 snap["rf_currency_mismatch"] = True
             rfd = listing
         elif rfd.get("cross_check_warning"):
-            snap["data_gaps"].append("無風險利率：" + rfd["cross_check_warning"])
+            snap["data_gaps"].append(Gap("rf_cross_check", text=str(rfd["cross_check_warning"])))
     (case_dir / "rf.json").write_text(json.dumps(rfd, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     if not rfd.get("ok"):
         raise RuntimeError(f"無法取得無風險利率：{rfd.get('error')}")
@@ -277,10 +277,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
         produced.replace(canonical_json)
         result["path"] = str(canonical_json)
     if calc_date != valuation_date:
-        outj.setdefault("data_gaps", []).append(
-            f"內建規格的估值日固定為 {calc_date}（該日為假設覆核日）；本次以 {valuation_date} 執行，"
-            f"折現起點與輸出內部估值日仍為 {calc_date}。"
-        )
+        outj.setdefault("data_gaps", []).append(Gap("builtin_date", calc_date=calc_date, valuation_date=valuation_date))
     # R16: what the provider actually reported for this run (retries included).
     outj["llm_usage"] = client.usage_summary()
     outj["adjustments_applied"] = applied_adjustments
@@ -292,6 +289,8 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     else:
         outj["adjustment_plan"] = {"plan": "system_default", "note": "未套用財報調整（系統預設）"}
     outj["statement_source"] = snap.get("statement_source") or {"source": "yahoo"}
+    # data gaps as code + parameters, so the web app can show them in the reader's language (alpha.3 step 10)
+    outj["data_gap_codes"] = encode_gaps(outj.get("data_gaps") or [])
     Path(result["path"]).write_text(
         json.dumps(outj, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     # write assumptions csv
@@ -314,7 +313,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
         extra_sheets = add_research_sheets(xlsx, researchmod.research_payload(
             ticker, calc=outj, valuation_date=valuation_date))
     except Exception as exc:  # pragma: no cover - defensive
-        snap["data_gaps"].append(f"附加研究分頁未能寫入 Excel：{type(exc).__name__}: {exc}")
+        snap["data_gaps"].append(Gap("extra_sheets_failed", error=f"{type(exc).__name__}: {exc}"))
     md = out_dir / f"{valuation_date}_{ticker}_valuation.md"
     write_report(outj, str(md))
     _step("state", "正在寫入執行紀錄（state.json／run_meta.json）…")

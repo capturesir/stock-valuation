@@ -7,6 +7,7 @@ from ..engine.fcff_engine import D, EngineInputError, discount_block, run, build
 from ..engine import method_a as MA
 from ..engine.verify_fcff import verify
 from . import rules
+from .gaps import Gap
 
 
 SCEN_NAMES = ["悲觀", "基準", "樂觀", "靜態", "9%靜態"]
@@ -62,9 +63,7 @@ def sensitivity_axes(wacc: float, terminal_g: float, rf: float, *, waccs=None, g
     kept = sorted({g for g in gs if g <= terminal_g + 1e-12 and (wacc - g >= MIN_SPREAD or abs(g - terminal_g) < 1e-12)})
     up = [round(wacc + default_step / 2 * i, 5) for i in range(n)]
     up[0] = wacc  # keep the exact base WACC so the base cell matches the headline value
-    return up, kept, (
-        f"敏感度表：WACC {wacc:.2%} 與終值 g {terminal_g:.2%} 太接近，無法以基準 WACC 為中心向下取值；"
-        "改為由基準 WACC 向上取值，並略去高於基準 g 的欄。")
+    return up, kept, Gap("sensitivity_upward", wacc=wacc, g=terminal_g)
 
 
 def _make_rows(spec: dict, growths, margins, zero_dnwc=False, capex_pcts=None) -> list[dict]:
@@ -269,10 +268,7 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
         # Heavy-capex names: the static scenario keeps the historical capex path
         # while the 9% floor uses the sustainable ratio, so the "floor" can print
         # above the static case. Say so instead of letting the reader guess.
-        floor_note = (
-            f"9%靜態（{fv_9:.2f}）高於靜態（{fv_static:.2f}）：靜態情境以基準 WACC 折現、Capex＝D&A，"
-            "9%地板以固定 9% 折現並用地板 Capex 比例；兩者假設不同，不是計算錯誤。"
-        )
+        floor_note = Gap("floor_above_static", fv9=fv_9, fvs=fv_static)
 
     wacc_v = disc["wacc"]["value"]
     # sensitivity grid around wacc and g (kept strictly above g in every cell)
@@ -281,9 +277,7 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
         waccs=spec.get("sens_waccs"), gs=spec.get("sens_gs"))
     spread_note = None
     if wacc_v - spec["terminal_g"] < TIGHT_SPREAD:
-        spread_note = (
-            f"WACC {wacc_v:.2%} 與終值 g {spec['terminal_g']:.2%} 只相差 {wacc_v - spec['terminal_g']:.2%}，"
-            "終值佔企業價值的比重與對假設的敏感度都會極高；理論價只宜作方向參考。")
+        spread_note = Gap("tight_spread", wacc=wacc_v, g=spec["terminal_g"], spread=wacc_v - spec["terminal_g"])
 
     revisions = spec.get("revisions") or [{
         "date": spec["valuation_date"], "item": "理論價（首次估值）", "old": None, "new": None,
@@ -331,8 +325,8 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     erp_e = _dam.erp_for(spec.get("valuation_date") or "")
     erp_note = None
     if erp_e is None or erp_e.get("stale"):
-        erp_note = (f"ERP：估值月份 {str(spec.get('valuation_date'))[:7]} 的 Damodaran 隱含 ERP 尚未取得，"
-                    f"暫用 {disc['erp']['data_date']} 的 {disc['erp']['value']:.2%}（方法 A 要求按月更新）。")
+        erp_note = Gap("erp_stale", month=str(spec.get("valuation_date"))[:7], data_date=str(disc["erp"]["data_date"]),
+                       erp=float(disc["erp"]["value"]))
     for note in (floor_note, spread_note, sens_note, erp_note):
         if note:
             out.setdefault("data_gaps", []).append(note)
@@ -340,10 +334,7 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
     # company (loss-making, over-levered, or a bad base year). verify_fcff only
     # checks arithmetic, so flag it explicitly instead of shipping it silently.
     if out["fair_value_per_share"] is None or out["fair_value_per_share"] <= 0:
-        warning = (
-            f"理論價為負或無效（{out['fair_value_per_share']}），代表 FCFF 五情境模型不適用於此公司"
-            "（例如仍大幅虧損、資本結構極端或基準年異常）；此結果不可用作估值參考。"
-        )
+        warning = Gap("negative_value", value=str(out["fair_value_per_share"]))
         out.setdefault("data_gaps", []).insert(0, warning)
         out["result_warning"] = warning
 
