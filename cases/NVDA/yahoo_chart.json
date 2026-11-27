@@ -1,61 +1,61 @@
 {
- "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1794583647&period2=1795879647&interval=1d&events=div,split",
+ "url": "https://query1.finance.yahoo.com/v8/finance/chart/NVDA?period1=1793148937&period2=1794444937&interval=1d&events=div,split",
  "http_status": 200,
  "ok": true,
  "meta": {
   "currency": "USD",
   "exchange": "NMS",
   "symbol": "NVDA",
-  "regularMarketPrice": 146.935,
-  "regularMarketTime": 1795793256,
+  "regularMarketPrice": 168.89,
+  "regularMarketTime": 1794344401,
   "gmtoffset": -18000,
   "shortName": "NVIDIA Corporation",
   "instrumentType": "EQUITY"
  },
  "closes": [
   {
-   "date": "2026-11-13",
-   "close": 162.85000610351562
+   "date": "2026-10-28",
+   "close": 215.3800048828125
   },
   {
-   "date": "2026-11-16",
-   "close": 156.13999938964844
+   "date": "2026-10-29",
+   "close": 213.66000366210938
   },
   {
-   "date": "2026-11-17",
-   "close": 155.4600067138672
+   "date": "2026-10-30",
+   "close": 204.63999938964844
   },
   {
-   "date": "2026-11-18",
-   "close": 150.9600067138672
+   "date": "2026-11-02",
+   "close": 202.05999755859375
   },
   {
-   "date": "2026-11-19",
-   "close": 145.97999572753906
+   "date": "2026-11-03",
+   "close": 206.69000244140625
   },
   {
-   "date": "2026-11-20",
-   "close": 125.52999877929688
+   "date": "2026-11-04",
+   "close": 200.1300048828125
   },
   {
-   "date": "2026-11-23",
-   "close": 165.0500030517578
+   "date": "2026-11-05",
+   "close": 181.60000610351562
   },
   {
-   "date": "2026-11-24",
-   "close": 155.3800048828125
+   "date": "2026-11-06",
+   "close": 186.63999938964844
   },
   {
-   "date": "2026-11-25",
-   "close": 149.3000030517578
+   "date": "2026-11-09",
+   "close": 178.6699981689453
   },
   {
-   "date": "2026-11-27",
-   "close": 146.93499755859375
+   "date": "2026-11-10",
+   "close": 168.88999938964844
   }
  ],
  "last": {
-  "date": "2026-11-27",
-  "close": 146.93499755859375
+  "date": "2026-11-10",
+  "close": 168.88999938964844
  }
 }

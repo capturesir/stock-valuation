@@ -1,15 +1,15 @@
 {
  "ticker": "NVDA",
- "last_valuation_date": "2026-11-27",
+ "last_valuation_date": "2026-11-11",
  "last_results_filing": {
-  "form": "8-K",
-  "filingDate": "2026-11-17",
-  "reportDate": "2026-11-17",
-  "accession": "0001045810-26-000088",
+  "form": "10-Q",
+  "filingDate": "2026-08-26",
+  "reportDate": "2026-07-26",
+  "accession": "0001045810-26-000075",
   "title": null,
   "file_link": null
  },
- "price": 146.93499755859375,
- "price_date": "2026-11-27",
- "fair_value_per_share": 843.4981406999915
+ "price": 168.88999938964844,
+ "price_date": "2026-11-10",
+ "fair_value_per_share": 874.9752392386321
 }
