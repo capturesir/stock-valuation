@@ -48,6 +48,13 @@
 - 尚未做：估值記錄所用方案與版本（第 10 步估值改讀標準層時加入）；追蹤他人方案、共享審批屬後期功能。
 - 測試：程式庫新增 4 項，後端新增 1 項（權限、版本、私隱、衝突、合併、驗證、匯出）；在瀏覽器實測 NVDA 調整資本開支，自由現金流隨之重算。
 
+### 引擎輸出多語言：Excel 與估值報告（alpha.3 第 10 步之四）
+- 新增三語匯出字典 `src/export/locales/export.json` 與輔助模組 `src/export/i18n.py`（繁體中文、简体中文、English），涵蓋估值 Excel 七張工作表、附加研究工作表、計算表公式核對標籤／條件格式與 Markdown 估值報告。
+- `build_workbook()`、`add_calc_sheet()`、`add_research_sheets()` 與 `write_report()` 新增 `lang` 參數（預設 `zh-Hant`，與 v1 輸出完全相容）；資料缺口優先讀取 `data_gap_codes` 並按目標語言渲染。
+- 後端 `GET /api/v1/runs/{run_id}/excel` 支援 `?lang=` 與 `Accept-Language` 按讀者語言即時產生並蓋上品牌；新增 `GET /api/v1/runs/{run_id}/report` 下載多語言 Markdown 估值報告；新增錯誤代碼 `no_report`。
+- 前端股票頁下載 Excel 連結自動帶入目前介面語言（`api.excelUrl(runId, locale)`）。
+- 測試：新增 `tests/test_export_i18n.py` 6 項（三語字典與佔位符一致性、語系正規化、NVDA 與 1830.HK 三語 Excel 與公式檢查、三語報告與品牌浮水印、附加研究工作表）。
+
 ### 移除 v2 不使用的 v1 功能與舊文件（擁有者決定，2026-11-25）
 - 擁有者把 v1 的舊文件移出倉庫（使用指南 v1.1、估值框架作業手冊、訊號格式說明與 JSON Schema、README 截圖等）。經檢查 v2 新系統沒有用到這些檔案，因此不再連結：
   - 移除 v1 的「交易訊號匯出」（B 組相容 `signals.json`）：`src/signals/`、命令列 `export-signals` 與 `run --export-signals`、v1 本機網頁的「下載訊號 JSON」「匯出訊號」及其接口、相關測試。v2 沒有這個功能。

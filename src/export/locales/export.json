@@ -1,0 +1,1467 @@
+{
+  "sheet.summary": {
+    "zh-Hant": "摘要",
+    "zh-Hans": "摘要",
+    "en": "Summary"
+  },
+  "sheet.calc": {
+    "zh-Hant": "計算",
+    "zh-Hans": "计算",
+    "en": "Calculation"
+  },
+  "sheet.scenarios": {
+    "zh-Hant": "情境假設",
+    "zh-Hans": "情景假设",
+    "en": "Scenarios"
+  },
+  "sheet.growth": {
+    "zh-Hant": "增長假設對照",
+    "zh-Hans": "增长假设对照",
+    "en": "Growth Assumptions"
+  },
+  "sheet.ib": {
+    "zh-Hant": "投行估值比較",
+    "zh-Hans": "投行估值比较",
+    "en": "Broker Comparison"
+  },
+  "sheet.sources": {
+    "zh-Hant": "來源",
+    "zh-Hans": "来源",
+    "en": "Sources"
+  },
+  "sheet.gaps": {
+    "zh-Hant": "資料缺口",
+    "zh-Hans": "数据缺口",
+    "en": "Data Gaps"
+  },
+  "sheet.review": {
+    "zh-Hant": "財報覆核",
+    "zh-Hans": "财报复核",
+    "en": "Statement Review"
+  },
+  "sheet.adjustments": {
+    "zh-Hant": "金額調整紀錄",
+    "zh-Hans": "金额调整记录",
+    "en": "Adjustments"
+  },
+  "sheet.forecast": {
+    "zh-Hant": "歷史與預測並列",
+    "zh-Hans": "历史与预测并列",
+    "en": "History & Forecast"
+  },
+  "sheet.reasons": {
+    "zh-Hant": "預測理由",
+    "zh-Hans": "预测理由",
+    "en": "Forecast Rationale"
+  },
+  "sheet.usage": {
+    "zh-Hant": "AI 用量",
+    "zh-Hans": "AI 用量",
+    "en": "AI Usage"
+  },
+  "sheet.history": {
+    "zh-Hant": "估值歷史",
+    "zh-Hans": "估值历史",
+    "en": "Valuation History"
+  },
+  "scenario.bear": {
+    "zh-Hant": "悲觀",
+    "zh-Hans": "悲观",
+    "en": "Bear"
+  },
+  "scenario.base": {
+    "zh-Hant": "基準",
+    "zh-Hans": "基准",
+    "en": "Base"
+  },
+  "scenario.bull": {
+    "zh-Hant": "樂觀",
+    "zh-Hans": "乐观",
+    "en": "Bull"
+  },
+  "scenario.static": {
+    "zh-Hant": "靜態",
+    "zh-Hans": "静态",
+    "en": "Static"
+  },
+  "scenario.static_9": {
+    "zh-Hant": "9%靜態",
+    "zh-Hans": "9%静态",
+    "en": "9% Static"
+  },
+  "common.none": {
+    "zh-Hant": "無",
+    "zh-Hans": "无",
+    "en": "None"
+  },
+  "common.na": {
+    "zh-Hant": "不適用",
+    "zh-Hans": "不适用",
+    "en": "N/A"
+  },
+  "common.none_unavailable": {
+    "zh-Hant": "無／未取得",
+    "zh-Hans": "无／未取得",
+    "en": "None / Unavailable"
+  },
+  "common.undisclosed": {
+    "zh-Hant": "未披露",
+    "zh-Hans": "未披露",
+    "en": "Undisclosed"
+  },
+  "common.yes": {
+    "zh-Hant": "是",
+    "zh-Hans": "是",
+    "en": "Yes"
+  },
+  "common.no": {
+    "zh-Hant": "否",
+    "zh-Hans": "否",
+    "en": "No"
+  },
+  "common.pass": {
+    "zh-Hant": "通過",
+    "zh-Hans": "通过",
+    "en": "Pass"
+  },
+  "common.fail": {
+    "zh-Hant": "未通過",
+    "zh-Hans": "未通过",
+    "en": "Fail"
+  },
+  "common.total": {
+    "zh-Hant": "合計",
+    "zh-Hans": "合计",
+    "en": "Total"
+  },
+  "kind.market": {
+    "zh-Hant": "市場數據",
+    "zh-Hans": "市场数据",
+    "en": "Market Data"
+  },
+  "kind.analyst": {
+    "zh-Hant": "分析師假設",
+    "zh-Hans": "分析师假设",
+    "en": "Analyst Assumption"
+  },
+  "kind.market_analyst": {
+    "zh-Hant": "市場數據＋分析師假設",
+    "zh-Hans": "市场数据＋分析师假设",
+    "en": "Market Data + Assumption"
+  },
+  "kind.calc": {
+    "zh-Hant": "計算",
+    "zh-Hans": "计算",
+    "en": "Calculated"
+  },
+  "kind.input": {
+    "zh-Hant": "輸入",
+    "zh-Hans": "输入",
+    "en": "Input"
+  },
+  "report.title": {
+    "zh-Hant": "# {asset}（{ticker}）FCFF 估值",
+    "zh-Hans": "# {asset}（{ticker}）FCFF 估值",
+    "en": "# {asset} ({ticker}) FCFF Valuation"
+  },
+  "report.valuation_date": {
+    "zh-Hant": "- 估值日：{date}（亞洲／澳門時間，UTC+8）",
+    "zh-Hans": "- 估值日：{date}（亚洲／澳门时间，UTC+8）",
+    "en": "- Valuation Date: {date} (Asia/Macau, UTC+8)"
+  },
+  "report.price": {
+    "zh-Hant": "- 市價：{tc} {px}（{date}，來源：{url}）",
+    "zh-Hans": "- 市价：{tc} {px}（{date}，来源：{url}）",
+    "en": "- Market Price: {tc} {px} ({date}, Source: {url})"
+  },
+  "report.fair_value": {
+    "zh-Hant": "- 主理論價（基準）：{tc} {fv:.4f}",
+    "zh-Hans": "- 主理论价（基准）：{tc} {fv:.4f}",
+    "en": "- Base Fair Value per Share: {tc} {fv:.4f}"
+  },
+  "report.model_ccy": {
+    "zh-Hant": "- 模型貨幣：{cc}",
+    "zh-Hans": "- 模型货币：{cc}",
+    "en": "- Model Currency: {cc}"
+  },
+  "report.model_ccy_fx_note": {
+    "zh-Hant": "（財報以 {cc} 列帳，每股數值按匯率換算為 {tc}）",
+    "zh-Hans": "（财报以 {cc} 列账，每股数值按汇率换算为 {tc}）",
+    "en": " (statements reported in {cc}; per-share figures converted to {tc})"
+  },
+  "report.price_over_fv": {
+    "zh-Hant": "- 市價／基準理論價：{ratio:.3f}×",
+    "zh-Hans": "- 市价／基准理论价：{ratio:.3f}×",
+    "en": "- Price / Base Fair Value: {ratio:.3f}x"
+  },
+  "report.price_over_fv_na": {
+    "zh-Hant": "- 市價／基準理論價：不適用",
+    "zh-Hans": "- 市价／基准理论价：不适用",
+    "en": "- Price / Base Fair Value: N/A"
+  },
+  "report.wacc": {
+    "zh-Hant": "- WACC（方法 A）：{wacc:.2%}",
+    "zh-Hans": "- WACC（方法 A）：{wacc:.2%}",
+    "en": "- WACC (Method A): {wacc:.2%}"
+  },
+  "report.terminal_g": {
+    "zh-Hant": "- 終值 g：{g:.2%}",
+    "zh-Hans": "- 终值 g：{g:.2%}",
+    "en": "- Terminal Growth g: {g:.2%}"
+  },
+  "report.assumption_source": {
+    "zh-Hant": "- 假設來源：{source}",
+    "zh-Hans": "- 假设来源：{source}",
+    "en": "- Assumption Source: {source}"
+  },
+  "report.disclaimer": {
+    "zh-Hant": "**本文件不構成投資建議。** 理論價由本系統 Python 引擎按已列來源與假設計算，不是語言模型的記憶或心算。投行目標價只作交叉核對，不用來反向修正本框架的 WACC、增長或利潤率。本次為臨時估值，**沒有**寫入關注名單或交易訊號。",
+    "zh-Hans": "**本文件不构成投资建议。** 理论价由本系统 Python 引擎按已列来源与假设计算，不是语言模型的记忆或心算。投行目标价只作交叉核对，不用来反向修正本框架的 WACC、增长或利润率。本次为临时估值，**没有**写入自选列表或交易信号。",
+    "en": "**This document does not constitute investment advice.** Fair values are calculated by the Python valuation engine from the listed sources and assumptions, not recalled or estimated by an LLM. Broker target prices are for cross-checking only and are never used to back-solve WACC, growth, or margins. This ad-hoc valuation was **not** added to any watchlist or trading signal."
+  },
+  "report.sec.scenarios": {
+    "zh-Hant": "## 五情境每股理論價",
+    "zh-Hans": "## 五情景每股理论价",
+    "en": "## Five-Scenario Fair Value per Share"
+  },
+  "report.tbl.scenarios": {
+    "zh-Hant": "| 情境 | 理論價 | 市價／該情境 | 說明 |",
+    "zh-Hans": "| 情景 | 理论价 | 市价／该情景 | 说明 |",
+    "en": "| Scenario | Fair Value | Price / Scenario | Notes |"
+  },
+  "report.sec.discount": {
+    "zh-Hant": "## 折現率（方法 A）",
+    "zh-Hans": "## 折现率（方法 A）",
+    "en": "## Discount Rate (Method A)"
+  },
+  "report.disc.rf": {
+    "zh-Hant": "- Rf：{val}",
+    "zh-Hans": "- Rf：{val}",
+    "en": "- Rf: {val}"
+  },
+  "report.disc.erp": {
+    "zh-Hant": "- ERP：{val}",
+    "zh-Hans": "- ERP：{val}",
+    "en": "- ERP: {val}"
+  },
+  "report.disc.crp": {
+    "zh-Hant": "- CRP：{val}",
+    "zh-Hans": "- CRP：{val}",
+    "en": "- CRP: {val}"
+  },
+  "report.disc.beta_adopted": {
+    "zh-Hant": "- 採用 β：{val}",
+    "zh-Hans": "- 采用 β：{val}",
+    "en": "- Adopted Beta: {val}"
+  },
+  "report.disc.beta_ref": {
+    "zh-Hant": "- 參考迴歸 β：{val}",
+    "zh-Hans": "- 参考回归 β：{val}",
+    "en": "- Reference Regression Beta: {val}"
+  },
+  "report.disc.ke": {
+    "zh-Hant": "- Ke：{val}",
+    "zh-Hans": "- Ke：{val}",
+    "en": "- Ke: {val}"
+  },
+  "report.disc.kd_pre_tax": {
+    "zh-Hant": "- Kd（稅前）：{val}",
+    "zh-Hans": "- Kd（税前）：{val}",
+    "en": "- Pre-Tax Kd: {val}"
+  },
+  "report.disc.tax_rate": {
+    "zh-Hant": "- 稅率：{val}",
+    "zh-Hans": "- 税率：{val}",
+    "en": "- Tax Rate: {val}"
+  },
+  "report.disc.wacc": {
+    "zh-Hant": "- WACC：{val}",
+    "zh-Hans": "- WACC：{val}",
+    "en": "- WACC: {val}"
+  },
+  "report.disc.fmt": {
+    "zh-Hant": "{value:.4%}；{basis}（{source}，{date}）",
+    "zh-Hans": "{value:.4%}；{basis}（{source}，{date}）",
+    "en": "{value:.4%}; {basis} ({source}, {date})"
+  },
+  "report.sec.projections": {
+    "zh-Hant": "## 基準增長與利潤率",
+    "zh-Hans": "## 基准增长与利润率",
+    "en": "## Base-Case Growth & Margins"
+  },
+  "report.tbl.projections": {
+    "zh-Hant": "| 財年 | 營收增長 | 營收 | EBIT 利潤率 | Capex/營收 | 折現期 t |",
+    "zh-Hans": "| 财年 | 营收增长 | 营收 | EBIT 利润率 | Capex/营收 | 折现期 t |",
+    "en": "| Fiscal Year | Revenue Growth | Revenue | EBIT Margin | Capex/Rev | Discount Period t |"
+  },
+  "report.sec.growth": {
+    "zh-Hant": "## 增長假設對照（摘要）",
+    "zh-Hans": "## 增长假设对照（摘要）",
+    "en": "## Growth Assumptions Comparison (Summary)"
+  },
+  "report.growth.hint": {
+    "zh-Hant": "完整逐年對照見 Excel 工作表「增長假設對照」。一致預期或投行欄若無來源數字則留空。",
+    "zh-Hans": "完整逐年对照见 Excel 工作表“增长假设对照”。一致预期或投行栏若无来源数字则留空。",
+    "en": "See the Excel sheet 'Growth Assumptions' for the full year-by-year comparison. Consensus or broker columns are left blank when no source data is available."
+  },
+  "report.sec.ib": {
+    "zh-Hant": "## 投行估值比較",
+    "zh-Hans": "## 投行估值比较",
+    "en": "## Broker Valuation Comparison"
+  },
+  "report.ib.consensus": {
+    "zh-Hant": "- 一致預期目標價均值 {ccy} {mean}（區間 {low}–{high}，n={n}，{source}，{date}）。均值 ÷ 本框架基準 = {ratio:.3f}×。",
+    "zh-Hans": "- 一致预期目标价均值 {ccy} {mean}（区间 {low}–{high}，n={n}，{source}，{date}）。均值 ÷ 本框架基准 = {ratio:.3f}×。",
+    "en": "- Consensus mean target price {ccy} {mean} (range {low}–{high}, n={n}, {source}, {date}). Mean / Base Fair Value = {ratio:.3f}x."
+  },
+  "report.ib.no_consensus": {
+    "zh-Hant": "- 未取得可用的一致預期目標價，或覆蓋為零；不填假數。",
+    "zh-Hans": "- 未取得可用的一致预期目标价，或覆盖为零；不填假数。",
+    "en": "- No usable consensus target price available (or zero analyst coverage); no placeholder values filled."
+  },
+  "report.ib.no_brokers": {
+    "zh-Hant": "- 無具名投行目標價（未取得報告原文或可核對轉述）。",
+    "zh-Hans": "- 无具名投行目标价（未取得报告原文或可核对转述）。",
+    "en": "- No named broker target prices (no primary reports or verifiable citations obtained)."
+  },
+  "report.ib.broker_line": {
+    "zh-Hant": "- {broker}：目標價 {target}（{date}，{rating}）。方法：{method}。",
+    "zh-Hans": "- {broker}：目标价 {target}（{date}，{rating}）。方法：{method}。",
+    "en": "- {broker}: Target {target} ({date}, {rating}). Method: {method}."
+  },
+  "report.ib.small_sample": {
+    "zh-Hant": "- 具名機構少於五家，樣本不足。",
+    "zh-Hans": "- 具名机构少于五家，样本不足。",
+    "en": "- Fewer than five named brokers; sample size is insufficient."
+  },
+  "report.sec.gaps": {
+    "zh-Hant": "## 資料缺口",
+    "zh-Hans": "## 数据缺口",
+    "en": "## Data Gaps"
+  },
+  "report.sec.crosscheck": {
+    "zh-Hant": "## CFO 與 NOPAT 交叉（若有）",
+    "zh-Hans": "## CFO 与 NOPAT 交叉（若有）",
+    "en": "## CFO vs. NOPAT Cross-Check (If Available)"
+  },
+  "report.crosscheck.line": {
+    "zh-Hant": "- 年度：{year}；CFO 公式 FCFF≈{fcff}；NOPAT={nopat}；說明：{note}",
+    "zh-Hans": "- 年度：{year}；CFO 公式 FCFF≈{fcff}；NOPAT={nopat}；说明：{note}",
+    "en": "- Year: {year}; CFO-based FCFF ≈ {fcff}; NOPAT = {nopat}; Note: {note}"
+  },
+  "report.crosscheck.none": {
+    "zh-Hant": "- 本次無完整交叉，或已在缺口說明。",
+    "zh-Hans": "- 本次无完整交叉，或已在缺口说明。",
+    "en": "- No full cross-check available for this run, or already noted under Data Gaps."
+  },
+  "report.sec.verify": {
+    "zh-Hant": "## 驗證",
+    "zh-Hans": "## 验证",
+    "en": "## Verification"
+  },
+  "report.verify.line": {
+    "zh-Hant": "- 獨立重算：見同目錄 verify 結果。算術通過只代表內部一致，不代表假設在估值日仍然完整。",
+    "zh-Hans": "- 独立重算：见同目录 verify 结果。算术通过只代表内部一致，不代表假设在估值日仍然完整。",
+    "en": "- Independent recomputation: see the verify output in the same directory. Passing arithmetic checks confirms internal consistency only, not completeness of assumptions on the valuation date."
+  },
+  "wb.summary.title": {
+    "zh-Hant": "{asset}（{ticker}）FCFF 五情境估值摘要",
+    "zh-Hans": "{asset}（{ticker}）FCFF 五情景估值摘要",
+    "en": "{asset} ({ticker}) FCFF Five-Scenario Valuation Summary"
+  },
+  "wb.summary.val_date": {
+    "zh-Hant": "估值日（澳門時間）",
+    "zh-Hans": "估值日（澳门时间）",
+    "en": "Valuation Date (Macau)"
+  },
+  "wb.summary.price": {
+    "zh-Hant": "市價",
+    "zh-Hans": "市价",
+    "en": "Market Price"
+  },
+  "wb.summary.price_date": {
+    "zh-Hant": "市價日期",
+    "zh-Hans": "市价日期",
+    "en": "Price Date"
+  },
+  "wb.summary.currency": {
+    "zh-Hant": "貨幣",
+    "zh-Hans": "货币",
+    "en": "Currency"
+  },
+  "wb.summary.currency_pair": {
+    "zh-Hant": "{tc}（模型貨幣 {cc}）",
+    "zh-Hans": "{tc}（模型货币 {cc}）",
+    "en": "{tc} (Model Currency {cc})"
+  },
+  "wb.summary.base_fv": {
+    "zh-Hant": "基準理論價",
+    "zh-Hans": "基准理论价",
+    "en": "Base Fair Value"
+  },
+  "wb.summary.price_over_fv": {
+    "zh-Hant": "市價／基準理論價",
+    "zh-Hans": "市价／基准理论价",
+    "en": "Price / Base Fair Value"
+  },
+  "wb.summary.wacc": {
+    "zh-Hant": "WACC（方法 A）",
+    "zh-Hans": "WACC（方法 A）",
+    "en": "WACC (Method A)"
+  },
+  "wb.summary.terminal_g": {
+    "zh-Hant": "終值 g",
+    "zh-Hans": "终值 g",
+    "en": "Terminal Growth g"
+  },
+  "wb.summary.assumption_source": {
+    "zh-Hant": "假設來源",
+    "zh-Hans": "假设来源",
+    "en": "Assumption Source"
+  },
+  "wb.summary.hdr.scenario": {
+    "zh-Hant": "情境",
+    "zh-Hans": "情景",
+    "en": "Scenario"
+  },
+  "wb.summary.hdr.fv": {
+    "zh-Hant": "每股理論價（{sym}）",
+    "zh-Hans": "每股理论价（{sym}）",
+    "en": "Fair Value / Share ({sym})"
+  },
+  "wb.summary.hdr.notes": {
+    "zh-Hant": "說明",
+    "zh-Hans": "说明",
+    "en": "Notes"
+  },
+  "wb.summary.disclaimer": {
+    "zh-Hant": "本文件不構成投資建議。理論價由 Python 引擎按已列來源與假設算出，不是語言模型心算。投行目標價只作核對，不用來回校本框架參數。臨時估值預設不寫入關注名單或訊號。",
+    "zh-Hans": "本文件不构成投资建议。理论价由 Python 引擎按已列来源与假设算出，不是语言模型心算。投行目标价只作核对，不用来回校本框架参数。临时估值默认不写入自选列表或信号。",
+    "en": "This file does not constitute investment advice. Fair values are calculated by the Python engine from the listed sources and assumptions, not estimated by an LLM. Broker targets are for cross-checking only and never back-solved into model parameters. Ad-hoc valuations are not written to watchlists or signals."
+  },
+  "wb.scenarios.title": {
+    "zh-Hant": "五情境假設",
+    "zh-Hans": "五情景假设",
+    "en": "Five-Scenario Assumptions"
+  },
+  "wb.scenarios.hdr.fv": {
+    "zh-Hant": "每股理論價",
+    "zh-Hans": "每股理论价",
+    "en": "Fair Value / Share"
+  },
+  "wb.scenarios.hdr.disc": {
+    "zh-Hant": "折現率",
+    "zh-Hans": "折现率",
+    "en": "Discount Rate"
+  },
+  "wb.scenarios.hdr.growths": {
+    "zh-Hant": "增長路徑",
+    "zh-Hans": "增长路径",
+    "en": "Growth Path"
+  },
+  "wb.scenarios.base_margins": {
+    "zh-Hant": "基準逐年 EBIT 利潤率",
+    "zh-Hans": "基准逐年 EBIT 利润率",
+    "en": "Base-Case Annual EBIT Margins"
+  },
+  "wb.hdr.fy": {
+    "zh-Hant": "財年",
+    "zh-Hans": "财年",
+    "en": "Fiscal Year"
+  },
+  "wb.hdr.rev_growth": {
+    "zh-Hant": "營收增長",
+    "zh-Hans": "营收增长",
+    "en": "Revenue Growth"
+  },
+  "wb.hdr.ebit_margin": {
+    "zh-Hant": "EBIT 利潤率",
+    "zh-Hans": "EBIT 利润率",
+    "en": "EBIT Margin"
+  },
+  "wb.hdr.capex_rev": {
+    "zh-Hant": "Capex/營收",
+    "zh-Hans": "Capex/营收",
+    "en": "Capex/Revenue"
+  },
+  "wb.hdr.da_rev": {
+    "zh-Hant": "D&A/營收",
+    "zh-Hans": "D&A/营收",
+    "en": "D&A/Revenue"
+  },
+  "wb.growth.title": {
+    "zh-Hant": "未來多年增長假設對照（營收同比，除非另註）",
+    "zh-Hans": "未来多年增长假设对照（营收同比，除非另注）",
+    "en": "Multi-Year Growth Assumptions Comparison (Revenue YoY unless noted)"
+  },
+  "wb.growth.col.bear": {
+    "zh-Hant": "本框架－悲觀",
+    "zh-Hans": "本框架－悲观",
+    "en": "Model - Bear"
+  },
+  "wb.growth.col.base": {
+    "zh-Hant": "本框架－基準",
+    "zh-Hans": "本框架－基准",
+    "en": "Model - Base"
+  },
+  "wb.growth.col.bull": {
+    "zh-Hant": "本框架－樂觀",
+    "zh-Hans": "本框架－乐观",
+    "en": "Model - Bull"
+  },
+  "wb.growth.col.static": {
+    "zh-Hant": "本框架－靜態",
+    "zh-Hans": "本框架－静态",
+    "en": "Model - Static"
+  },
+  "wb.growth.col.static_9": {
+    "zh-Hant": "本框架－9%靜態",
+    "zh-Hans": "本框架－9%静态",
+    "en": "Model - 9% Static"
+  },
+  "wb.growth.col.consensus": {
+    "zh-Hant": "一致預期營收增長",
+    "zh-Hans": "一致预期营收增长",
+    "en": "Consensus Rev. Growth"
+  },
+  "wb.growth.col.base_margin": {
+    "zh-Hant": "基準 EBIT 利潤率",
+    "zh-Hans": "基准 EBIT 利润率",
+    "en": "Base EBIT Margin"
+  },
+  "wb.growth.notes": {
+    "zh-Hant": "附註",
+    "zh-Hans": "附注",
+    "en": "Notes"
+  },
+  "wb.growth.sources": {
+    "zh-Hant": "來源",
+    "zh-Hans": "来源",
+    "en": "Sources"
+  },
+  "wb.ib.title": {
+    "zh-Hant": "投行／賣方估值比較（只作核對，不回校本框架）",
+    "zh-Hans": "投行／卖方估值比较（只作核对，不回校本框架）",
+    "en": "Broker / Sell-Side Valuation Comparison (Cross-Check Only)"
+  },
+  "wb.ib.consensus_hdr": {
+    "zh-Hant": "一致預期目標價（Yahoo 等彙總，不能代替具名機構）",
+    "zh-Hans": "一致预期目标价（Yahoo 等汇总，不能代替具名机构）",
+    "en": "Consensus Target Price (Aggregated e.g. Yahoo; does not replace named brokers)"
+  },
+  "wb.ib.col.source": {
+    "zh-Hant": "來源",
+    "zh-Hans": "来源",
+    "en": "Source"
+  },
+  "wb.ib.col.date": {
+    "zh-Hant": "日期",
+    "zh-Hans": "日期",
+    "en": "Date"
+  },
+  "wb.ib.col.mean": {
+    "zh-Hant": "均值",
+    "zh-Hans": "均值",
+    "en": "Mean"
+  },
+  "wb.ib.col.high": {
+    "zh-Hant": "最高",
+    "zh-Hans": "最高",
+    "en": "High"
+  },
+  "wb.ib.col.low": {
+    "zh-Hant": "最低",
+    "zh-Hans": "最低",
+    "en": "Low"
+  },
+  "wb.ib.col.median": {
+    "zh-Hant": "中位",
+    "zh-Hans": "中位",
+    "en": "Median"
+  },
+  "wb.ib.col.analysts": {
+    "zh-Hant": "分析師人數",
+    "zh-Hans": "分析师人数",
+    "en": "Analysts"
+  },
+  "wb.ib.col.currency": {
+    "zh-Hant": "貨幣",
+    "zh-Hans": "货币",
+    "en": "Currency"
+  },
+  "wb.ib.col.url": {
+    "zh-Hant": "網址",
+    "zh-Hans": "网址",
+    "en": "URL"
+  },
+  "wb.ib.mean_over_base": {
+    "zh-Hant": "均值 ÷ 本框架基準",
+    "zh-Hans": "均值 ÷ 本框架基准",
+    "en": "Mean / Model Base"
+  },
+  "wb.ib.mean_vs_price": {
+    "zh-Hant": "均值相對現價",
+    "zh-Hans": "均值相对现价",
+    "en": "Mean vs. Price"
+  },
+  "wb.ib.broker.name": {
+    "zh-Hant": "機構",
+    "zh-Hans": "机构",
+    "en": "Broker"
+  },
+  "wb.ib.broker.date": {
+    "zh-Hant": "報告日期",
+    "zh-Hans": "报告日期",
+    "en": "Report Date"
+  },
+  "wb.ib.broker.rating": {
+    "zh-Hant": "評級",
+    "zh-Hans": "评级",
+    "en": "Rating"
+  },
+  "wb.ib.broker.target": {
+    "zh-Hant": "目標價",
+    "zh-Hans": "目标价",
+    "en": "Target Price"
+  },
+  "wb.ib.broker.vs_price": {
+    "zh-Hant": "相對現價",
+    "zh-Hans": "相对现价",
+    "en": "vs. Price"
+  },
+  "wb.ib.broker.over_base": {
+    "zh-Hant": "目標價÷基準理論價",
+    "zh-Hans": "目标价÷基准理论价",
+    "en": "Target / Base FV"
+  },
+  "wb.ib.broker.method": {
+    "zh-Hant": "已知方法",
+    "zh-Hans": "已知方法",
+    "en": "Method"
+  },
+  "wb.ib.broker.assumptions": {
+    "zh-Hant": "已知關鍵假設",
+    "zh-Hans": "已知关键假设",
+    "en": "Key Assumptions"
+  },
+  "wb.ib.broker.notes": {
+    "zh-Hant": "備註",
+    "zh-Hans": "备注",
+    "en": "Notes"
+  },
+  "wb.ib.no_brokers": {
+    "zh-Hant": "（無具名機構。未取得報告原文或可靠轉述，不捏造目標價。）",
+    "zh-Hans": "（无具名机构。未取得报告原文或可靠转述，不捏造目标价。）",
+    "en": "(No named brokers. No primary reports or reliable citations obtained; no target prices fabricated.)"
+  },
+  "wb.ib.small_sample": {
+    "zh-Hant": "樣本不足",
+    "zh-Hans": "样本不足",
+    "en": "Insufficient sample"
+  },
+  "wb.ib.gap_prefix": {
+    "zh-Hant": "缺口：",
+    "zh-Hans": "缺口：",
+    "en": "Gap: "
+  },
+  "wb.sources.title": {
+    "zh-Hant": "來源與假設依據",
+    "zh-Hans": "来源与假设依据",
+    "en": "Sources & Assumption Basis"
+  },
+  "wb.sources.col.item": {
+    "zh-Hant": "項目",
+    "zh-Hans": "项目",
+    "en": "Item"
+  },
+  "wb.sources.col.value": {
+    "zh-Hant": "數值",
+    "zh-Hans": "数值",
+    "en": "Value"
+  },
+  "wb.sources.col.basis": {
+    "zh-Hant": "依據",
+    "zh-Hans": "依据",
+    "en": "Basis"
+  },
+  "wb.sources.col.source_name": {
+    "zh-Hant": "來源名稱",
+    "zh-Hans": "来源名称",
+    "en": "Source Name"
+  },
+  "wb.sources.col.data_date": {
+    "zh-Hant": "資料日期",
+    "zh-Hans": "数据日期",
+    "en": "Data Date"
+  },
+  "wb.sources.bridge": {
+    "zh-Hant": "股權橋接",
+    "zh-Hans": "股权桥接",
+    "en": "Equity Bridge"
+  },
+  "wb.gaps.title": {
+    "zh-Hant": "資料缺口（沒有取到就不填假數）",
+    "zh-Hans": "数据缺口（没有取到就不填假数）",
+    "en": "Data Gaps (Missing data is never replaced with fabricated values)"
+  },
+  "calc.title": {
+    "zh-Hant": "{asset}（{ticker}）DCFF（FCFF DCF）計算表",
+    "zh-Hans": "{asset}（{ticker}）DCFF（FCFF DCF）计算表",
+    "en": "{asset} ({ticker}) DCFF (FCFF DCF) Calculation"
+  },
+  "calc.note.units": {
+    "zh-Hant": "單位：{units}。估值日 {val_date}；市價日期 {price_date}。",
+    "zh-Hans": "单位：{units}。估值日 {val_date}；市价日期 {price_date}。",
+    "en": "Units: {units}. Valuation Date: {val_date}; Price Date: {price_date}."
+  },
+  "calc.note.convention": {
+    "zh-Hant": "折現慣例：{convention}",
+    "zh-Hans": "折现惯例：{convention}",
+    "en": "Discounting Convention: {convention}"
+  },
+  "calc.note.legend": {
+    "zh-Hant": "格式：藍字黃底＝輸入（取自 calc JSON，來源見右方）；黑字＝Excel 公式（可改動輸入即時重算）；綠底＝關鍵結果。",
+    "zh-Hans": "格式：蓝字黄底＝输入（取自 calc JSON，来源见右方）；黑字＝Excel 公式（可改动输入即时重算）；绿底＝关键结果。",
+    "en": "Legend: Blue text / yellow fill = Input (from calc JSON, see sources on right); Black text = Live Excel formula (recalculates on edit); Green fill = Key output."
+  },
+  "calc.sec.a": {
+    "zh-Hant": "A. 折現率輸入（WACC）",
+    "zh-Hans": "A. 折现率输入（WACC）",
+    "en": "A. Discount Rate Inputs (WACC)"
+  },
+  "calc.sec.b": {
+    "zh-Hant": "B. 基期數據及規則",
+    "zh-Hans": "B. 基期数据及规则",
+    "en": "B. Base Period & Rules"
+  },
+  "calc.sec.c": {
+    "zh-Hant": "C. 逐年預測（FCFF = NOPAT + D&A − Capex − ΔNWC；DF = 1/(1+WACC)^t）",
+    "zh-Hans": "C. 逐年预测（FCFF = NOPAT + D&A − Capex − ΔNWC；DF = 1/(1+WACC)^t）",
+    "en": "C. Annual Projections (FCFF = NOPAT + D&A - Capex - ΔNWC; DF = 1/(1+WACC)^t)"
+  },
+  "calc.sec.d": {
+    "zh-Hant": "D. 終值及企業價值",
+    "zh-Hans": "D. 终值及企业价值",
+    "en": "D. Terminal Value & Enterprise Value"
+  },
+  "calc.sec.e": {
+    "zh-Hant": "E. 股權橋接（EV → 股權價值）",
+    "zh-Hans": "E. 股权桥接（EV → 股权价值）",
+    "en": "E. Equity Bridge (EV → Equity Value)"
+  },
+  "calc.sec.f": {
+    "zh-Hant": "F. 股權價值 → 每股理論價（並與 JSON 核對）",
+    "zh-Hans": "F. 股权价值 → 每股理论价（并与 JSON 核对）",
+    "en": "F. Equity Value → Fair Value per Share (vs. JSON Check)"
+  },
+  "calc.sec.g": {
+    "zh-Hant": "G. 敏感度：每股理論價（{sym}；縱軸 WACC、橫軸 g）— 公式即時重算",
+    "zh-Hans": "G. 敏感度：每股理论价（{sym}；纵轴 WACC、横轴 g）— 公式即时重算",
+    "en": "G. Sensitivity: Fair Value per Share ({sym}; rows = WACC, cols = g) — Live Formulas"
+  },
+  "calc.sec.h": {
+    "zh-Hant": "H. 情境（模型 JSON 輸出；需同時改動多項假設，未於本表以公式重算）",
+    "zh-Hans": "H. 情景（模型 JSON 输出；需同时改动多项假设，未于本表以公式重算）",
+    "en": "H. Scenarios (Model JSON output; multi-parameter changes, not formula-recalculated here)"
+  },
+  "calc.sec.revisions": {
+    "zh-Hant": "修訂紀錄（舊 → 新，原因）",
+    "zh-Hans": "修订记录（旧 → 新，原因）",
+    "en": "Revision Log (Old → New, Reason)"
+  },
+  "calc.sec.deviations": {
+    "zh-Hant": "專業修正（與規格的差異：要求 → 採用，理由）",
+    "zh-Hans": "专业修正（与规格的差异：要求 → 采用，理由）",
+    "en": "Spec Deviations (Requested → Adopted, Reason)"
+  },
+  "calc.hdr.item": {
+    "zh-Hant": "項目",
+    "zh-Hans": "项目",
+    "en": "Item"
+  },
+  "calc.hdr.value": {
+    "zh-Hant": "數值",
+    "zh-Hans": "数值",
+    "en": "Value"
+  },
+  "calc.hdr.unit": {
+    "zh-Hant": "單位",
+    "zh-Hans": "单位",
+    "en": "Unit"
+  },
+  "calc.hdr.kind": {
+    "zh-Hant": "依據類型",
+    "zh-Hans": "依据类型",
+    "en": "Type"
+  },
+  "calc.hdr.basis": {
+    "zh-Hant": "依據說明",
+    "zh-Hans": "依据说明",
+    "en": "Basis / Notes"
+  },
+  "calc.hdr.source": {
+    "zh-Hant": "來源名稱",
+    "zh-Hans": "来源名称",
+    "en": "Source"
+  },
+  "calc.hdr.url": {
+    "zh-Hant": "網址",
+    "zh-Hans": "网址",
+    "en": "URL"
+  },
+  "calc.hdr.date": {
+    "zh-Hant": "數據日期",
+    "zh-Hans": "数据日期",
+    "en": "Data Date"
+  },
+  "calc.a.rf": {
+    "zh-Hant": "無風險利率 Rf",
+    "zh-Hans": "无风险利率 Rf",
+    "en": "Risk-Free Rate (Rf)"
+  },
+  "calc.a.erp": {
+    "zh-Hant": "股權風險溢價 ERP",
+    "zh-Hans": "股权风险溢价 ERP",
+    "en": "Equity Risk Premium (ERP)"
+  },
+  "calc.a.crp": {
+    "zh-Hant": "國家風險溢價 CRP",
+    "zh-Hans": "国家风险溢价 CRP",
+    "en": "Country Risk Premium (CRP)"
+  },
+  "calc.a.beta_ref": {
+    "zh-Hant": "Beta（參考）",
+    "zh-Hans": "Beta（参考）",
+    "en": "Beta (Reference)"
+  },
+  "calc.a.beta_adopted": {
+    "zh-Hant": "Beta（採用）",
+    "zh-Hans": "Beta（采用）",
+    "en": "Beta (Adopted)"
+  },
+  "calc.a.ke": {
+    "zh-Hant": "股權成本 Ke = Rf + β ×（ERP + CRP）",
+    "zh-Hans": "股权成本 Ke = Rf + β ×（ERP + CRP）",
+    "en": "Cost of Equity Ke = Rf + β × (ERP + CRP)"
+  },
+  "calc.a.kd_pre_tax": {
+    "zh-Hant": "稅前債務成本 Kd",
+    "zh-Hans": "税前债务成本 Kd",
+    "en": "Pre-Tax Cost of Debt (Kd)"
+  },
+  "calc.a.tax_rate": {
+    "zh-Hant": "稅率（WACC 及 NOPAT 用）",
+    "zh-Hans": "税率（WACC 及 NOPAT 用）",
+    "en": "Tax Rate (WACC & NOPAT)"
+  },
+  "calc.a.kd_after_tax": {
+    "zh-Hant": "稅後債務成本 = Kd ×（1 − 稅率）",
+    "zh-Hans": "税后债务成本 = Kd ×（1 − 税率）",
+    "en": "After-Tax Kd = Kd × (1 - Tax Rate)"
+  },
+  "calc.a.e_px": {
+    "zh-Hant": "市值用股價（{sym}）",
+    "zh-Hans": "市值用股价（{sym}）",
+    "en": "Share Price for Market Cap ({sym})"
+  },
+  "calc.a.e_sh": {
+    "zh-Hant": "市值用股數（百萬股）",
+    "zh-Hans": "市值用股数（百万股）",
+    "en": "Shares for Market Cap (M)"
+  },
+  "calc.a.e_fx": {
+    "zh-Hant": "市值換算匯率（交易貨幣／US$）",
+    "zh-Hans": "市值换算汇率（交易货币／US$）",
+    "en": "Market Cap FX Rate (Trade Ccy / US$)"
+  },
+  "calc.a.pref_sh": {
+    "zh-Hant": "其中優先股（百萬股）",
+    "zh-Hans": "其中优先股（百万股）",
+    "en": "Of which Preferred Shares (M)"
+  },
+  "calc.a.pref_px": {
+    "zh-Hant": "優先股股價（{sym}）",
+    "zh-Hans": "优先股股价（{sym}）",
+    "en": "Preferred Share Price ({sym})"
+  },
+  "calc.a.e_pref": {
+    "zh-Hant": "股權市值 E = (普通股價 × 普通股數 + 優先股價 × 優先股數) ÷ 匯率",
+    "zh-Hans": "股权市值 E = (普通股价 × 普通股数 + 优先股价 × 优先股数) ÷ 汇率",
+    "en": "Equity Value E = (Common Px × Common Sh + Pref Px × Pref Sh) / FX"
+  },
+  "calc.a.e": {
+    "zh-Hant": "股權市值 E = 股價 × 股數 ÷ 匯率",
+    "zh-Hans": "股权市值 E = 股价 × 股数 ÷ 汇率",
+    "en": "Equity Value E = Price × Shares / FX"
+  },
+  "calc.a.we": {
+    "zh-Hant": "股權權重 E/(E+D)",
+    "zh-Hans": "股权权重 E/(E+D)",
+    "en": "Equity Weight E/(E+D)"
+  },
+  "calc.a.wd": {
+    "zh-Hant": "債務權重 D/(E+D)",
+    "zh-Hans": "债务权重 D/(E+D)",
+    "en": "Debt Weight D/(E+D)"
+  },
+  "calc.a.wacc": {
+    "zh-Hant": "WACC = We × Ke + Wd × Kd稅後",
+    "zh-Hans": "WACC = We × Ke + Wd × Kd税后",
+    "en": "WACC = We × Ke + Wd × After-Tax Kd"
+  },
+  "calc.a.g": {
+    "zh-Hant": "永續增長率 g",
+    "zh-Hans": "永续增长率 g",
+    "en": "Terminal Growth Rate (g)"
+  },
+  "calc.a.ronic": {
+    "zh-Hant": "新增投資回報率 RONIC（價值驅動終值）",
+    "zh-Hans": "新增投资回报率 RONIC（价值驱动终值）",
+    "en": "RONIC (Value-Driver Terminal Value)"
+  },
+  "calc.a.tvm": {
+    "zh-Hant": "終值方法",
+    "zh-Hans": "终值方法",
+    "en": "Terminal Value Method"
+  },
+  "calc.a.horizon": {
+    "zh-Hant": "預測期",
+    "zh-Hans": "预测期",
+    "en": "Forecast Horizon"
+  },
+  "calc.unit.m_shares": {
+    "zh-Hant": "百萬股",
+    "zh-Hans": "百万股",
+    "en": "M shares"
+  },
+  "calc.unit.shares": {
+    "zh-Hant": "股",
+    "zh-Hans": "股",
+    "en": "shares"
+  },
+  "calc.unit.millions": {
+    "zh-Hant": "百萬",
+    "zh-Hans": "百万",
+    "en": "M"
+  },
+  "calc.unit.years": {
+    "zh-Hant": "年",
+    "zh-Hans": "年",
+    "en": "yrs"
+  },
+  "calc.b.nwc_rate": {
+    "zh-Hant": "ΔNWC 比率（× 營收增量）",
+    "zh-Hans": "ΔNWC 比率（× 营收增量）",
+    "en": "ΔNWC Ratio (× ΔRevenue)"
+  },
+  "calc.c.year": {
+    "zh-Hant": "年度",
+    "zh-Hans": "年度",
+    "en": "Year"
+  },
+  "calc.c.len": {
+    "zh-Hant": "期長（年）",
+    "zh-Hans": "期长（年）",
+    "en": "Length (yrs)"
+  },
+  "calc.c.rev_g": {
+    "zh-Hant": "營收增長",
+    "zh-Hans": "营收增长",
+    "en": "Rev. Growth"
+  },
+  "calc.c.rev": {
+    "zh-Hant": "營收",
+    "zh-Hans": "营收",
+    "en": "Revenue"
+  },
+  "calc.c.ebit_m": {
+    "zh-Hant": "EBIT 率",
+    "zh-Hans": "EBIT 率",
+    "en": "EBIT Margin"
+  },
+  "calc.c.tax": {
+    "zh-Hant": "稅率",
+    "zh-Hans": "税率",
+    "en": "Tax Rate"
+  },
+  "calc.c.da_rev": {
+    "zh-Hant": "D&A／營收",
+    "zh-Hans": "D&A／营收",
+    "en": "D&A / Rev"
+  },
+  "calc.c.capex_rev": {
+    "zh-Hant": "Capex／營收",
+    "zh-Hans": "Capex／营收",
+    "en": "Capex / Rev"
+  },
+  "calc.c.t": {
+    "zh-Hant": "折現期 t",
+    "zh-Hans": "折现期 t",
+    "en": "Period t"
+  },
+  "calc.c.df": {
+    "zh-Hant": "折現因子 DF",
+    "zh-Hans": "折现因子 DF",
+    "en": "Discount Factor"
+  },
+  "calc.c.r1": {
+    "zh-Hant": "營收增長理由／基準",
+    "zh-Hans": "营收增长理由／基准",
+    "en": "Growth Rationale / Base"
+  },
+  "calc.c.r2": {
+    "zh-Hant": "利潤率理由",
+    "zh-Hans": "利润率理由",
+    "en": "Margin Rationale"
+  },
+  "calc.c.r3": {
+    "zh-Hant": "再投資理由",
+    "zh-Hans": "再投资理由",
+    "en": "Reinvestment Rationale"
+  },
+  "calc.c.src": {
+    "zh-Hant": "來源網址",
+    "zh-Hans": "来源网址",
+    "en": "Source URLs"
+  },
+  "calc.d.fcff_next_vd": {
+    "zh-Hant": "FCFF(N+1) = NOPAT_N ×（1+g）×（1 − g/RONIC）",
+    "zh-Hans": "FCFF(N+1) = NOPAT_N ×（1+g）×（1 − g/RONIC）",
+    "en": "FCFF(N+1) = NOPAT_N × (1+g) × (1 - g/RONIC)"
+  },
+  "calc.d.fcff_next_gordon": {
+    "zh-Hant": "FCFF(N+1) = FCFF_N ×（1+g）",
+    "zh-Hans": "FCFF(N+1) = FCFF_N ×（1+g）",
+    "en": "FCFF(N+1) = FCFF_N × (1+g)"
+  },
+  "calc.d.tv": {
+    "zh-Hant": "終值 TV = FCFF(N+1) ÷（WACC − g）",
+    "zh-Hans": "终值 TV = FCFF(N+1) ÷（WACC − g）",
+    "en": "Terminal Value TV = FCFF(N+1) / (WACC - g)"
+  },
+  "calc.d.t_tv": {
+    "zh-Hant": "終值折現期（= 最後預測年 t_N，年中一致）",
+    "zh-Hans": "终值折现期（= 最后预测年 t_N，年中一致）",
+    "en": "TV Discount Period (= last forecast year t_N, mid-year)"
+  },
+  "calc.d.pv_tv": {
+    "zh-Hant": "PV(TV) = TV ÷（1+WACC）^t_N",
+    "zh-Hans": "PV(TV) = TV ÷（1+WACC）^t_N",
+    "en": "PV(TV) = TV / (1+WACC)^t_N"
+  },
+  "calc.d.sum_pv": {
+    "zh-Hant": "預測期 PV 合計 ΣPV(FCFF)",
+    "zh-Hans": "预测期 PV 合计 ΣPV(FCFF)",
+    "en": "Sum of Forecast PV ΣPV(FCFF)"
+  },
+  "calc.d.ev": {
+    "zh-Hant": "企業價值 EV = ΣPV + PV(TV)",
+    "zh-Hans": "企业价值 EV = ΣPV + PV(TV)",
+    "en": "Enterprise Value EV = ΣPV + PV(TV)"
+  },
+  "calc.d.tv_share": {
+    "zh-Hant": "終值占 EV",
+    "zh-Hans": "终值占 EV",
+    "en": "TV % of EV"
+  },
+  "calc.e.orig_amt": {
+    "zh-Hant": "原幣金額（百萬）",
+    "zh-Hans": "原币金额（百万）",
+    "en": "Orig. Ccy Amount (M)"
+  },
+  "calc.e.fx": {
+    "zh-Hant": "換算匯率",
+    "zh-Hans": "换算汇率",
+    "en": "FX Rate"
+  },
+  "calc.e.signed": {
+    "zh-Hant": "計入值",
+    "zh-Hans": "计入值",
+    "en": "Signed Value"
+  },
+  "calc.e.basis": {
+    "zh-Hant": "依據",
+    "zh-Hans": "依据",
+    "en": "Basis"
+  },
+  "calc.e.net": {
+    "zh-Hant": "橋接淨額（原幣：{ccy}）",
+    "zh-Hans": "桥接净额（原币：{ccy}）",
+    "en": "Net Bridge (Orig. Ccy: {ccy})"
+  },
+  "calc.e.debt_bridge": {
+    "zh-Hant": "債務 D（橋接中的融資性債務）",
+    "zh-Hans": "债务 D（桥接中的融资性债务）",
+    "en": "Debt D (Interest-Bearing Debt from Bridge)"
+  },
+  "calc.e.debt": {
+    "zh-Hant": "債務 D",
+    "zh-Hans": "债务 D",
+    "en": "Debt D"
+  },
+  "calc.f.equity": {
+    "zh-Hant": "股權價值 = EV + 橋接淨額",
+    "zh-Hans": "股权价值 = EV + 桥接净额",
+    "en": "Equity Value = EV + Net Bridge"
+  },
+  "calc.f.sh_common": {
+    "zh-Hant": "普通股攤薄股數",
+    "zh-Hans": "普通股摊薄股数",
+    "en": "Diluted Common Shares"
+  },
+  "calc.f.adr": {
+    "zh-Hant": "ADR 比率（1 ADR = ? 普通股）",
+    "zh-Hans": "ADR 比率（1 ADR = ? 普通股）",
+    "en": "ADR Ratio (1 ADR = ? Common)"
+  },
+  "calc.f.adr_units": {
+    "zh-Hant": "ADR 約當單位 = 股數 ÷ ADR 比率",
+    "zh-Hans": "ADR 约当单位 = 股数 ÷ ADR 比率",
+    "en": "ADR Equivalent Units = Shares / ADR Ratio"
+  },
+  "calc.f.shares": {
+    "zh-Hant": "攤薄股數",
+    "zh-Hans": "摊薄股数",
+    "en": "Diluted Shares"
+  },
+  "calc.f.ps_fx": {
+    "zh-Hant": "每股換算匯率（{ccy} → {tc}）",
+    "zh-Hans": "每股换算汇率（{ccy} → {tc}）",
+    "en": "Per-Share FX Rate ({ccy} → {tc})"
+  },
+  "calc.f.fair": {
+    "zh-Hant": "每股理論價（{sym}）= 股權價值 ÷ 股數 × 匯率",
+    "zh-Hans": "每股理论价（{sym}）= 股权价值 ÷ 股数 × 汇率",
+    "en": "Fair Value / Share ({sym}) = Equity / Shares × FX"
+  },
+  "calc.f.fair_json": {
+    "zh-Hant": "核對：calc JSON 每股理論價",
+    "zh-Hans": "核对：calc JSON 每股理论价",
+    "en": "Check: calc JSON Fair Value / Share"
+  },
+  "calc.f.diff": {
+    "zh-Hant": "差異（公式 ÷ JSON − 1）",
+    "zh-Hans": "差异（公式 ÷ JSON − 1）",
+    "en": "Difference (Formula / JSON - 1)"
+  },
+  "calc.f.check": {
+    "zh-Hant": "核對結果（容許 ±0.5%）",
+    "zh-Hans": "核对结果（容许 ±0.5%）",
+    "en": "Check Result (±0.5% tolerance)"
+  },
+  "calc.f.check_pass": {
+    "zh-Hant": "✔ 相符",
+    "zh-Hans": "✔ 相符",
+    "en": "✔ Match"
+  },
+  "calc.f.check_fail": {
+    "zh-Hant": "✘ 不符",
+    "zh-Hans": "✘ 不符",
+    "en": "✘ Mismatch"
+  },
+  "calc.f.price": {
+    "zh-Hant": "市價（{date} 收市）",
+    "zh-Hans": "市价（{date} 收市）",
+    "en": "Market Price ({date} close)"
+  },
+  "calc.f.ratio": {
+    "zh-Hant": "市價 ÷ 理論價",
+    "zh-Hans": "市价 ÷ 理论价",
+    "en": "Price / Fair Value"
+  },
+  "calc.f.ratio_note": {
+    "zh-Hant": "計算；達 2 倍列入待剔除名單",
+    "zh-Hans": "计算；达 2 倍列入待剔除名单",
+    "en": "Calculated; >= 2x flagged for removal review"
+  },
+  "calc.f.gap": {
+    "zh-Hant": "折讓／溢價（市價 ÷ 理論價 − 1）",
+    "zh-Hans": "折让／溢价（市价 ÷ 理论价 − 1）",
+    "en": "Discount / Premium (Price / FV - 1)"
+  },
+  "calc.f.gap_note": {
+    "zh-Hant": "計算：紅＝溢價（偏貴），綠＝折讓（偏便宜）",
+    "zh-Hans": "计算：红＝溢价（偏贵），绿＝折让（偏便宜）",
+    "en": "Calculated: Red = Premium (expensive), Green = Discount (cheap)"
+  },
+  "calc.g.json_matrix": {
+    "zh-Hant": "對照：calc JSON 敏感度矩陣（模型輸出，靜態值）",
+    "zh-Hans": "对照：calc JSON 敏感度矩阵（模型输出，静态值）",
+    "en": "Reference: calc JSON Sensitivity Matrix (Model output, static)"
+  },
+  "calc.g.sens_diff": {
+    "zh-Hant": "公式矩陣與 JSON 矩陣平均絕對差",
+    "zh-Hans": "公式矩阵与 JSON 矩阵平均绝对差",
+    "en": "Mean Absolute Diff (Formula vs. JSON Matrix)"
+  },
+  "calc.h.rel_base": {
+    "zh-Hant": "相對基本",
+    "zh-Hans": "相对基准",
+    "en": "vs. Base"
+  },
+  "calc.h.changes": {
+    "zh-Hant": "假設變動",
+    "zh-Hans": "假设变动",
+    "en": "Assumption Changes"
+  },
+  "calc.rev.date_item": {
+    "zh-Hant": "日期／項目",
+    "zh-Hans": "日期／项目",
+    "en": "Date / Item"
+  },
+  "calc.rev.old": {
+    "zh-Hant": "舊",
+    "zh-Hans": "旧",
+    "en": "Old"
+  },
+  "calc.rev.new": {
+    "zh-Hant": "新",
+    "zh-Hans": "新",
+    "en": "New"
+  },
+  "calc.rev.reason": {
+    "zh-Hant": "原因",
+    "zh-Hans": "原因",
+    "en": "Reason"
+  },
+  "calc.dev.requested": {
+    "zh-Hant": "要求",
+    "zh-Hans": "要求",
+    "en": "Requested"
+  },
+  "calc.dev.adopted": {
+    "zh-Hant": "採用",
+    "zh-Hans": "采用",
+    "en": "Adopted"
+  },
+  "calc.dev.reason": {
+    "zh-Hant": "理由",
+    "zh-Hans": "理由",
+    "en": "Rationale"
+  },
+  "extra.review.hdr.stmt": {
+    "zh-Hant": "報表",
+    "zh-Hans": "报表",
+    "en": "Statement"
+  },
+  "extra.review.hdr.item": {
+    "zh-Hant": "科目",
+    "zh-Hans": "科目",
+    "en": "Line Item"
+  },
+  "extra.review.hdr.label": {
+    "zh-Hant": "中文名",
+    "zh-Hans": "中文名",
+    "en": "Label"
+  },
+  "extra.review.hdr.unit": {
+    "zh-Hant": "單位",
+    "zh-Hans": "单位",
+    "en": "Unit"
+  },
+  "extra.review.hdr.importance": {
+    "zh-Hant": "重要性",
+    "zh-Hans": "重要性",
+    "en": "Importance"
+  },
+  "extra.review.hdr.rank": {
+    "zh-Hant": "排名",
+    "zh-Hans": "排名",
+    "en": "Rank"
+  },
+  "extra.review.hdr.model_input": {
+    "zh-Hant": "模型輸入",
+    "zh-Hans": "模型输入",
+    "en": "Model Input"
+  },
+  "extra.review.note": {
+    "zh-Hant": "逐項覆核：Yahoo 財報全部科目，按金額大小排序（比率與每股數字另列其後）。「模型輸入」標示哪些科目直接進入估值。",
+    "zh-Hans": "逐项复核：Yahoo 财报全部科目，按金额大小排序（比率与每股数字另列其后）。“模型输入”标示哪些科目直接进入估值。",
+    "en": "Line-by-line review of Yahoo financial statements sorted by magnitude (ratios and per-share items follow). 'Model Input' marks items feeding directly into valuation."
+  },
+  "extra.adj.hdr.time": {
+    "zh-Hant": "時間",
+    "zh-Hans": "时间",
+    "en": "Timestamp"
+  },
+  "extra.adj.hdr.fy": {
+    "zh-Hant": "財報期",
+    "zh-Hans": "财报期",
+    "en": "Period"
+  },
+  "extra.adj.hdr.orig": {
+    "zh-Hant": "修改前",
+    "zh-Hans": "修改前",
+    "en": "Original"
+  },
+  "extra.adj.hdr.adj": {
+    "zh-Hant": "修改後",
+    "zh-Hans": "修改后",
+    "en": "Adjusted"
+  },
+  "extra.adj.hdr.delta": {
+    "zh-Hant": "差異",
+    "zh-Hans": "差异",
+    "en": "Delta"
+  },
+  "extra.adj.hdr.reason": {
+    "zh-Hant": "原因",
+    "zh-Hans": "原因",
+    "en": "Reason"
+  },
+  "extra.adj.hdr.affects": {
+    "zh-Hant": "影響估值",
+    "zh-Hans": "影响估值",
+    "en": "Affects Model"
+  },
+  "extra.adj.hdr.note": {
+    "zh-Hant": "說明",
+    "zh-Hans": "说明",
+    "en": "Notes"
+  },
+  "extra.adj.note_some": {
+    "zh-Hant": "每次修改都保留原始值、修改值、原因與時間；沒有原因的修改不會被採用。",
+    "zh-Hans": "每次修改都保留原始值、修改值、原因与时间；没有原因的修改不会被采用。",
+    "en": "Every edit preserves the original value, adjusted value, reason, and timestamp; edits without a reason are not applied."
+  },
+  "extra.adj.note_none": {
+    "zh-Hant": "本次沒有金額調整。",
+    "zh-Hans": "本次没有金额调整。",
+    "en": "No financial adjustments in this run."
+  },
+  "extra.fc.kind.actual": {
+    "zh-Hant": "實際",
+    "zh-Hans": "实际",
+    "en": "Actual"
+  },
+  "extra.fc.kind.base": {
+    "zh-Hant": "基準年",
+    "zh-Hans": "基准年",
+    "en": "Base Year"
+  },
+  "extra.fc.kind.forecast": {
+    "zh-Hant": "預測",
+    "zh-Hans": "预测",
+    "en": "Forecast"
+  },
+  "extra.fc.hdr.period": {
+    "zh-Hant": "年／期間",
+    "zh-Hans": "年／期间",
+    "en": "Year / Period"
+  },
+  "extra.fc.hdr.kind": {
+    "zh-Hant": "類型",
+    "zh-Hans": "类型",
+    "en": "Type"
+  },
+  "extra.fc.hdr.period_end": {
+    "zh-Hant": "財報期末",
+    "zh-Hans": "财报期末",
+    "en": "Period End"
+  },
+  "extra.fc.hdr.pv": {
+    "zh-Hant": "現值",
+    "zh-Hans": "现值",
+    "en": "PV"
+  },
+  "extra.fc.hdr.growth_base": {
+    "zh-Hant": "增長依據",
+    "zh-Hans": "增长依据",
+    "en": "Growth Basis"
+  },
+  "extra.fc.default_units": {
+    "zh-Hant": "百萬公司貨幣",
+    "zh-Hans": "百万公司货币",
+    "en": "Millions (reporting currency)"
+  },
+  "extra.fc.note": {
+    "zh-Hant": "單位：{units}。實際＝已公布財報；基準年＝模型的歷史起點；預測＝本次模型輸出。",
+    "zh-Hans": "单位：{units}。实际＝已公布财报；基准年＝模型的历史起点；预测＝本次模型输出。",
+    "en": "Units: {units}. Actual = reported financials; Base Year = model starting point; Forecast = model projections."
+  },
+  "extra.reasons.hdr.growth": {
+    "zh-Hant": "增長理由",
+    "zh-Hans": "增长理由",
+    "en": "Growth Rationale"
+  },
+  "extra.reasons.note": {
+    "zh-Hant": "理由逐年列出；資料依據與推論分開陳述，未取得資料時明示而不是補一個數字。",
+    "zh-Hans": "理由逐年列出；数据依据与推论分开陈述，未取得数据时明示而不是补一个数字。",
+    "en": "Rationales are listed by year; factual basis and inference are separated, and missing data is stated explicitly rather than fabricated."
+  },
+  "extra.usage.hdr.requests": {
+    "zh-Hant": "請求次數",
+    "zh-Hans": "请求次数",
+    "en": "Requests"
+  },
+  "extra.usage.hdr.reported": {
+    "zh-Hant": "有回報",
+    "zh-Hans": "有回报",
+    "en": "Reported"
+  },
+  "extra.usage.hdr.prompt": {
+    "zh-Hant": "輸入 Token",
+    "zh-Hans": "输入 Token",
+    "en": "Input Tokens"
+  },
+  "extra.usage.hdr.completion": {
+    "zh-Hant": "輸出 Token",
+    "zh-Hans": "输出 Token",
+    "en": "Output Tokens"
+  },
+  "extra.usage.hdr.total": {
+    "zh-Hant": "總 Token",
+    "zh-Hans": "总 Token",
+    "en": "Total Tokens"
+  },
+  "extra.usage.hdr.unreported": {
+    "zh-Hant": "未回報",
+    "zh-Hans": "未回报",
+    "en": "Unreported"
+  },
+  "extra.usage.note_default": {
+    "zh-Hant": "未使用 AI 時，此表只會顯示 0 次請求。",
+    "zh-Hans": "未使用 AI 时，此表只会显示 0 次请求。",
+    "en": "When AI is not used, this sheet shows 0 requests."
+  },
+  "extra.hist.hdr.val_date": {
+    "zh-Hant": "估值日",
+    "zh-Hans": "估值日",
+    "en": "Valuation Date"
+  },
+  "extra.hist.hdr.price_date": {
+    "zh-Hant": "市價日期",
+    "zh-Hans": "市价日期",
+    "en": "Price Date"
+  },
+  "extra.hist.hdr.fv": {
+    "zh-Hant": "理論價",
+    "zh-Hans": "理论价",
+    "en": "Fair Value"
+  },
+  "extra.hist.hdr.price": {
+    "zh-Hant": "當時市價",
+    "zh-Hans": "当时市价",
+    "en": "Price Then"
+  },
+  "extra.hist.hdr.gap": {
+    "zh-Hant": "差距",
+    "zh-Hans": "差距",
+    "en": "Gap"
+  },
+  "extra.hist.hdr.gap_pct": {
+    "zh-Hant": "差距%",
+    "zh-Hans": "差距%",
+    "en": "Gap %"
+  },
+  "extra.hist.hdr.verify": {
+    "zh-Hant": "驗證",
+    "zh-Hans": "验证",
+    "en": "Verify"
+  },
+  "extra.hist.note": {
+    "zh-Hant": "每次估值當時的理論價與當時市價；圖表與此表同一資料來源。",
+    "zh-Hans": "每次估值当时的理论价与当时市价；图表与此表同一数据来源。",
+    "en": "Historical fair value and market price at each valuation date; same data source as the chart."
+  }
+}

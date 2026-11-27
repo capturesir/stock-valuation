@@ -17,6 +17,8 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from .i18n import DEFAULT, normalize_lang, t
+
 HEADER_FILL = PatternFill("solid", fgColor="1F3A5F")
 HEADER_FONT = Font(color="FFFFFF", bold=True, size=10)
 BOLD = Font(bold=True, size=10)
@@ -60,8 +62,9 @@ def _sheet(wb, name: str, headers: list[str], rows: Iterable[list[Any]],
     return ws
 
 
-def add_research_sheets(xlsx_path: str | Path, payload: dict) -> list[str]:
+def add_research_sheets(xlsx_path: str | Path, payload: dict, lang: str = DEFAULT) -> list[str]:
     """Append the research sheets. Returns the names actually written."""
+    lang = normalize_lang(lang)
     path = Path(xlsx_path)
     if not path.is_file():
         return []
@@ -78,7 +81,10 @@ def add_research_sheets(xlsx_path: str | Path, payload: dict) -> list[str]:
                 if y not in all_years:
                     all_years.append(y)
         all_years.sort(reverse=True)
-        hdr = ["報表", "科目", "中文名", "單位", "重要性", "排名"] + all_years + ["模型輸入"]
+        hdr = [
+            t("extra.review.hdr.stmt", lang), t("extra.review.hdr.item", lang), t("extra.review.hdr.label", lang),
+            t("extra.review.hdr.unit", lang), t("extra.review.hdr.importance", lang), t("extra.review.hdr.rank", lang),
+        ] + all_years + [t("extra.review.hdr.model_input", lang)]
         rows = []
         for s in review["statements"]:
             for r in s["rows"]:
@@ -88,54 +94,68 @@ def add_research_sheets(xlsx_path: str | Path, payload: dict) -> list[str]:
                     *[r["values"].get(y) for y in all_years],
                     r.get("model_input") or "",
                 ])
-        _sheet(wb, "財報覆核", hdr, rows,
+        sheet_review = t("sheet.review", lang)
+        _sheet(wb, sheet_review, hdr, rows,
                widths=[10, 38, 34, 12, 9, 8] + [13] * len(all_years) + [12],
-               note="逐項覆核：Yahoo 財報全部科目，按金額大小排序（比率與每股數字另列其後）。"
-                    "「模型輸入」標示哪些科目直接進入估值。")
-        written.append("財報覆核")
+               note=t("extra.review.note", lang))
+        written.append(sheet_review)
 
     adjs = payload.get("adjustments") or []
+    yes_lbl, no_lbl = t("common.yes", lang), t("common.no", lang)
     rows = [[
         a.get("created_at"), a.get("statement"), a.get("item"), a.get("label"),
         a.get("fy"), a.get("original"), a.get("adjusted"), a.get("delta"),
-        a.get("reason"), "是" if a.get("affects_model") else "否",
+        a.get("reason"), yes_lbl if a.get("affects_model") else no_lbl,
         (a.get("model_input") or ""), a.get("note") or "",
     ] for a in adjs]
-    _sheet(wb, "金額調整紀錄", ["時間", "報表", "科目", "中文名", "財報期", "修改前",
-                          "修改後", "差異", "原因", "影響估值", "模型輸入", "說明"],
-           rows, widths=[19, 8, 32, 30, 12, 16, 16, 16, 40, 9, 12, 46],
-           note="每次修改都保留原始值、修改值、原因與時間；沒有原因的修改不會被採用。" if rows
-                else "本次沒有金額調整。")
-    written.append("金額調整紀錄")
+    sheet_adj = t("sheet.adjustments", lang)
+    _sheet(wb, sheet_adj, [
+        t("extra.adj.hdr.time", lang), t("extra.review.hdr.stmt", lang), t("extra.review.hdr.item", lang),
+        t("extra.review.hdr.label", lang), t("extra.adj.hdr.fy", lang), t("extra.adj.hdr.orig", lang),
+        t("extra.adj.hdr.adj", lang), t("extra.adj.hdr.delta", lang), t("extra.adj.hdr.reason", lang),
+        t("extra.adj.hdr.affects", lang), t("extra.review.hdr.model_input", lang), t("extra.adj.hdr.note", lang),
+    ], rows, widths=[19, 8, 32, 30, 12, 16, 16, 16, 40, 9, 12, 46],
+           note=t("extra.adj.note_some", lang) if rows else t("extra.adj.note_none", lang))
+    written.append(sheet_adj)
 
     fc = payload.get("forecast") or {}
     if fc.get("rows"):
+        kind_map = {
+            "actual": t("extra.fc.kind.actual", lang),
+            "base": t("extra.fc.kind.base", lang),
+            "forecast": t("extra.fc.kind.forecast", lang),
+        }
         rows = [[
-            r.get("year"), {"actual": "實際", "base": "基準年", "forecast": "預測"}.get(r.get("kind")),
+            r.get("year"), kind_map.get(r.get("kind")),
             r.get("period_end"), r.get("revenue"), r.get("growth") if r.get("growth") is not None else None,
             r.get("ebit"), r.get("ebit_margin"), r.get("da"), r.get("capex"),
             r.get("nwc"), r.get("fcff"), r.get("pv"), r.get("growth_base"),
         ] for r in fc["rows"]]
-        _sheet(wb, "歷史與預測並列",
-               ["年／期間", "類型", "財報期末", "營收", "營收增長", "EBIT", "EBIT 利潤率",
-                "D&A", "Capex", "ΔNWC", "FCFF", "現值", "增長依據"],
-               rows, widths=[16, 9, 12, 14, 11, 14, 11, 12, 12, 12, 14, 14, 46],
+        sheet_fc = t("sheet.forecast", lang)
+        _sheet(wb, sheet_fc, [
+            t("extra.fc.hdr.period", lang), t("extra.fc.hdr.kind", lang), t("extra.fc.hdr.period_end", lang),
+            t("calc.c.rev", lang), t("wb.hdr.rev_growth", lang), "EBIT", t("wb.hdr.ebit_margin", lang),
+            "D&A", "Capex", "ΔNWC", "FCFF", t("extra.fc.hdr.pv", lang), t("extra.fc.hdr.growth_base", lang),
+        ], rows, widths=[16, 9, 12, 14, 11, 14, 11, 12, 12, 12, 14, 14, 46],
                number_formats={5: "0.0%", 7: "0.0%"},
-               note=f"單位：{fc.get('units') or '百萬公司貨幣'}。實際＝已公布財報；基準年＝模型的歷史起點；預測＝本次模型輸出。")
-        written.append("歷史與預測並列")
+               note=t("extra.fc.note", lang, units=fc.get("units") or t("extra.fc.default_units", lang)))
+        written.append(sheet_fc)
 
     if fc.get("reasons"):
         rows = [[r.get("year"), r.get("growth"), r.get("growth_rationale"),
                  r.get("margin_rationale"), r.get("reinvestment_rationale")]
                 for r in fc["reasons"]]
-        _sheet(wb, "預測理由", ["年／期間", "營收增長", "增長理由", "利潤率理由", "再投資理由"],
-               rows, widths=[16, 11, 58, 48, 48], number_formats={2: "0.0%"},
-               note="理由逐年列出；資料依據與推論分開陳述，未取得資料時明示而不是補一個數字。")
-        written.append("預測理由")
+        sheet_reasons = t("sheet.reasons", lang)
+        _sheet(wb, sheet_reasons, [
+            t("extra.fc.hdr.period", lang), t("wb.hdr.rev_growth", lang), t("extra.reasons.hdr.growth", lang),
+            t("calc.c.r2", lang), t("calc.c.r3", lang),
+        ], rows, widths=[16, 11, 58, 48, 48], number_formats={2: "0.0%"},
+               note=t("extra.reasons.note", lang))
+        written.append(sheet_reasons)
 
     usage = payload.get("usage") or {}
     rows = [[
-        "合計", usage.get("requests"), usage.get("reported"), usage.get("prompt_tokens"),
+        t("common.total", lang), usage.get("requests"), usage.get("reported"), usage.get("prompt_tokens"),
         usage.get("completion_tokens"), usage.get("total_tokens"), usage.get("unreported_requests"),
     ]]
     for ev in usage.get("events") or []:
@@ -143,26 +163,34 @@ def add_research_sheets(xlsx_path: str | Path, payload: dict) -> list[str]:
             ev.get("tag"), 1, 1 if ev.get("reported") else 0, ev.get("prompt_tokens"),
             ev.get("completion_tokens"), ev.get("total_tokens"), 0 if ev.get("reported") else 1,
         ])
-    _sheet(wb, "AI 用量", ["項目", "請求次數", "有回報", "輸入 Token", "輸出 Token",
-                        "總 Token", "未回報"], rows,
-           widths=[24, 11, 9, 13, 13, 13, 10],
+    sheet_usage = t("sheet.usage", lang)
+    _sheet(wb, sheet_usage, [
+        t("calc.hdr.item", lang), t("extra.usage.hdr.requests", lang), t("extra.usage.hdr.reported", lang),
+        t("extra.usage.hdr.prompt", lang), t("extra.usage.hdr.completion", lang),
+        t("extra.usage.hdr.total", lang), t("extra.usage.hdr.unreported", lang),
+    ], rows, widths=[24, 11, 9, 13, 13, 13, 10],
            number_formats={2: "0", 3: "0", 4: "#,##0", 5: "#,##0", 6: "#,##0", 7: "0"},
-           note=(usage.get("note") or "未使用 AI 時，此表只會顯示 0 次請求。"))
-    written.append("AI 用量")
+           note=(usage.get("note") or t("extra.usage.note_default", lang)))
+    written.append(sheet_usage)
 
     hist = payload.get("history") or {}
+    pass_lbl, fail_lbl = t("common.pass", lang), t("common.fail", lang)
     rows = [[
         p.get("date"), p.get("price_date"), p.get("fair_value"), p.get("price"),
         p.get("gap"), p.get("gap_pct"), p.get("wacc"), p.get("g"),
-        "通過" if p.get("verify_pass") else "未通過" if p.get("verify_pass") is False else "—",
+        pass_lbl if p.get("verify_pass") else fail_lbl if p.get("verify_pass") is False else "—",
         p.get("assumption_source"),
     ] for p in (hist.get("points") or [])]
-    _sheet(wb, "估值歷史", ["估值日", "市價日期", "理論價", "當時市價", "差距", "差距%",
-                        "WACC", "終值 g", "驗證", "假設來源"], rows,
-           widths=[12, 12, 13, 13, 13, 10, 10, 10, 9, 16],
+    sheet_hist = t("sheet.history", lang)
+    _sheet(wb, sheet_hist, [
+        t("extra.hist.hdr.val_date", lang), t("extra.hist.hdr.price_date", lang), t("extra.hist.hdr.fv", lang),
+        t("extra.hist.hdr.price", lang), t("extra.hist.hdr.gap", lang), t("extra.hist.hdr.gap_pct", lang),
+        "WACC", t("wb.summary.terminal_g", lang), t("extra.hist.hdr.verify", lang),
+        t("wb.summary.assumption_source", lang),
+    ], rows, widths=[12, 12, 13, 13, 13, 10, 10, 10, 9, 16],
            number_formats={3: "#,##0.00", 4: "#,##0.00", 5: "#,##0.00", 6: "0.0%", 7: "0.00%", 8: "0.00%"},
-           note="每次估值當時的理論價與當時市價；圖表與此表同一資料來源。")
-    written.append("估值歷史")
+           note=t("extra.hist.note", lang))
+    written.append(sheet_hist)
 
     wb.save(path)
     return written

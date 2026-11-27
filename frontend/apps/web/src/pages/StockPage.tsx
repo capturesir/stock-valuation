@@ -18,7 +18,7 @@ const SCEN = ["bear", "base", "bull", "static", "floor9"] as const;
 const dcf = (r: RunOut | null | undefined, s: string) => r?.methods.find((m) => m.method === "dcf" && m.scenario === s)?.value ?? null;
 
 export function StockPage() {
-  const { t, f } = useI18n();
+  const { locale, t, f } = useI18n();
   const params = useParams();
   const ticker = (params.ticker ?? "").toUpperCase();
   const tab: Tab = (TABS as readonly string[]).includes(params.tab ?? "") ? (params.tab as Tab) : "overview";
@@ -78,7 +78,7 @@ export function StockPage() {
           </>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className="btn primary" type="button" onClick={() => setDrawer(true)}><Refresh size={16} />{t("stock.revalue")}</button>
-            {latest?.has_excel && <a className="btn secondary" href={api.excelUrl(latest.id)}>{t("stock.downloadExcel")}</a>}
+            {latest?.has_excel && <a className="btn secondary" href={api.excelUrl(latest.id, locale)}>{t("stock.downloadExcel")}</a>}
             {!inList && <button className="btn secondary" type="button" onClick={() => add.mutate()}>{t("stock.addToWatchlist")}</button>}
           </div>
         </div>

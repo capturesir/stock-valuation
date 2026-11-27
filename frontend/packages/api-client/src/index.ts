@@ -204,7 +204,8 @@ export function createClient(cfg: ClientConfig = {}) {
     ops: () => req<OpsStatus>("GET", "/admin/ops"),
     valuations: (ticker: string) => req<StockValuations>("GET", `/stocks/${enc(ticker)}/valuations`),
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),
-    excelUrl: (runId: string) => `${base}/runs/${enc(runId)}/excel`,
+    excelUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/excel${q({ lang })}`,
+    reportUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/report${q({ lang })}`,
     statementsExportUrl: (ticker: string, format: "xlsx" | "csv", view: "latest" | "original", period: "annual" | "quarterly",
                           plan: PlanChoice = "auto") =>
       `${base}/stocks/${enc(ticker)}/statements/export${q({ format, view, period, years: period === "quarterly" ? 12 : 10, plan })}`,

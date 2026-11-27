@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """Per-asset FCFF DCF (DCFF) calculation sheets with LIVE Excel formulas, built from models/calc/<ticker>_latest.json.
 
-add_calc_sheet(wb, d, name, peer=None) writes:
-  A. 輸入及折現率   inputs (blue = taken from JSON / sources) and formulas (black): Ke, Kd after tax, E, D, weights, WACC
-  B. 基期及規則     base-year figures used by the stub row (FY2025, 1H26, 2025H2 / guidance), ΔNWC rule
-  C. 逐年預測       one row per year: revenue = prior × (1+growth) (CNOOC: price × volume drivers), EBIT, NOPAT, D&A,
-                    capex, ΔNWC, FCFF, mid-year discount period t, DF = 1/(1+WACC)^t, PV; rationale + sources at right
-  D. 終值及企業價值 FCFF_{N+1}, TV = FCFF_{N+1}/(WACC−g) valued at t_N and discounted at t_N (analyst convention), EV
-  E. 股權橋接       each item: sign, original-currency amount, FX, US$m, signed value, basis, source → equity
-  F. 每股理論價     ÷ shares × per-share FX (ADR ratio for TSM); check vs JSON fair value; price gap
-  G. 敏感度         live WACC × g grid (SUMPRODUCT re-discount) + JSON grid for comparison
-  H. 情境 / 修訂紀錄 / 專業修正（spec deviations） from JSON
+add_calc_sheet(wb, d, name=None, peer=None, lang="zh-Hant") writes:
+  A. Discount rate inputs (WACC)
+  B. Base-year figures and rules
+  C. Annual projections with live Excel formulas
+  D. Terminal value & Enterprise Value
+  E. Equity bridge
+  F. Per-share fair value + JSON cross-check
+  G. Live WACC x g sensitivity matrix + JSON comparison
+  H. Scenarios, revision log, and spec deviations
 Returns a dict of key cell addresses (fair value, etc.).
 """
 import re
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.utils import get_column_letter as CL
+
+from .i18n import DEFAULT, font_name, kind_label, normalize_lang, scenario_name, t as tr
 
 FN = "Microsoft JhengHei"
 T_F = Font(name=FN, bold=True, size=14, color="1F3A5F")
@@ -53,7 +54,6 @@ def trade_currency(d: dict) -> str:
     return d.get("currency") or ""
 
 
-
 def as_source_text(v):
     """shares_source may be a plain str or an audit dict {basis, source_name, ...} (e.g. 0178.HK / 0941.HK)."""
     if v is None:
@@ -61,8 +61,6 @@ def as_source_text(v):
     if isinstance(v, dict):
         return str(v.get("basis") or v.get("source_name") or v.get("value") or "")
     return str(v)
-
-
 
 
 def resolve_nwc_rate(d: dict) -> float:
@@ -118,22 +116,37 @@ def disp(t):
 
 
 class W:
-    def __init__(self, ws):
+    def __init__(self, ws, lang: str = DEFAULT):
         self.ws, self.r, self.ref = ws, 1, {}
+        self.lang = normalize_lang(lang)
+        self.fn = font_name(self.lang)
+        self.t_f = Font(name=self.fn, bold=True, size=14, color="1F3A5F")
+        self.sec_f = Font(name=self.fn, bold=True, size=11.5, color="FFFFFF")
+        self.hdr_f = Font(name=self.fn, bold=True, size=10, color="1F3A5F")
+        self.in_f = Font(name=self.fn, size=10, color="1F5FAF")
+        self.calc_f = Font(name=self.fn, size=10, color="000000")
+        self.key_f = Font(name=self.fn, size=11, bold=True, color="000000")
+        self.txt_f = Font(name=self.fn, size=9.5, color="404650")
+        self.note_f = Font(name=self.fn, size=9.5, italic=True, color="6B7280")
+        self.link_f = Font(name=self.fn, size=9.5, color="1F5FAF", underline="single")
+        self.bold_f = Font(name=self.fn, size=10, bold=True)
+        self.lbl_f = Font(name=self.fn, size=10, bold=True, color="262B33")
+        self.green_f = Font(name=self.fn, color="006100", bold=True)
+        self.red_f = Font(name=self.fn, color="9C0006", bold=True)
 
     def cell(self, r, c, v, font=None, fmt=None, fill=None, wrap=False, align=None, border=True):
         x = self.ws.cell(r, c, v)
-        x.font = font or CALC_F
+        x.font = font or self.calc_f
         if fmt: x.number_format = fmt
         if fill: x.fill = fill
         if border: x.border = BD
         x.alignment = Alignment(vertical="top", wrap_text=wrap, horizontal=align)
         return x
 
-    def text_span(self, r, c1, c2, v, font=TXT_F, link=False):
+    def text_span(self, r, c1, c2, v, font=None, link=False):
         if c2 > c1:
             self.ws.merge_cells(start_row=r, start_column=c1, end_row=r, end_column=c2)
-        x = self.cell(r, c1, v if v not in ("", None) else None, LINK_F if (link and v) else font, wrap=True)
+        x = self.cell(r, c1, v if v not in ("", None) else None, self.link_f if (link and v) else (font or self.txt_f), wrap=True)
         if link and v and str(v).startswith("http"):
             x.hyperlink = str(v)
         for c in range(c1 + 1, c2 + 1):
@@ -152,7 +165,7 @@ class W:
         self.r += 1
         for c in range(1, ncol + 1):
             self.ws.cell(self.r, c).fill = SEC_FILL
-        x = self.ws.cell(self.r, 1, title); x.font = SEC_F
+        x = self.ws.cell(self.r, 1, title); x.font = self.sec_f
         self.ws.row_dimensions[self.r].height = 20
         self.r += 1
 
@@ -163,7 +176,7 @@ class W:
             c2 = spans.get(lab, c)
             if c2 > c:
                 self.ws.merge_cells(start_row=self.r, start_column=c, end_row=self.r, end_column=c2)
-            self.cell(self.r, c, lab, HDR_F, fill=HDR_FILL, wrap=True, align="center")
+            self.cell(self.r, c, lab, self.hdr_f, fill=HDR_FILL, wrap=True, align="center")
             for k in range(c + 1, c2 + 1):
                 self.ws.cell(self.r, k).border = BD; self.ws.cell(self.r, k).fill = HDR_FILL
             c = c2 + 1
@@ -174,18 +187,19 @@ class W:
     def inp(self, key, label, value, fmt=None, unit="", basis="", src="", url="", date="", kind=None, key_row=False):
         r = self.r
         is_f = isinstance(value, str) and value.startswith("=")
-        self.cell(r, 1, label, KEY_F if key_row else Font(name=FN, size=10, bold=True, color="262B33"), wrap=True)
+        self.cell(r, 1, label, self.key_f if key_row else self.lbl_f, wrap=True)
         is_txt = isinstance(value, str) and not is_f
-        self.cell(r, 2, value, KEY_F if key_row else (CALC_F if is_f else IN_F), fmt,
-                      KEY_FILL if key_row else (None if is_f else IN_FILL), align="left" if is_txt else "right", wrap=is_txt)
-        self.cell(r, 3, unit or None, TXT_F, align="center")
-        k = kind if kind is not None else (kind_of(basis) or ("計算" if is_f else ""))
-        self.cell(r, 4, k or None, Font(name=FN, size=9.5, bold=True, color={"市場數據": "1F5FAF", "分析師假設": "9C5700",
-                                                                             "計算": "4B5563"}.get(k, "6B4FA0")), align="center", wrap=True)
+        self.cell(r, 2, value, self.key_f if key_row else (self.calc_f if is_f else self.in_f), fmt,
+                  KEY_FILL if key_row else (None if is_f else IN_FILL), align="left" if is_txt else "right", wrap=is_txt)
+        self.cell(r, 3, unit or None, self.txt_f, align="center")
+        raw_k = kind if kind is not None else (kind_of(basis) or ("計算" if is_f else ""))
+        disp_k = kind_label(raw_k, self.lang)
+        color = {"市場數據": "1F5FAF", "分析師假設": "9C5700", "計算": "4B5563"}.get(raw_k, "6B4FA0")
+        self.cell(r, 4, disp_k or None, Font(name=self.fn, size=9.5, bold=True, color=color), align="center", wrap=True)
         self.text_span(r, 5, 11, basis)
         self.text_span(r, 12, 14, src)
         self.text_span(r, 15, 17, url, link=True)
-        self.cell(r, 18, date or None, TXT_F, align="center")
+        self.cell(r, 18, date or None, self.txt_f, align="center")
         self.height(r, [(basis, 7 * 12 - 2), (src, 3 * 12 - 2), (label, 32), (value if isinstance(value, str) and not str(value).startswith("=") else "", 14)])
         self.ref[key] = f"$B${r}"
         self.r += 1
@@ -200,10 +214,13 @@ def _pick_debt(d):
     return None
 
 
-def add_calc_sheet(wb, d, name, peer=None):
+def add_calc_sheet(wb, d, name=None, peer=None, lang: str = DEFAULT):
     """d: calc JSON dict. peer: (sheet_name, refs) of the 2330.TW sheet for the TSM cross-check."""
+    lang = normalize_lang(lang)
+    if name is None:
+        name = tr("sheet.calc", lang)
     ws = wb.create_sheet(name)
-    w = W(ws)
+    w = W(ws, lang=lang)
     t, ccy = d["ticker"], d["currency"]
     # share price and per-share values are in the trading currency, which may
     # differ from the model currency used by the FCFF rows (see trade_currency)
@@ -220,36 +237,46 @@ def add_calc_sheet(wb, d, name, peer=None):
     for k, v in WIDTHS.items():
         ws.column_dimensions[k].width = v
 
+    std_hdr = [
+        tr("calc.hdr.item", lang), tr("calc.hdr.value", lang), tr("calc.hdr.unit", lang),
+        tr("calc.hdr.kind", lang), tr("calc.hdr.basis", lang), tr("calc.hdr.source", lang),
+        tr("calc.hdr.url", lang), tr("calc.hdr.date", lang),
+    ]
+    std_spans = {tr("calc.hdr.basis", lang): 11, tr("calc.hdr.source", lang): 14, tr("calc.hdr.url", lang): 17}
+
     # ---------------------------------------------------------------- title
-    x = ws.cell(1, 1, f"{d['asset']}（{disp(t)}）DCFF（FCFF DCF）計算表"); x.font = T_F
+    x = ws.cell(1, 1, tr("calc.title", lang, asset=d["asset"], ticker=disp(t))); x.font = w.t_f
     ws.row_dimensions[1].height = 24
-    notes = [f"單位：{d['units']}。估值日 {d['valuation_date']}；市價日期 {d['price_date']}。",
-             f"折現慣例：{d['discounting_convention']}",
-             "格式：藍字黃底＝輸入（取自 calc JSON，來源見右方）；黑字＝Excel 公式（可改動輸入即時重算）；綠底＝關鍵結果。"]
+    notes = [
+        tr("calc.note.units", lang, units=d["units"], val_date=d["valuation_date"], price_date=d["price_date"]),
+        tr("calc.note.convention", lang, convention=d["discounting_convention"]),
+        tr("calc.note.legend", lang),
+    ]
     for i, n in enumerate(notes, 2):
         ws.merge_cells(start_row=i, start_column=1, end_row=i, end_column=18)
-        c = ws.cell(i, 1, n); c.font = NOTE_F; c.alignment = Alignment(wrap_text=True, vertical="top")
+        c = ws.cell(i, 1, n); c.font = w.note_f; c.alignment = Alignment(wrap_text=True, vertical="top")
         ws.row_dimensions[i].height = 15 if len(n) < 150 else 28
     w.r = len(notes) + 1
 
     # ---------------------------------------------------------------- A. inputs
-    w.section("A. 折現率輸入（WACC）")
-    w.header(["項目", "數值", "單位", "依據類型", "依據說明", "來源名稱", "網址", "數據日期"],
-             spans={"依據說明": 11, "來源名稱": 14, "網址": 17})
+    w.section(tr("calc.sec.a", lang))
+    w.header(std_hdr, spans=std_spans)
+
     def D_(key, label, fmt=PCT3, unit="", formula=None, key_row=False):
         it = disc[key]
         w.inp(key, label, formula or it["value"], fmt, unit, it.get("basis", ""), it.get("source_name", ""),
               it.get("url", ""), it.get("data_date", ""), key_row=key_row)
-    D_("rf", "無風險利率 Rf")
-    D_("erp", "股權風險溢價 ERP")
-    D_("crp", "國家風險溢價 CRP")
-    D_("beta_ref", "Beta（參考）", NUM4)
-    D_("beta_adopted", "Beta（採用）", NUM4)
+
+    D_("rf", tr("calc.a.rf", lang))
+    D_("erp", tr("calc.a.erp", lang))
+    D_("crp", tr("calc.a.crp", lang))
+    D_("beta_ref", tr("calc.a.beta_ref", lang), NUM4)
+    D_("beta_adopted", tr("calc.a.beta_adopted", lang), NUM4)
     R = w.ref
-    D_("ke", "股權成本 Ke = Rf + β ×（ERP + CRP）", formula=f"={R['rf']}+{R['beta_adopted']}*({R['erp']}+{R['crp']})")
-    D_("kd_pre_tax", "稅前債務成本 Kd")
-    D_("tax_rate", "稅率（WACC 及 NOPAT 用）")
-    D_("kd_after_tax", "稅後債務成本 = Kd ×（1 − 稅率）", formula=f"={R['kd_pre_tax']}*(1-{R['tax_rate']})")
+    D_("ke", tr("calc.a.ke", lang), formula=f"={R['rf']}+{R['beta_adopted']}*({R['erp']}+{R['crp']})")
+    D_("kd_pre_tax", tr("calc.a.kd_pre_tax", lang))
+    D_("tax_rate", tr("calc.a.tax_rate", lang))
+    D_("kd_after_tax", tr("calc.a.kd_after_tax", lang), formula=f"={R['kd_pre_tax']}*(1-{R['tax_rate']})")
     # E inputs
     cs = d["capital_structure"]
     if t == "TSM" and peer:
@@ -260,47 +287,47 @@ def add_calc_sheet(wb, d, name, peer=None):
         e_px, e_sh = d["price"], d["shares"]
         e_fx = d["fx_if_any"].get("per_share_fx", 1.0) or 1.0
         e_note, e_sym = "", sym
-    w.inp("e_px", f"市值用股價（{e_sym}）", e_px, NUM2, e_sym, f"市場數據：{d['price_date']} 收市" + ("；" + e_note if e_note else ""),
+    u_msh = tr("calc.unit.m_shares", lang)
+    w.inp("e_px", tr("calc.a.e_px", lang, sym=e_sym), e_px, NUM2, e_sym, f"市場數據：{d['price_date']} 收市" + ("；" + e_note if e_note else ""),
           "", d["price_source_url"] if not e_note else peer["json"]["price_source_url"], d["price_date"])
-    w.inp("e_sh", "市值用股數（百萬股）", e_sh, NUM2, "百萬股", "市場數據：" + as_source_text(peer["json"]["shares_source"] if e_note else d["shares_source"]))
-    w.inp("e_fx", "市值換算匯率（交易貨幣／US$）", e_fx, NUM4, "", "市場數據：" + (fx.get("pair") or "不適用（美元）") +
+    w.inp("e_sh", tr("calc.a.e_sh", lang), e_sh, NUM2, u_msh, "市場數據：" + as_source_text(peer["json"]["shares_source"] if e_note else d["shares_source"]))
+    w.inp("e_fx", tr("calc.a.e_fx", lang), e_fx, NUM4, "", "市場數據：" + (fx.get("pair") or "不適用（美元）") +
           (f" {d['price_date']} 收市" if e_fx != 1 else ""), fx.get("source_name", ""), fx.get("url", ""), fx.get("data_date", ""))
     ia = d.get("inputs_audit") or {}
     if ia.get("pref_shares") and ia.get("pref_px") and not e_note:
         # preferred shares (e.g. 009150.KS): counted 1:1 in the per-share denominator, but valued at their own price in E
-        w.inp("pref_sh", "其中優先股（百萬股）", ia["pref_shares"], NUM2, "百萬股", f"市場數據：資產負債表優先股數（{ia.get('pref_sym', '')}）")
-        w.inp("pref_px", f"優先股股價（{e_sym}）", ia["pref_px"], NUM2, e_sym, f"市場數據：{ia.get('pref_sym', '')} {d['price_date']} 收市", "Yahoo Finance chart API",
+        w.inp("pref_sh", tr("calc.a.pref_sh", lang), ia["pref_shares"], NUM2, u_msh, f"市場數據：資產負債表優先股數（{ia.get('pref_sym', '')}）")
+        w.inp("pref_px", tr("calc.a.pref_px", lang, sym=e_sym), ia["pref_px"], NUM2, e_sym, f"市場數據：{ia.get('pref_sym', '')} {d['price_date']} 收市", "Yahoo Finance chart API",
               f"https://finance.yahoo.com/quote/{ia.get('pref_sym', '')}/history/", d["price_date"])
-        w.inp("E", "股權市值 E = (普通股價 × 普通股數 + 優先股價 × 優先股數) ÷ 匯率", f"=({R['e_px']}*({R['e_sh']}-{R['pref_sh']})+{R['pref_px']}*{R['pref_sh']})/{R['e_fx']}", NUM0, MU,
+        w.inp("E", tr("calc.a.e_pref", lang), f"=({R['e_px']}*({R['e_sh']}-{R['pref_sh']})+{R['pref_px']}*{R['pref_sh']})/{R['e_fx']}", NUM0, MU,
               disc["weight_e"]["basis"], kind="計算")
     else:
-        w.inp("E", "股權市值 E = 股價 × 股數 ÷ 匯率", f"={R['e_px']}*{R['e_sh']}/{R['e_fx']}", NUM0, MU,
+        w.inp("E", tr("calc.a.e", lang), f"={R['e_px']}*{R['e_sh']}/{R['e_fx']}", NUM0, MU,
               disc["weight_e"]["basis"], kind="計算")
     w.r_debt = w.r
     w.ref["D"] = f"$B${w.r}"; w.r += 1   # filled after the bridge block (references bridge cells)
-    w.inp("we", "股權權重 E/(E+D)", f"={R['E']}/({R['E']}+{R['D']})", PCT3, kind="計算")
-    w.inp("wd", "債務權重 D/(E+D)", f"={R['D']}/({R['E']}+{R['D']})", PCT3, kind="計算")
-    w.inp("wacc", "WACC = We × Ke + Wd × Kd稅後", f"={R['we']}*{R['ke']}+{R['wd']}*{R['kd_after_tax']}", PCT3,
+    w.inp("we", tr("calc.a.we", lang), f"={R['E']}/({R['E']}+{R['D']})", PCT3, kind="計算")
+    w.inp("wd", tr("calc.a.wd", lang), f"={R['D']}/({R['E']}+{R['D']})", PCT3, kind="計算")
+    w.inp("wacc", tr("calc.a.wacc", lang), f"={R['we']}*{R['ke']}+{R['wd']}*{R['kd_after_tax']}", PCT3,
           basis=disc["wacc"]["basis"], key_row=True)
     term = d["terminal"]
-    w.inp("g", "永續增長率 g", term["g"], PCT, basis=term.get("g_rationale", ""))
+    w.inp("g", tr("calc.a.g", lang), term["g"], PCT, basis=term.get("g_rationale", ""))
     if term["method"] == "value_driver":
-        w.inp("ronic", "新增投資回報率 RONIC（價值驅動終值）", term["ronic"], PCT, basis=term.get("method_rationale", ""))
+        w.inp("ronic", tr("calc.a.ronic", lang), term["ronic"], PCT, basis=term.get("method_rationale", ""))
     else:
-        w.inp("tvm", "終值方法", "FCFF_N ×（1+g）", None, basis=term.get("method_rationale", ""))
-    w.inp("horizon", "預測期", d["forecast_years"], None, basis="分析師假設：" + d.get("forecast_horizon_rationale", ""))
+        w.inp("tvm", tr("calc.a.tvm", lang), "FCFF_N ×（1+g）", None, basis=term.get("method_rationale", ""))
+    w.inp("horizon", tr("calc.a.horizon", lang), d["forecast_years"], None, basis="分析師假設：" + d.get("forecast_horizon_rationale", ""))
 
     # ---------------------------------------------------------------- B. base & rules
     by = d["base_year"]; p0 = d["projections"][0]
-    w.section("B. 基期數據及規則")
-    w.header(["項目", "數值", "單位", "依據類型", "依據說明", "來源名稱", "網址", "數據日期"],
-             spans={"依據說明": 11, "來源名稱": 14, "網址": 17})
+    w.section(tr("calc.sec.b", lang))
+    w.header(std_hdr, spans=std_spans)
     if memory:
         rs = by["revenue_source"]; sp = by["fy2026_split_used"]
         w.inp("rev_fy26", "FY2026 營收（實際）", by["revenue"], NUM0, MU, rs.get("basis", ""), rs.get("source_name", ""), rs.get("url", ""), rs.get("data_date", ""))
         w.inp("dram26", "FY2026 DRAM 營收（取下限）", sp["dram"], NUM0, MU, "分析師假設：" + (sp.get("note") or "管理層稱 FY2026 DRAM 營收超過 US$100bn，取下限"), "Micron FQ4-26 法說會逐字稿", "https://www.tradingkey.com/news/transcripts/262195079-tradingkey", "2026-09-30")
         w.inp("nand26", "FY2026 NAND＋其他營收 = 總營收 − DRAM", f"={w.ref['rev_fy26']}-{w.ref['dram26']}", NUM0, MU, "計算", kind="計算")
-        w.inp("nwc_rate", "ΔNWC 比率（× 營收增量）", 0.15, PCT, "", "分析師假設：" + p0["delta_nwc_rule"] + "；" + (by.get("nwc_note") or ""))
+        w.inp("nwc_rate", tr("calc.b.nwc_rate", lang), 0.15, PCT, "", "分析師假設：" + p0["delta_nwc_rule"] + "；" + (by.get("nwc_note") or ""))
     elif not cnooc:
         rs = by.get("revenue_source", {}); h1 = by.get("h1_2026", {}); h1s = h1.get("source", {})
         lb = by.get("labels") or {}          # coverage-expansion JSONs carry their own period labels
@@ -309,7 +336,7 @@ def add_calc_sheet(wb, d, name, peer=None):
         base_h2 = round(p0["revenue"] / (1 + p0["revenue_growth"]), 2)
         w.inp("rev_h2_25", lb.get("rev_comp", "2025H2 營收（2026H2 增長率基準）"), base_h2, NUM0, MU, "市場數據：" + p0["revenue_growth_base"])
         w.inp("fy26", lb.get("fy_cur", "FY2026E 營收 = 1H26 實際 + 2026H2E"), "=0", NUM0, MU, "計算：與下表 stub 營收相加；下一財年增長率以此為基準", kind="計算")
-        w.inp("nwc_rate", "ΔNWC 比率（× 營收增量）", resolve_nwc_rate(d), PCT, "", "分析師假設：" + d["projections"][1]["delta_nwc_rule"] + "；2026H2 = " + p0["delta_nwc_rule"] + "；" + (by.get("nwc_note") or ""))
+        w.inp("nwc_rate", tr("calc.b.nwc_rate", lang), resolve_nwc_rate(d), PCT, "", "分析師假設：" + d["projections"][1]["delta_nwc_rule"] + "；2026H2 = " + p0["delta_nwc_rule"] + "；" + (by.get("nwc_note") or ""))
         capex_h1 = h1.get("capex")
         if capex_h1 is not None and abs((p0["capex"] + capex_h1) - round(p0["capex"] + capex_h1)) < 1e-6:
             w.inp("capex_guide", "2026 全年資本支出指引（取中位）", round(p0["capex"] + capex_h1), NUM0, MU, "分析師假設：" + p0["reinvestment_rationale"])
@@ -342,21 +369,25 @@ def add_calc_sheet(wb, d, name, peer=None):
     R = w.ref
 
     # ---------------------------------------------------------------- C. projections
-    w.section("C. 逐年預測（FCFF = NOPAT + D&A − Capex − ΔNWC；DF = 1/(1+WACC)^t）", 29)
+    w.section(tr("calc.sec.c", lang), 29)
     projs = d["projections"]
     if memory:
-        hdr = ["年度", "期長（年）", "DRAM 位元增長", "DRAM 售價變動", "DRAM 營收", "NAND 位元增長", "NAND 售價變動", "NAND＋其他營收", "營收", "營收增長",
-               "EBIT 率", "EBIT", "稅率", "NOPAT", "D&A", "Capex", "ΔNWC", "FCFF", "折現期 t", "折現因子 DF", "PV(FCFF)", "營收增長理由／基準", "利潤率理由", "再投資理由", "來源網址"]
+        hdr = [tr("calc.c.year", lang), tr("calc.c.len", lang), "DRAM 位元增長", "DRAM 售價變動", "DRAM 營收", "NAND 位元增長", "NAND 售價變動", "NAND＋其他營收",
+               tr("calc.c.rev", lang), tr("calc.c.rev_g", lang), tr("calc.c.ebit_m", lang), "EBIT", tr("calc.c.tax", lang), "NOPAT", "D&A", "Capex", "ΔNWC", "FCFF",
+               tr("calc.c.t", lang), tr("calc.c.df", lang), "PV(FCFF)", tr("calc.c.r1", lang), tr("calc.c.r2", lang), tr("calc.c.r3", lang), tr("calc.c.src", lang)]
         col = {k: i + 1 for i, k in enumerate(["yr", "len", "db", "dasp", "drev", "nb", "nasp", "nrev", "rev", "g", "m", "ebit", "tax", "nopat", "da", "cx", "nwc",
                                                 "fcff", "t", "df", "pv", "r1", "r2", "r3", "src"])}
     elif not cnooc:
-        hdr = ["年度", "期長（年）", "營收增長", "營收", "EBIT 率", "EBIT", "稅率", "NOPAT", "D&A／營收", "D&A",
-               "Capex／營收", "Capex", "ΔNWC", "FCFF", "折現期 t", "折現因子 DF", "PV(FCFF)", "營收增長理由／基準", "利潤率理由", "再投資理由", "來源網址"]
+        hdr = [tr("calc.c.year", lang), tr("calc.c.len", lang), tr("calc.c.rev_g", lang), tr("calc.c.rev", lang),
+               tr("calc.c.ebit_m", lang), "EBIT", tr("calc.c.tax", lang), "NOPAT", tr("calc.c.da_rev", lang), "D&A",
+               tr("calc.c.capex_rev", lang), "Capex", "ΔNWC", "FCFF", tr("calc.c.t", lang), tr("calc.c.df", lang),
+               "PV(FCFF)", tr("calc.c.r1", lang), tr("calc.c.r2", lang), tr("calc.c.r3", lang), tr("calc.c.src", lang)]
         col = {k: i + 1 for i, k in enumerate(["yr", "len", "g", "rev", "m", "ebit", "tax", "nopat", "dap", "da", "cxp", "cx", "nwc", "fcff", "t", "df", "pv", "r1", "r2", "r3", "src"])}
     else:
-        hdr = ["年度", "期長（年）", "布蘭特 US$", "實現油價", "產量增長", "產量（百萬桶）", "銷量", "成本指數", "營收", "營收增長",
-               "現金成本", "其他稅項", "特別收益金", "DD&A", "EBIT", "EBIT 率", "稅率", "NOPAT", "Capex（RMB m）", "Capex", "ΔNWC",
-               "FCFF", "折現期 t", "折現因子 DF", "PV(FCFF)", "營收／油價理由", "利潤率理由", "再投資理由", "來源網址"]
+        hdr = [tr("calc.c.year", lang), tr("calc.c.len", lang), "布蘭特 US$", "實現油價", "產量增長", "產量（百萬桶）", "銷量", "成本指數",
+               tr("calc.c.rev", lang), tr("calc.c.rev_g", lang), "現金成本", "其他稅項", "特別收益金", "DD&A", "EBIT", tr("calc.c.ebit_m", lang),
+               tr("calc.c.tax", lang), "NOPAT", "Capex（RMB m）", "Capex", "ΔNWC", "FCFF", tr("calc.c.t", lang), tr("calc.c.df", lang),
+               "PV(FCFF)", tr("calc.c.r1", lang), tr("calc.c.r2", lang), tr("calc.c.r3", lang), tr("calc.c.src", lang)]
         col = {k: i + 1 for i, k in enumerate(["yr", "len", "brent", "real", "pg", "prod", "vol", "idx", "rev", "g", "cash", "otax", "levy", "da",
                                                 "ebit", "m", "tax", "nopat", "cxr", "cx", "nwc", "fcff", "t", "df", "pv", "r1", "r2", "r3", "src"])}
     w.header(hdr)
@@ -364,8 +395,8 @@ def add_calc_sheet(wb, d, name, peer=None):
     first = w.r
     for i, p in enumerate(projs):
         r = w.r; pr = r - 1
-        c = lambda k, v, fmt=None, inp=False, wrap=False: w.cell(r, col[k], v, IN_F if inp else CALC_F, fmt, IN_FILL if inp else None, wrap)
-        c("yr", p["year"]); ws.cell(r, 1).font = Font(name=FN, size=10, bold=True)
+        c = lambda k, v, fmt=None, inp=False, wrap=False: w.cell(r, col[k], v, w.in_f if inp else w.calc_f, fmt, IN_FILL if inp else None, wrap)
+        c("yr", p["year"]); ws.cell(r, 1).font = w.bold_f
         c("len", p["period_length_years"], "0.0", True)
         if memory:
             dr = p["drivers"]
@@ -457,7 +488,7 @@ def add_calc_sheet(wb, d, name, peer=None):
         c("r3", (p.get("reinvestment_rationale") or "") + "；ΔNWC：" + (p.get("delta_nwc_rule") or ""), wrap=True)
         c("src", "\n".join(p.get("sources") or []), wrap=True)
         for k in ("r1", "r2", "r3", "src"):
-            ws.cell(r, col[k]).font = TXT_F
+            ws.cell(r, col[k]).font = w.txt_f
         w.height(r, [(r1, 48), (p.get("margin_rationale"), 38), (p.get("reinvestment_rationale"), 38)])
         w.r += 1
     last = w.r - 1
@@ -469,25 +500,29 @@ def add_calc_sheet(wb, d, name, peer=None):
     R = w.ref
 
     # ---------------------------------------------------------------- D. terminal & EV
-    w.section("D. 終值及企業價值")
-    w.header(["項目", "數值", "單位", "依據類型", "依據說明", "來源名稱", "網址", "數據日期"],
-             spans={"依據說明": 11, "來源名稱": 14, "網址": 17})
+    w.section(tr("calc.sec.d", lang))
+    w.header(std_hdr, spans=std_spans)
     if term["method"] == "value_driver":
-        w.inp("fcff_next", "FCFF(N+1) = NOPAT_N ×（1+g）×（1 − g/RONIC）", f"={R['nopat_last']}*(1+{R['g']})*(1-{R['g']}/{R['ronic']})", NUM0, MU, term.get("method_rationale", ""), kind="計算")
+        w.inp("fcff_next", tr("calc.d.fcff_next_vd", lang), f"={R['nopat_last']}*(1+{R['g']})*(1-{R['g']}/{R['ronic']})", NUM0, MU, term.get("method_rationale", ""), kind="計算")
     else:
-        w.inp("fcff_next", "FCFF(N+1) = FCFF_N ×（1+g）", f"={R['fcff_last']}*(1+{R['g']})", NUM0, MU, term.get("method_rationale", ""), kind="計算")
-    w.inp("tv", "終值 TV = FCFF(N+1) ÷（WACC − g）", f"={R['fcff_next']}/({R['wacc']}-{R['g']})", NUM0, MU, "計算：" + term.get("tv_timing_note", ""), kind="計算")
-    w.inp("t_tv", "終值折現期（= 最後預測年 t_N，年中一致）", f"={R['t_last']}", "0.00", "年", "計算：" + term.get("tv_timing_note", ""), kind="計算")
-    w.inp("pv_tv", "PV(TV) = TV ÷（1+WACC）^t_N", f"={R['tv']}/(1+{R['wacc']})^{R['t_tv']}", NUM0, MU, kind="計算")
-    w.inp("sum_pv", "預測期 PV 合計 ΣPV(FCFF)", f"=SUM({R['pv_rng']})", NUM0, MU, kind="計算")
-    w.inp("ev", "企業價值 EV = ΣPV + PV(TV)", f"={R['sum_pv']}+{R['pv_tv']}", NUM0, MU, key_row=True, kind="計算")
-    w.inp("tv_share", "終值占 EV", f"={R['pv_tv']}/{R['ev']}", PCT, "", kind="計算")
+        w.inp("fcff_next", tr("calc.d.fcff_next_gordon", lang), f"={R['fcff_last']}*(1+{R['g']})", NUM0, MU, term.get("method_rationale", ""), kind="計算")
+    w.inp("tv", tr("calc.d.tv", lang), f"={R['fcff_next']}/({R['wacc']}-{R['g']})", NUM0, MU, "計算：" + term.get("tv_timing_note", ""), kind="計算")
+    w.inp("t_tv", tr("calc.d.t_tv", lang), f"={R['t_last']}", "0.00", tr("calc.unit.years", lang), "計算：" + term.get("tv_timing_note", ""), kind="計算")
+    w.inp("pv_tv", tr("calc.d.pv_tv", lang), f"={R['tv']}/(1+{R['wacc']})^{R['t_tv']}", NUM0, MU, kind="計算")
+    w.inp("sum_pv", tr("calc.d.sum_pv", lang), f"=SUM({R['pv_rng']})", NUM0, MU, kind="計算")
+    w.inp("ev", tr("calc.d.ev", lang), f"={R['sum_pv']}+{R['pv_tv']}", NUM0, MU, key_row=True, kind="計算")
+    w.inp("tv_share", tr("calc.d.tv_share", lang), f"={R['pv_tv']}/{R['ev']}", PCT, "", kind="計算")
     R = w.ref
 
     # ---------------------------------------------------------------- E. bridge
-    w.section("E. 股權橋接（EV → 股權價值）")
-    w.header(["項目", "±", "原幣金額（百萬）", "換算匯率", MU, "計入值", "依據", "來源名稱", "網址", "數據日期"],
-             spans={"依據": 12, "來源名稱": 15, "網址": 17})
+    w.section(tr("calc.sec.e", lang))
+    e_hdr = [
+        tr("calc.hdr.item", lang), "±", tr("calc.e.orig_amt", lang), tr("calc.e.fx", lang), MU,
+        tr("calc.e.signed", lang), tr("calc.e.basis", lang), tr("calc.hdr.source", lang),
+        tr("calc.hdr.url", lang), tr("calc.hdr.date", lang),
+    ]
+    e_spans = {tr("calc.e.basis", lang): 12, tr("calc.hdr.source", lang): 15, tr("calc.hdr.url", lang): 17}
+    w.header(e_hdr, spans=e_spans)
     _fx_rate = fx.get("bridge_fx") if fx.get("bridge_fx") is not None else fx.get("rate")
     _same_ccy = (ccy == "USD" or d.get("model_ccy") == ccy or (_fx_rate in (None, 1, 1.0) and not fx.get("pair") and not fx.get("bridge_pair")))
     if _same_ccy and not is_adr:
@@ -497,142 +532,148 @@ def add_calc_sheet(wb, d, name, peer=None):
     else:
         w.inp("b_fx", (fx.get("bridge_pair") or "USD/TWD") + "（橋接換算）", (fx.get("bridge_fx") if fx.get("bridge_fx") is not None else fx.get("rate", fx.get("per_share_fx", 1.0))), NUM4, "", f"市場數據：{d['price_date']} 收市", fx.get("source_name", ""), fx.get("url", ""), fx.get("data_date", ""))
         R = w.ref; b_fx, b_note = R["b_fx"], ({"CNY": "RMB"}.get(d.get("reporting_ccy"), "NT$") if d.get("reporting_ccy") else "NT$")
-        w.header(["項目", "±", "原幣金額（百萬）", "換算匯率", MU, "計入值", "依據", "來源名稱", "網址", "數據日期"],
-                 spans={"依據": 12, "來源名稱": 15, "網址": 17})
+        w.header(e_hdr, spans=e_spans)
     b_first = w.r; debt_cells = []
     debt_items = _pick_debt(d)
     for b in d["bridge"]:
         r = w.r
-        w.cell(r, 1, b["item"], Font(name=FN, size=10, bold=True), wrap=True)
-        w.cell(r, 2, b["sign"], IN_F, fill=IN_FILL, align="center")
+        w.cell(r, 1, b["item"], w.bold_f, wrap=True)
+        w.cell(r, 2, b["sign"], w.in_f, fill=IN_FILL, align="center")
         if b_fx:
             fxv = d["fx_if_any"]["usdcny"] if cnooc else ((fx.get("bridge_fx") if fx.get("bridge_fx") is not None else fx.get("rate", fx.get("per_share_fx", 1.0))))
-            w.cell(r, 3, round(b["value"] * fxv, 4), IN_F, NUM2, IN_FILL)
-            w.cell(r, 4, f"={b_fx}", CALC_F, NUM4)
-            w.cell(r, 5, f"=C{r}/D{r}", CALC_F, NUM2)
+            w.cell(r, 3, round(b["value"] * fxv, 4), w.in_f, NUM2, IN_FILL)
+            w.cell(r, 4, f"={b_fx}", w.calc_f, NUM4)
+            w.cell(r, 5, f"=C{r}/D{r}", w.calc_f, NUM2)
         else:
-            w.cell(r, 3, b["value"], IN_F, NUM2, IN_FILL); w.cell(r, 4, 1, CALC_F, NUM4)
-            w.cell(r, 5, f"=C{r}/D{r}", CALC_F, NUM2)
-        w.cell(r, 6, f'=IF(B{r}="+",E{r},-E{r})', CALC_F, NUM2)
+            w.cell(r, 3, b["value"], w.in_f, NUM2, IN_FILL); w.cell(r, 4, 1, w.calc_f, NUM4)
+            w.cell(r, 5, f"=C{r}/D{r}", w.calc_f, NUM2)
+        w.cell(r, 6, f'=IF(B{r}="+",E{r},-E{r})', w.calc_f, NUM2)
         w.text_span(r, 7, 12, b.get("basis", "")); w.text_span(r, 13, 15, b.get("source_name", ""))
-        w.text_span(r, 16, 17, b.get("url", ""), link=True); w.cell(r, 18, b.get("data_date") or None, TXT_F, align="center")
+        w.text_span(r, 16, 17, b.get("url", ""), link=True); w.cell(r, 18, b.get("data_date") or None, w.txt_f, align="center")
         w.height(r, [(b.get("basis", ""), 70), (b.get("source_name", ""), 34), (b["item"], 32)])
         if debt_items and b in debt_items:
             debt_cells.append(f"$E${r}")
         w.r += 1
     b_last = w.r - 1
-    w.inp("bridge_net", f"橋接淨額（原幣：{b_note}）", f"=SUM(F{b_first}:F{b_last})", NUM0, MU, kind="計算")
+    w.inp("bridge_net", tr("calc.e.net", lang, ccy=b_note), f"=SUM(F{b_first}:F{b_last})", NUM0, MU, kind="計算")
     R = w.ref
     # D for WACC (row reserved in block A)
     rD = w.r_debt; save_r = w.r; w.r = rD
     if debt_cells:
-        w.inp("D", "債務 D（橋接中的融資性債務）", "=" + "+".join(debt_cells), NUM0, MU, disc["weight_d"]["basis"], kind="計算")
+        w.inp("D", tr("calc.e.debt_bridge", lang), "=" + "+".join(debt_cells), NUM0, MU, disc["weight_d"]["basis"], kind="計算")
     else:
-        w.inp("D", "債務 D", cs["D_model_ccy_m"], NUM0, MU, disc["weight_d"]["basis"])
+        w.inp("D", tr("calc.e.debt", lang), cs["D_model_ccy_m"], NUM0, MU, disc["weight_d"]["basis"])
     w.r = save_r; R = w.ref
 
     # ---------------------------------------------------------------- F. per share
-    w.section("F. 股權價值 → 每股理論價（並與 JSON 核對）")
-    w.header(["項目", "數值", "單位", "依據類型", "依據說明", "來源名稱", "網址", "數據日期"],
-             spans={"依據說明": 11, "來源名稱": 14, "網址": 17})
-    w.inp("equity", "股權價值 = EV + 橋接淨額", f"={R['ev']}+{R['bridge_net']}", NUM0, MU, kind="計算")
+    w.section(tr("calc.sec.f", lang))
+    w.header(std_hdr, spans=std_spans)
+    w.inp("equity", tr("calc.f.equity", lang), f"={R['ev']}+{R['bridge_net']}", NUM0, MU, kind="計算")
     if is_adr:
-        w.inp("sh_common", "普通股攤薄股數", d["shares"] * d["adr_ratio"], NUM2, "百萬股", "市場數據：" + as_source_text(d["shares_source"]))
-        w.inp("adr", "ADR 比率（1 ADR = ? 普通股）", d["adr_ratio"], "0", "股", "市場數據：1 ADR = 5 普通股（TSMC 股利公告）")
-        w.inp("shares", "ADR 約當單位 = 股數 ÷ ADR 比率", f"={R['sh_common']}/{R['adr']}", NUM2, "百萬", kind="計算")
+        w.inp("sh_common", tr("calc.f.sh_common", lang), d["shares"] * d["adr_ratio"], NUM2, u_msh, "市場數據：" + as_source_text(d["shares_source"]))
+        w.inp("adr", tr("calc.f.adr", lang), d["adr_ratio"], "0", tr("calc.unit.shares", lang), "市場數據：1 ADR = 5 普通股（TSMC 股利公告）")
+        w.inp("shares", tr("calc.f.adr_units", lang), f"={R['sh_common']}/{R['adr']}", NUM2, tr("calc.unit.millions", lang), kind="計算")
     else:
-        w.inp("shares", "攤薄股數", d["shares"], NUM2, "百萬股", "市場數據：" + as_source_text(d["shares_source"]))
+        w.inp("shares", tr("calc.f.shares", lang), d["shares"], NUM2, u_msh, "市場數據：" + as_source_text(d["shares_source"]))
     pfx = fx.get("per_share_fx", 1.0)
-    w.inp("ps_fx", f"每股換算匯率（{ccy} → {trade_currency(d)}）", pfx, NUM4, "", ("市場數據：" + str(fx.get("pair")) + f" {d['price_date']} 收市；" if pfx != 1 else "") + fx.get("per_share_fx_note", ""),
+    w.inp("ps_fx", tr("calc.f.ps_fx", lang, ccy=ccy, tc=trade_currency(d)), pfx, NUM4, "", ("市場數據：" + str(fx.get("pair")) + f" {d['price_date']} 收市；" if pfx != 1 else "") + fx.get("per_share_fx_note", ""),
           fx.get("source_name", "") if pfx != 1 else "", fx.get("url", "") if pfx != 1 else "", fx.get("data_date", "") if pfx != 1 else "")
     R = w.ref
-    w.inp("fair", f"每股理論價（{sym}）= 股權價值 ÷ 股數 × 匯率", f"={R['equity']}/{R['shares']}*{R['ps_fx']}", NUM2, sym, key_row=True, kind="計算")
+    w.inp("fair", tr("calc.f.fair", lang, sym=sym), f"={R['equity']}/{R['shares']}*{R['ps_fx']}", NUM2, sym, key_row=True, kind="計算")
     R = w.ref
-    w.inp("fair_json", "核對：calc JSON 每股理論價", d["fair_value_per_share"], NUM2, sym, f"calc/{t}_latest.json → fair_value_per_share", kind="輸入")
+    w.inp("fair_json", tr("calc.f.fair_json", lang), d["fair_value_per_share"], NUM2, sym, f"calc/{t}_latest.json → fair_value_per_share", kind="輸入")
     R = w.ref
-    w.inp("diff", "差異（公式 ÷ JSON − 1）", f"={R['fair']}/{R['fair_json']}-1", "0.0000%", "", kind="計算")
+    w.inp("diff", tr("calc.f.diff", lang), f"={R['fair']}/{R['fair_json']}-1", "0.0000%", "", kind="計算")
     R = w.ref
-    w.inp("check", "核對結果（容許 ±0.5%）", f'=IF(ABS({R["diff"]})<0.005,"✔ 相符","✘ 不符")', None, "", kind="計算")
+    chk_pass, chk_fail = tr("calc.f.check_pass", lang), tr("calc.f.check_fail", lang)
+    w.inp("check", tr("calc.f.check", lang), f'=IF(ABS({R["diff"]})<0.005,"{chk_pass}","{chk_fail}")', None, "", kind="計算")
     if is_adr and peer:
         R = w.ref
         pr_ = peer["refs"]
         w.inp("xchk", "交叉核對：2330.TW 理論價 × ADR 比率 ÷ USD/TWD", f"='{peer['name']}'!{pr_['fair']}*{R['adr']}/'{peer['name']}'!{pr_['b_fx']}", NUM2, "US$",
               "計算：" + d.get("consistency_check", ""), kind="計算")
     R = w.ref
-    w.inp("price", f"市價（{d['price_date']} 收市）", d["price"], NUM2, sym, "市場數據", "", d["price_source_url"], d["price_date"])
+    w.inp("price", tr("calc.f.price", lang, date=d["price_date"]), d["price"], NUM2, sym, "市場數據", "", d["price_source_url"], d["price_date"])
     R = w.ref
-    w.inp("ratio", "市價 ÷ 理論價", f"={R['price']}/{R['fair']}", MULT, "", "計算；達 2 倍列入待剔除名單", kind="計算")
+    w.inp("ratio", tr("calc.f.ratio", lang), f"={R['price']}/{R['fair']}", MULT, "", tr("calc.f.ratio_note", lang), kind="計算")
     R = w.ref
-    w.inp("gap", "折讓／溢價（市價 ÷ 理論價 − 1）", f"={R['ratio']}-1", "+0.0%;-0.0%;0.0%", "", "計算：紅＝溢價（偏貴），綠＝折讓（偏便宜）", kind="計算")
+    w.inp("gap", tr("calc.f.gap", lang), f"={R['ratio']}-1", "+0.0%;-0.0%;0.0%", "", tr("calc.f.gap_note", lang), kind="計算")
     R = w.ref
     gcell = R["gap"].replace("$", "")
-    ws.conditional_formatting.add(gcell, CellIsRule(operator="lessThan", formula=["0"], fill=GREEN[0], font=GREEN[1]))
-    ws.conditional_formatting.add(gcell, CellIsRule(operator="greaterThan", formula=["0"], fill=RED[0], font=RED[1]))
+    ws.conditional_formatting.add(gcell, CellIsRule(operator="lessThan", formula=["0"], fill=GREEN[0], font=w.green_f))
+    ws.conditional_formatting.add(gcell, CellIsRule(operator="greaterThan", formula=["0"], fill=RED[0], font=w.red_f))
     ccell = R["check"].replace("$", "")
-    ws.conditional_formatting.add(ccell, CellIsRule(operator="equal", formula=['"✔ 相符"'], fill=GREEN[0], font=GREEN[1]))
-    ws.conditional_formatting.add(ccell, CellIsRule(operator="equal", formula=['"✘ 不符"'], fill=RED[0], font=RED[1]))
+    ws.conditional_formatting.add(ccell, CellIsRule(operator="equal", formula=[f'"{chk_pass}"'], fill=GREEN[0], font=w.green_f))
+    ws.conditional_formatting.add(ccell, CellIsRule(operator="equal", formula=[f'"{chk_fail}"'], fill=RED[0], font=w.red_f))
 
     # ---------------------------------------------------------------- G. sensitivity
     sens = d["sensitivity"]
-    w.section(f"G. 敏感度：每股理論價（{sym}；縱軸 WACC、橫軸 g）— 公式即時重算")
+    w.section(tr("calc.sec.g", lang, sym=sym))
     tvf = (lambda wc, gc: f"{R['nopat_last']}*(1+{gc})*(1-{gc}/{R['ronic']})") if term["method"] == "value_driver" \
         else (lambda wc, gc: f"{R['fcff_last']}*(1+{gc})")
     hr = w.r
-    w.cell(hr, 1, "WACC ＼ g", HDR_F, fill=HDR_FILL, align="center")
+    w.cell(hr, 1, "WACC ＼ g", w.hdr_f, fill=HDR_FILL, align="center")
     for j, g in enumerate(sens["g_list"]):
-        w.cell(hr, 2 + j, g, IN_F, "0.0%", IN_FILL, align="center")
+        w.cell(hr, 2 + j, g, w.in_f, "0.0%", IN_FILL, align="center")
     w.r += 1
     base_w = disc["wacc"]["value"]
     live_first = w.r
     for i, wv in enumerate(sens["wacc_list"]):
         r = w.r; off = round(wv - base_w, 6)
-        w.cell(r, 1, f"={R['wacc']}{'+' if off >= 0 else '-'}{abs(off)}", CALC_F, "0.00%", align="center")
+        w.cell(r, 1, f"={R['wacc']}{'+' if off >= 0 else '-'}{abs(off)}", w.calc_f, "0.00%", align="center")
         for j in range(len(sens["g_list"])):
             wc, gc = f"$A{r}", f"{CL(2 + j)}${hr}"
             f = (f"=(SUMPRODUCT({R['fcff_rng']}/(1+{wc})^{R['t_rng']})+{tvf(wc, gc)}/({wc}-{gc})/(1+{wc})^{R['t_last']}"
                  f"+{R['bridge_net']})/{R['shares']}*{R['ps_fx']}")
-            x = w.cell(r, 2 + j, f, CALC_F, NUM2)
+            x = w.cell(r, 2 + j, f, w.calc_f, NUM2)
             if abs(off) < 1e-9 and abs(sens["g_list"][j] - term["g"]) < 1e-12:
-                x.fill = KEY_FILL; x.font = KEY_F
+                x.fill = KEY_FILL; x.font = w.key_f
         w.r += 1
     live_last = w.r - 1
     w.r += 1
-    x = ws.cell(w.r, 1, "對照：calc JSON 敏感度矩陣（模型輸出，靜態值）"); x.font = HDR_F; w.r += 1
+    x = ws.cell(w.r, 1, tr("calc.g.json_matrix", lang)); x.font = w.hdr_f; w.r += 1
     j_first = w.r
     for i, wv in enumerate(sens["wacc_list"]):
-        w.cell(w.r, 1, wv, IN_F, "0.00%", IN_FILL, align="center")
+        w.cell(w.r, 1, wv, w.in_f, "0.00%", IN_FILL, align="center")
         for j, v in enumerate(sens["matrix"][i]):
-            w.cell(w.r, 2 + j, v, IN_F, NUM2, IN_FILL)
+            w.cell(w.r, 2 + j, v, w.in_f, NUM2, IN_FILL)
         w.r += 1
     j_last = w.r - 1
-    w.inp("sens_diff", "公式矩陣與 JSON 矩陣平均絕對差", f"=SUMPRODUCT(ABS(B{live_first}:F{live_last}-B{j_first}:F{j_last}))/25", NUM4, sym, kind="計算")
+    w.inp("sens_diff", tr("calc.g.sens_diff", lang), f"=SUMPRODUCT(ABS(B{live_first}:F{live_last}-B{j_first}:F{j_last}))/25", NUM4, sym, kind="計算")
     R = w.ref
 
     # ---------------------------------------------------------------- H. scenarios / revisions / deviations
-    w.section("H. 情境（模型 JSON 輸出；需同時改動多項假設，未於本表以公式重算）")
-    w.header(["情境", "每股理論價", "相對基本", "假設變動"], spans={"假設變動": 14})
+    w.section(tr("calc.sec.h", lang))
+    h_changes = tr("calc.h.changes", lang)
+    w.header([tr("wb.summary.hdr.scenario", lang), tr("wb.scenarios.hdr.fv", lang),
+              tr("calc.h.rel_base", lang), h_changes], spans={h_changes: 14})
     for s in d["scenarios"]:
         r = w.r
-        w.cell(r, 1, s["name"], Font(name=FN, size=10, bold=True), wrap=True)
-        w.cell(r, 2, s["fair_value"], IN_F, NUM2, IN_FILL)
-        w.cell(r, 3, f"=B{r}/{R['fair_json']}-1", CALC_F, "+0.0%;-0.0%;0.0%")
+        disp_s = scenario_name(s["name"], lang)
+        w.cell(r, 1, disp_s, w.bold_f, wrap=True)
+        w.cell(r, 2, s["fair_value"], w.in_f, NUM2, IN_FILL)
+        w.cell(r, 3, f"=B{r}/{R['fair_json']}-1", w.calc_f, "+0.0%;-0.0%;0.0%")
         w.text_span(r, 4, 14, s.get("changes", ""))
-        w.height(r, [(s.get("changes", ""), 120), (s["name"], 32)])
+        w.height(r, [(s.get("changes", ""), 120), (disp_s, 32)])
         w.r += 1
-    w.section("修訂紀錄（舊 → 新，原因）")
-    w.header(["日期／項目", "舊", "新", "原因"], spans={"舊": 5, "新": 9, "原因": 18})
+    w.section(tr("calc.sec.revisions", lang))
+    rev_old, rev_new, rev_reason = tr("calc.rev.old", lang), tr("calc.rev.new", lang), tr("calc.rev.reason", lang)
+    w.header([tr("calc.rev.date_item", lang), rev_old, rev_new, rev_reason],
+             spans={rev_old: 5, rev_new: 9, rev_reason: 18})
     for rv in d["revisions"]:
         r = w.r
-        w.cell(r, 1, f"{rv['date']}｜{rv['item']}", Font(name=FN, size=10, bold=True), wrap=True)
+        w.cell(r, 1, f"{rv['date']}｜{rv['item']}", w.bold_f, wrap=True)
         fmtv = lambda v: (f"{v:.4%}" if isinstance(v, float) and v < 1 else (f"{v:,.2f}" if isinstance(v, (int, float)) else str(v)))
         w.text_span(r, 2, 5, fmtv(rv["old"])); w.text_span(r, 6, 9, fmtv(rv["new"])); w.text_span(r, 10, 18, rv.get("reason", ""))
         w.height(r, [(fmtv(rv["old"]), 46), (fmtv(rv["new"]), 46), (rv.get("reason", ""), 100), (rv["item"], 30)])
         w.r += 1
-    w.section("專業修正（與規格的差異：要求 → 採用，理由）")
-    w.header(["項目", "要求", "採用", "理由"], spans={"要求": 5, "採用": 10, "理由": 18})
+    w.section(tr("calc.sec.deviations", lang))
+    dev_req, dev_adp, dev_rsn = tr("calc.dev.requested", lang), tr("calc.dev.adopted", lang), tr("calc.dev.reason", lang)
+    w.header([tr("calc.hdr.item", lang), dev_req, dev_adp, dev_rsn],
+             spans={dev_req: 5, dev_adp: 10, dev_rsn: 18})
     for sd in d.get("spec_deviations", []):
         r = w.r
-        w.cell(r, 1, sd["item"], Font(name=FN, size=10, bold=True), wrap=True)
+        w.cell(r, 1, sd["item"], w.bold_f, wrap=True)
         w.text_span(r, 2, 5, sd["requested"]); w.text_span(r, 6, 10, sd["adopted"]); w.text_span(r, 11, 18, sd["reason"])
         w.height(r, [(sd["requested"], 46), (sd["adopted"], 58), (sd["reason"], 90), (sd["item"], 30)])
         w.r += 1

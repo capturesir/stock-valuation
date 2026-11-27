@@ -1,21 +1,26 @@
-"""Stocks: lookup, valuation history (trend chart), daily prices, Excel download."""
+"""Stocks: lookup, valuation history (trend chart), daily prices, Excel & report download."""
 from __future__ import annotations
 
 import datetime as dt
+import json
+import shutil
+import tempfile
 from pathlib import Path
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTask
 
 from .. import limits
 from ..auth import Principal, current_principal
 from ..db import get_db
-from ..i18n import http_error, lang_dep
+from ..i18n import DEFAULT as DEFAULT_LANG, http_error, lang_dep, pick
 from ..models import Run, Security, WatchlistItem
 from ..schemas import PriceSeries, StockProfile, StockValuations
-from ..services import market
+from ..services import branding, market
 from .common import iso, run_out, ticker_or_400
 
 router = APIRouter(tags=["stocks"])
@@ -113,10 +118,60 @@ def _aware(ts: dt.datetime) -> dt.datetime:
     return ts if ts.tzinfo else ts.replace(tzinfo=dt.timezone.utc)
 
 
-@router.get("/runs/{run_id}/excel", summary="下載該次估值的 Excel")
-def excel(run_id: str, db: Session = Depends(get_db), lang: str = Depends(lang_dep)):
+def _load_calc_for_export(r: Run) -> Optional[dict]:
+    if not r.calc_json_path or not Path(r.calc_json_path).is_file():
+        return None
+    try:
+        calc = json.loads(Path(r.calc_json_path).read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if isinstance(calc, dict) and not calc.get("data_gap_codes") and r.data_gaps:
+        calc["data_gap_codes"] = r.data_gaps
+    return calc if isinstance(calc, dict) else None
+
+
+@router.get("/runs/{run_id}/excel", summary="下載該次估值的 Excel（按語言產生並蓋品牌）")
+def excel(run_id: str, lang_q: Optional[str] = Query(default=None, alias="lang"),
+          db: Session = Depends(get_db), header_lang: str = Depends(lang_dep)):
+    out_lang = pick(lang_q) if lang_q else header_lang
     r = db.get(Run, run_id)
     if r is None or not r.xlsx_path or not Path(r.xlsx_path).is_file():
-        raise http_error(404, "no_excel", lang)
-    return FileResponse(r.xlsx_path, filename=Path(r.xlsx_path).name,
+        raise http_error(404, "no_excel", out_lang)
+    filename = Path(r.xlsx_path).name
+    if out_lang == DEFAULT_LANG:
+        return FileResponse(r.xlsx_path, filename=filename,
+                            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    calc = _load_calc_for_export(r)
+    if calc is None:
+        return FileResponse(r.xlsx_path, filename=filename,
+                            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    from src.export.workbook import build_workbook
+
+    tmp = Path(tempfile.mkdtemp(prefix="sv-val-xlsx-"))
+    out = tmp / filename
+    build_workbook(calc, str(out), lang=out_lang)
+    branding.stamp_run_files(db, [str(out)])
+    return FileResponse(out, filename=filename, background=BackgroundTask(shutil.rmtree, tmp, ignore_errors=True),
                         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+@router.get("/runs/{run_id}/report", summary="下載該次估值的 Markdown 報告（按語言產生並蓋品牌）")
+def report(run_id: str, lang_q: Optional[str] = Query(default=None, alias="lang"),
+           db: Session = Depends(get_db), header_lang: str = Depends(lang_dep)):
+    out_lang = pick(lang_q) if lang_q else header_lang
+    r = db.get(Run, run_id)
+    if r is None:
+        raise http_error(404, "no_report", out_lang)
+    calc = _load_calc_for_export(r)
+    if calc is None:
+        raise http_error(404, "no_report", out_lang)
+    from src.export.report_md import write_report
+
+    val_date = r.valuation_date or calc.get("valuation_date") or "valuation"
+    filename = f"{val_date}_{r.ticker}_valuation.md"
+    tmp = Path(tempfile.mkdtemp(prefix="sv-val-md-"))
+    out = tmp / filename
+    write_report(calc, str(out), lang=out_lang)
+    branding.stamp_run_files(db, [str(out)])
+    return FileResponse(out, filename=filename, background=BackgroundTask(shutil.rmtree, tmp, ignore_errors=True),
+                        media_type="text/markdown; charset=utf-8")

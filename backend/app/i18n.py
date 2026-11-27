@@ -26,6 +26,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     "upstream": {"zh-Hant": "上游資料來源暫時無法連線：{detail}", "zh-Hans": "上游数据源暂时无法连接：{detail}",
                  "en": "The upstream data source is unavailable: {detail}"},
     "no_excel": {"zh-Hant": "這次估值沒有 Excel 檔。", "zh-Hans": "这次估值没有 Excel 文件。", "en": "This run has no Excel file."},
+    "no_report": {"zh-Hant": "這次估值沒有報告檔。", "zh-Hans": "这次估值没有报告文件。", "en": "This run has no valuation report."},
     "not_in_watchlist": {"zh-Hant": "{ticker} 不在觀察名單。", "zh-Hans": "{ticker} 不在自选列表。",
                          "en": "{ticker} is not on the watchlist."},
     "bad_request": {"zh-Hant": "{detail}", "zh-Hans": "{detail}", "en": "{detail}"},
