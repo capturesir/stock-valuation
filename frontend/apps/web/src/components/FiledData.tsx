@@ -1,6 +1,6 @@
-import { type FiledConceptOut, type FiledFactOut, type StatementsSyncResult } from "@sv/api-client";
+import { type FiledConceptOut, type FiledFactOut, type HkexPdfSyncOut, type StatementsSyncResult } from "@sv/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useIsAdmin } from "../lib/session";
@@ -47,13 +47,20 @@ export function FiledData({ ticker }: { ticker: string }) {
     onSettled: refreshAll,
   });
   const fetchNow = useMutation({ mutationFn: () => api.fetchStatements(ticker), onSettled: refreshAll });
+  const pdfInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadPdf = useMutation({
+    mutationFn: (file: File): Promise<HkexPdfSyncOut> => api.uploadHkexPdf(ticker, file, file.name),
+    onSettled: refreshAll,
+  });
+  const isHk = !!st?.hk_supported || /\.hk$/i.test(ticker);
+  const canFetch = isHk || (!!st?.sec_ready && st?.us_filer !== false);
   const [autoTried, setAutoTried] = useState(false);
-  // open the tab → fetch automatically when this US stock has no statements yet
+  // open the tab → fetch automatically when this US or HK stock has no statements yet
   useEffect(() => {
-    if (!st || autoTried || st.synced || st.pending || !st.sec_ready || st.us_filer === false) return;
+    if (!st || autoTried || st.synced || st.pending || !canFetch) return;
     setAutoTried(true);
     fetchNow.mutate();
-  }, [st, autoTried, fetchNow]);
+  }, [st, autoTried, fetchNow, canFetch]);
   // a background fetch finished: load what it stored
   const [wasPending, setWasPending] = useState(false);
   useEffect(() => {
@@ -71,27 +78,37 @@ export function FiledData({ ticker }: { ticker: string }) {
     setPicked(conceptKey(first));
   }, [concepts.data, picked]);
 
-  const syncButton = st?.sec_ready && (
-    <button className="btn secondary small" type="button" disabled={sync.isPending || st.pending} onClick={() => sync.mutate()}>
-      {sync.isPending || st.pending ? t("admin.sources.syncing") : t(filer.data ? "filed.resync" : "admin.sources.sync")}</button>
+  const syncButton = canFetch && (
+    <button className="btn secondary small" type="button" disabled={sync.isPending || st?.pending} onClick={() => sync.mutate()}>
+      {sync.isPending || st?.pending ? t("admin.sources.syncing") : t(filer.data ? "filed.resync" : "admin.sources.sync")}</button>
+  );
+  const hkPdfButton = isHk && (
+    <>
+      <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" style={{ display: "none" }}
+             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPdf.mutate(f); e.target.value = ""; }} />
+      <button className="btn secondary small" type="button" disabled={uploadPdf.isPending} onClick={() => pdfInputRef.current?.click()}>
+        {uploadPdf.isPending ? t("filed.hkex.uploading") : t("filed.hkex.uploadPdf")}
+      </button>
+    </>
   );
   const errText = (e: unknown) => (e as Error | null)?.message;
-  const syncError = (sync.error || fetchNow.error) && <div role="alert" className="banner err">{errText(sync.error ?? fetchNow.error)}</div>;
+  const syncError = (sync.error || fetchNow.error || uploadPdf.error) && <div role="alert" className="banner err">{errText(sync.error ?? fetchNow.error ?? uploadPdf.error)}</div>;
   const lastError = (code?: string | null) => (code && /^[a-z_]+$/.test(code) ? t(`filed.err.${code}`, { ticker }) : code);
 
   if (status.isLoading || (st?.synced && filer.isLoading)) return <p className="muted">{t("common.loading")}</p>;
   if (status.error) return <div role="alert" className="banner err">{errText(status.error)}</div>;
   if (!st?.synced || !filer.data) {
-    const working = st?.pending || fetchNow.isPending || sync.isPending;
+    const working = st?.pending || fetchNow.isPending || sync.isPending || uploadPdf.isPending;
     return (
       <section className="card" aria-labelledby="filed-none-h">
         <h2 id="filed-none-h">{t("filed.none.title", { ticker })}</h2>
-        {!st?.sec_ready ? <p className="muted" style={{ margin: 0 }}>{t(isAdmin ? "filed.none.noContactAdmin" : "filed.none.noContact")}</p>
+        {isHk ? <p className="muted" style={{ margin: 0 }}>{working ? t("filed.none.fetching", { ticker }) : t("filed.hkex.freeNote")}</p>
+          : !st?.sec_ready ? <p className="muted" style={{ margin: 0 }}>{t(isAdmin ? "filed.none.noContactAdmin" : "filed.none.noContact")}</p>
           : st.us_filer === false ? <p className="muted" style={{ margin: 0 }}>{t("filed.none.notUs", { ticker })}</p>
           : working ? <p role="status" style={{ margin: 0 }}>{t("filed.none.fetching", { ticker })}</p>
           : <p className="muted" style={{ margin: 0 }}>{t("filed.none.ready")}</p>}
         {!working && st?.last_error && <div role="alert" className="banner err">{lastError(st.last_error)}</div>}
-        {st?.sec_ready && st.us_filer !== false && !working && <div>{syncButton}</div>}
+        {canFetch && !working && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{syncButton}{hkPdfButton}</div>}
         {syncError}
       </section>
     );
@@ -102,6 +119,7 @@ export function FiledData({ ticker }: { ticker: string }) {
   const list = (concepts.data ?? []).filter((c) => !q || c.concept.toLowerCase().includes(q) || (c.label ?? "").toLowerCase().includes(q))
     .sort(byTaxonomyThenLabel);
   const current = (concepts.data ?? []).find((c) => conceptKey(c) === picked) ?? null;
+  const pdfCc = uploadPdf.data?.cross_check as { matched_count?: number; compared?: number; discrepancy_count?: number } | null | undefined;
   return (
     <>
       <section className="card" aria-labelledby="filer-h">
@@ -115,11 +133,18 @@ export function FiledData({ ticker }: { ticker: string }) {
             </span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <a className="btn secondary small" href={`https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${fl.cik}`}
-               target="_blank" rel="noreferrer">{t("filed.secPage")}</a>
+            <a className="btn secondary small"
+               href={fl.cik.startsWith("HK") ? "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en" : `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${fl.cik}`}
+               target="_blank" rel="noreferrer">{t(fl.cik.startsWith("HK") ? "filed.hkexPage" : "filed.secPage")}</a>
+            {hkPdfButton}
             {syncButton}
           </div>
         </div>
+        {isHk && <div className="muted small">{t("filed.hkex.freeNote")}</div>}
+        {uploadPdf.data && <div role="status" className="banner info">{t("filed.hkex.pdfDone", {
+          facts: uploadPdf.data.facts_added, ccy: uploadPdf.data.currency,
+          years: (uploadPdf.data.fiscal_years ?? []).join(", ") || "—",
+          matched: pdfCc?.matched_count ?? 0, compared: pdfCc?.compared ?? 0, diff: pdfCc?.discrepancy_count ?? 0 })}</div>}
         {sync.data && <div role="status" className="banner info">{t(sync.data.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {
           ticker, name: sync.data.name ?? "", filings: sync.data.filings_added, facts: sync.data.facts_added, total: sync.data.facts_total.toLocaleString() })}</div>}
         {syncError}

@@ -735,7 +735,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 從 SEC 取得一隻美股的申報清單與全部 XBRL 數字（force=true 重新讀取舊頁並重新解析；管理員） */
+        /** 取得一隻美股（SEC）或港股（D11 Yahoo＋年報 PDF）的申報清單與財報數字（force=true 重新讀取；管理員） */
         post: operations["sync_api_v1_admin_statements_sync__ticker__post"];
         delete?: never;
         options?: never;
@@ -818,7 +818,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 財報數據狀態：是否已取得、是否正在取得、是否 SEC 申報公司 */
+        /** 財報數據狀態：是否已取得、是否正在取得、是否 SEC 申報公司或港股（D11） */
         get: operations["fetch_status_api_v1_stocks__ticker__statements_status_get"];
         put?: never;
         post?: never;
@@ -837,8 +837,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 取得一隻美股的財報數據（任何已登入用戶；背景執行；近 6 小時內已取得則不重複） */
+        /** 取得一隻美股（SEC）或港股（D11 免費來源）的財報數據（任何已登入用戶；背景執行；近 6 小時內已取得則不重複） */
         post: operations["fetch_api_v1_stocks__ticker__statements_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/statements/hkex-pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 上傳港股年報 PDF 抽取 IFRS／HKFRS 財報數字並與 Yahoo 交叉核對（D11） */
+        post: operations["upload_hkex_pdf_api_v1_stocks__ticker__statements_hkex_pdf_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1605,6 +1622,13 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** Body_upload_hkex_pdf_api_v1_stocks__ticker__statements_hkex_pdf_post */
+        Body_upload_hkex_pdf_api_v1_stocks__ticker__statements_hkex_pdf_post: {
+            /** File */
+            file: string;
+            /** Document Url */
+            document_url?: string | null;
+        };
         /** Body_upload_logo_api_v1_admin_branding_logo__variant__post */
         Body_upload_logo_api_v1_admin_branding_logo__variant__post: {
             /** File */
@@ -1978,6 +2002,34 @@ export interface components {
              * @default 本系統產出不構成投資建議。
              */
             disclaimer: string;
+        };
+        /** HkexPdfSyncOut */
+        HkexPdfSyncOut: {
+            /** Ticker */
+            ticker: string;
+            /** Cik */
+            cik: string;
+            /** Currency */
+            currency: string;
+            /** Scale */
+            scale: number;
+            /** Pages Scanned */
+            pages_scanned: number;
+            /**
+             * Fiscal Years
+             * @default []
+             */
+            fiscal_years: number[];
+            /** Filings Added */
+            filings_added: number;
+            /** Facts Added */
+            facts_added: number;
+            /** Facts Total */
+            facts_total: number;
+            /** Cross Check */
+            cross_check?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** Holding */
         Holding: {
@@ -3211,6 +3263,12 @@ export interface components {
              * @description 是否在 SEC 代號清單中；清單未載入時為 null
              */
             us_filer?: boolean | null;
+            /**
+             * Hk Supported
+             * @description 是否為港股（D11 免費來源：Yahoo＋年報 PDF 抽取與核對）
+             * @default false
+             */
+            hk_supported: boolean;
             /** Synced */
             synced: boolean;
             /** Synced At */
@@ -5702,6 +5760,44 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_hkex_pdf_api_v1_stocks__ticker__statements_hkex_pdf_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_hkex_pdf_api_v1_stocks__ticker__statements_hkex_pdf_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HkexPdfSyncOut"];
+                };
             };
             /** @description Validation Error */
             422: {

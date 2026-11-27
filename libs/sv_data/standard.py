@@ -26,11 +26,11 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 RULES_DIR = Path(__file__).parent / "rules"
-ANNUAL_FORMS = {"10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A"}
+ANNUAL_FORMS = {"10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A", "HKEX-AR", "YAHOO-AR"}
 # Only financial-statement filings feed the standard layer. Other filings tag some of the same concepts with
 # different numbers: e.g. a proxy statement (DEF 14A) reports "net income" in its pay-versus-performance table,
 # rounded or adjusted (JPMorgan FY2025: 57,000 vs 57,048 in the 10-K), and is filed later, so it would win.
-STATEMENT_FORMS = ANNUAL_FORMS | {"10-K405", "10-KT", "10-KT/A", "10-Q", "10-Q/A", "6-K", "6-K/A"}
+STATEMENT_FORMS = ANNUAL_FORMS | {"10-K405", "10-KT", "10-KT/A", "10-Q", "10-Q/A", "6-K", "6-K/A", "HKEX-IR", "YAHOO-QR"}
 ANNUAL_DAYS = (350, 380)            # 52/53-week years included
 START_TOLERANCE = 3                 # days: a concept's year may start a day or two off the others
 STATEMENTS = ("income", "balance", "cash_flow")
@@ -225,7 +225,7 @@ def load_company(cik: str) -> Optional[dict]:
     """The company overlay for a CIK, or None."""
     import yaml
 
-    if not re.fullmatch(r"\d{10}", cik):
+    if not re.fullmatch(r"(?:\d{10}|HK\d{8})", cik):
         raise RulesError(f"bad CIK {cik!r}")
     p = RULES_DIR / "companies" / f"{cik}.yaml"
     if not p.exists():

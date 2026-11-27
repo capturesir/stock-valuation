@@ -152,7 +152,7 @@ def test_reading_filed_data_as_a_member(client, sec, member):
 
 
 def test_non_sec_tickers_and_upstream_failures(client, sec):
-    r = client.post(f"{API}/admin/statements/sync/0700.HK")
+    r = client.post(f"{API}/admin/statements/sync/7203.T")
     assert r.status_code == 400 and r.json()["detail"]["code"] == "sec_not_filer"
     sec.routes[sec_source.SUBMISSIONS_URL.format(name=f"CIK{CIK}.json")] = (503, b"busy")
     r = client.post(f"{API}/admin/statements/sync/EXMP")
@@ -240,7 +240,7 @@ def test_any_user_can_fetch_once_the_sec_contact_is_set(client, member, monkeypa
     calls = len(fake.calls)
     r = member.post(f"{API}/stocks/EXMP/statements/fetch")
     assert r.status_code == 200 and len(fake.calls) == calls  # fetched within 6 hours: not repeated
-    r = member.post(f"{API}/stocks/0700.HK/statements/fetch")
+    r = member.post(f"{API}/stocks/7203.T/statements/fetch")
     assert r.status_code == 400 and r.json()["detail"]["code"] == "sec_not_filer"
 
 

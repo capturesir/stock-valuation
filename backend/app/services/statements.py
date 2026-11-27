@@ -443,13 +443,17 @@ def submit(ticker: str) -> bool:
 def _run_background(ticker: str) -> None:
     import logging
 
+    from libs.sv_data.sources.hkex_free import is_hk_ticker
     from src.infra.kv import kv
 
     from ..db import session
 
     try:
         with session() as db:
-            sync_sec(db, ticker)
+            if is_hk_ticker(ticker):
+                sync_hkex(db, ticker)
+            else:
+                sync_sec(db, ticker)
     except Exception as exc:  # the error is on the filer (last_error) or the ticker is not an SEC filer
         safe = "".join(ch for ch in ticker if ch.isalnum() or ch in ".-=^")     # never let input forge log lines
         logging.getLogger("sv.statements").warning("background statements sync of %s failed: %s", safe, type(exc).__name__)
@@ -512,14 +516,196 @@ def update_all(session_factory) -> dict:
     return summary
 
 
+# ------------------------------------------------------------------ HKEX free source (D11)
+
+def _yahoo_meta(ticker: str) -> dict:
+    """Best-effort metadata (name, financial currency, sector, industry) from Yahoo. Replaced in tests."""
+    from src.fetch import guard
+
+    try:
+        with guard.call("yahoo"):
+            import yfinance as yf
+            info = yf.Ticker(ticker).info or {}
+            return {
+                "name": info.get("longName") or info.get("shortName") or ticker,
+                "currency": (info.get("financialCurrency") or info.get("currency") or "HKD").upper(),
+                "sector": info.get("sector"),
+                "industry": info.get("industry"),
+            }
+    except Exception:
+        return {"name": ticker, "currency": "HKD", "sector": None, "industry": None}
+
+
+def sync_hkex(
+    db: Session,
+    ticker: str,
+    *,
+    force: bool = False,
+    pdf_bytes: Optional[bytes] = None,
+    pdf_pages: Optional[list[tuple[int, str]]] = None,
+    document_url: Optional[str] = None,
+) -> dict:
+    """Sync an HKEX stock's statements via D11 free sources: Yahoo Finance + HKEX Annual Report PDF cross-check."""
+    import json as _json
+    from dataclasses import dataclass as _dc
+
+    from libs.sv_data.sources.hkex_free import (
+        HkexFreeProvider,
+        extract_hkex_pdf_facts,
+        hk_cik,
+        infer_sic_from_sector,
+        is_hk_ticker,
+    )
+
+    if not is_hk_ticker(ticker):
+        raise AppError("sec_not_filer", ticker=ticker)
+
+    cik = hk_cik(ticker)
+    meta = _yahoo_meta(ticker)
+    sic = infer_sic_from_sector(meta.get("sector"), meta.get("industry"))
+    now = dt.datetime.now(dt.timezone.utc)
+
+    # Layer ① Yahoo annual statements
+    yahoo_data = None
+    try:
+        yahoo_data = _yahoo_annual(ticker)
+    except Exception:
+        yahoo_data = None
+
+    raw_id: Optional[int] = None
+    yahoo_annual = (yahoo_data or {}).get("annual") or None
+    if yahoo_data:
+        body = _json.dumps(yahoo_data, sort_keys=True, ensure_ascii=False).encode()
+        raw_row, _ = keep(db, RawDocument("yahoo", "annual_financials", ticker, f"https://finance.yahoo.com/quote/{ticker}/financials", body))
+        raw_id = raw_row.id
+
+    pdf_info = {"currency": meta["currency"], "scale": 1, "pages_scanned": 0, "fiscal_years": []}
+    if pdf_bytes is not None:
+        raw_pdf, _ = keep(db, RawDocument(
+            "hkex_pdf", "annual_report", ticker,
+            document_url or "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en",
+            pdf_bytes, content_type="application/pdf",
+        ))
+        raw_id = raw_pdf.id
+        extracted = extract_hkex_pdf_facts(ticker, pdf_bytes=pdf_bytes, document_url=document_url, default_currency=meta["currency"])
+        pdf_info = {
+            "currency": extracted.currency,
+            "scale": extracted.scale,
+            "pages_scanned": extracted.pages_scanned,
+            "fiscal_years": extracted.fiscal_years,
+        }
+    elif pdf_pages is not None:
+        raw_txt = "\n".join(t for _, t in pdf_pages).encode("utf-8")
+        raw_pdf, _ = keep(db, RawDocument(
+            "hkex_pdf", "annual_report_text", ticker,
+            document_url or "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en",
+            raw_txt, content_type="text/plain",
+        ))
+        raw_id = raw_pdf.id
+        extracted = extract_hkex_pdf_facts(ticker, pages=pdf_pages, document_url=document_url, default_currency=meta["currency"])
+        pdf_info = {
+            "currency": extracted.currency,
+            "scale": extracted.scale,
+            "pages_scanned": extracted.pages_scanned,
+            "fiscal_years": extracted.fiscal_years,
+        }
+
+    provider = HkexFreeProvider()
+    result = provider.build_result(
+        ticker,
+        yahoo_annual=yahoo_annual,
+        pdf_bytes=pdf_bytes,
+        pdf_pages=pdf_pages,
+        document_url=document_url,
+        entity_name=meta.get("name") or ticker,
+        currency=pdf_info["currency"],
+        sic=sic,
+    )
+
+    filer = db.get(Filer, cik)
+    if filer is None:
+        filer = Filer(cik=cik, facts=0, pages_loaded=[])
+        db.add(filer)
+    filer.name = (meta.get("name") or ticker)[:200]
+    filer.entity_type = "hkex"
+    filer.sic = sic
+    filer.sic_description = (meta.get("industry") or meta.get("sector") or "HKEX")[:200]
+    filer.tickers = [ticker]
+    filer.exchanges = ["HKEX"]
+    if raw_id is not None:
+        filer.facts_document_id = raw_id
+    db.flush()
+
+    @_dc
+    class _FilingAdapter:
+        accession: str
+        form: str
+        filed: Optional[dt.date]
+        report_date: Optional[dt.date]
+        accepted_at: Optional[dt.datetime] = None
+        primary_document: Optional[str] = None
+        description: Optional[str] = None
+        items: Optional[str] = None
+        is_xbrl: bool = False
+        is_inline_xbrl: bool = False
+
+    filings_added = _save_filings(db, cik, [
+        _FilingAdapter(
+            accession=f.accession, form=f.form, filed=f.filed, report_date=f.report_date,
+            primary_document=f.primary_document, description=f.description,
+        )
+        for f in result.filings
+    ])
+
+    @_dc
+    class _ParsedAdapter:
+        facts: list
+        concepts: list
+
+    facts_added = _save_facts(db, cik, _ParsedAdapter(result.facts, result.concepts), raw_id) if result.facts else 0
+    filer.facts = db.scalar(select(func.count()).select_from(FiledFactRow).where(FiledFactRow.cik == cik)) or 0
+    filer.synced_at = now
+    filer.last_error = None
+    db.flush()
+
+    return {
+        "ticker": ticker,
+        "cik": cik,
+        "name": filer.name,
+        "filings_added": filings_added,
+        "facts_added": facts_added,
+        "facts_total": filer.facts,
+        "has_xbrl": False,
+        "unchanged": filings_added == 0 and facts_added == 0 and not force,
+        "duplicates": 0,
+        "conflicts": 0,
+        "skipped": 0,
+        "instances_read": 0,
+        "instance_facts": 0,
+        "instances_missing": 0,
+        "currency": result.currency or pdf_info["currency"],
+        "scale": pdf_info["scale"],
+        "pages_scanned": pdf_info["pages_scanned"],
+        "fiscal_years": pdf_info["fiscal_years"],
+        "cross_check": result.cross_check,
+    }
+
+
 # ------------------------------------------------------------------ reading
 
 def filer_for(db: Session, ticker: str) -> Optional[Filer]:
+    from libs.sv_data.sources.hkex_free import hk_cik, is_hk_ticker
+
+    if is_hk_ticker(ticker):
+        return db.get(Filer, hk_cik(ticker))
     row = db.get(SecTicker, ticker)
     return db.get(Filer, row.cik) if row else None
 
 
 def filing_urls(cik: str, accession: str, primary: Optional[str]) -> dict:
+    if cik.startswith("HK"):
+        url = primary if (primary and primary.startswith("http")) else "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en"
+        return {"index_url": url, "document_url": url}
     return {"index_url": sec_source.filing_index_url(cik, accession),
             "document_url": sec_source.filing_document_url(cik, accession, primary) if primary else None}
 

@@ -56,6 +56,7 @@ export type SavedComparisonOut = S["SavedComparisonOut"];
 export type PortfolioIn = S["PortfolioIn"];
 export type PortfolioOut = S["PortfolioOut"];
 export type StatementsStatus = S["StatementsStatus"];
+export type HkexPdfSyncOut = S["HkexPdfSyncOut"];
 export type StdRow = S["StdRow"];
 export type StdCell = S["StdCell"];
 export type AdjustmentPlansOut = S["AdjustmentPlansOut"];
@@ -199,6 +200,12 @@ export function createClient(cfg: ClientConfig = {}) {
     deletePortfolio: (id: string) => req<void>("DELETE", `/portfolios/${enc(id)}`),
     statementsStatus: (ticker: string) => req<StatementsStatus>("GET", `/stocks/${enc(ticker)}/statements/status`),
     fetchStatements: (ticker: string) => req<StatementsStatus>("POST", `/stocks/${enc(ticker)}/statements/fetch`),
+    uploadHkexPdf: (ticker: string, file: Blob, filename = "annual_report.pdf", documentUrl?: string) => {
+      const fd = new FormData();
+      fd.append("file", file, filename);
+      if (documentUrl) fd.append("document_url", documentUrl);
+      return req<HkexPdfSyncOut>("POST", `/stocks/${enc(ticker)}/statements/hkex-pdf`, undefined, fd);
+    },
     filedConcepts: (ticker: string) => req<FiledConceptOut[]>("GET", `/stocks/${enc(ticker)}/filed-concepts`),
     standardStatements: (ticker: string, view: "latest" | "original" = "latest", period: "annual" | "quarterly" = "annual", years = 10,
                          plan: PlanChoice = "auto") =>

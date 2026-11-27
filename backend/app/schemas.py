@@ -532,11 +532,25 @@ class StatementsStatus(BaseModel):
     ticker: str
     sec_ready: bool = Field(description="管理員已設定 SEC 聯絡資料")
     us_filer: Optional[bool] = Field(None, description="是否在 SEC 代號清單中；清單未載入時為 null")
+    hk_supported: bool = Field(False, description="是否為港股（D11 免費來源：Yahoo＋年報 PDF 抽取與核對）")
     synced: bool
     synced_at: Optional[str] = None
     pending: bool = Field(description="正在背景取得")
     facts: int = 0
     last_error: Optional[str] = None
+
+
+class HkexPdfSyncOut(BaseModel):
+    ticker: str
+    cik: str
+    currency: str
+    scale: int
+    pages_scanned: int
+    fiscal_years: list[int] = []
+    filings_added: int
+    facts_added: int
+    facts_total: int
+    cross_check: Optional[dict] = None
 
 
 class StdYear(BaseModel):

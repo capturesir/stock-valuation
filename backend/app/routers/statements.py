@@ -4,17 +4,19 @@ from __future__ import annotations
 import datetime as dt
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, File, Form, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+
+from libs.sv_data.sources.hkex_free import is_hk_ticker
 
 from .. import limits
 from ..auth import Principal, current_principal, require_admin, require_user
 from ..db import get_db
 from ..i18n import AppError, http_error, lang_dep
 from ..models import FiledConceptRow, FiledFactRow, Filer, Filing, InstanceFactRow
-from ..schemas import (AdjustmentPlanIn, AdjustmentPlansOut, AdjustmentVersionOut, DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, StandardStatements,
+from ..schemas import (AdjustmentPlanIn, AdjustmentPlansOut, AdjustmentVersionOut, DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, HkexPdfSyncOut, StandardStatements,
                        StatementsStatus, StatementsSyncResult)
 from ..services import adjustments, statements
 from .common import iso, ticker_or_400
@@ -36,11 +38,15 @@ def put_sources(body: DataSourcesIn, _: Principal = Depends(require_admin), db: 
 
 
 @router.post("/admin/statements/sync/{ticker}", response_model=StatementsSyncResult,
-             summary="從 SEC 取得一隻美股的申報清單與全部 XBRL 數字（force=true 重新讀取舊頁並重新解析；管理員）")
+             summary="取得一隻美股（SEC）或港股（D11 Yahoo＋年報 PDF）的申報清單與財報數字（force=true 重新讀取；管理員）")
 def sync(ticker: str, force: bool = False, _: Principal = Depends(require_admin), db: Session = Depends(get_db),
          lang: str = Depends(lang_dep)) -> dict:
     t = ticker_or_400(ticker)
     try:
+        if is_hk_ticker(t):
+            res = statements.sync_hkex(db, t, force=force)
+            db.commit()
+            return res
         return statements.sync_sec(db, t, force=force)
     except statements.Upstream as exc:
         db.commit()                     # keep the documents already saved and last_error on the filer
@@ -155,28 +161,30 @@ def _status(db: Session, t: str) -> dict:
     f = statements.filer_for(db, t)
     synced = f is not None and f.synced_at is not None
     return {"ticker": t, "sec_ready": statements.data_sources(db)["sec_ready"], "us_filer": statements.known_us_filer(db, t),
+            "hk_supported": is_hk_ticker(t),
             "synced": synced, "synced_at": iso(f.synced_at) if synced else None, "pending": statements.is_pending(t),
             "facts": f.facts if f else 0, "last_error": (f.last_error if f else None) or statements.last_failure(t)}
 
 
 @router.get("/stocks/{ticker}/statements/status", response_model=StatementsStatus,
-            summary="財報數據狀態：是否已取得、是否正在取得、是否 SEC 申報公司")
+            summary="財報數據狀態：是否已取得、是否正在取得、是否 SEC 申報公司或港股（D11）")
 def fetch_status(ticker: str, db: Session = Depends(get_db)) -> dict:
     return _status(db, ticker_or_400(ticker))
 
 
 @router.post("/stocks/{ticker}/statements/fetch", response_model=StatementsStatus,
              responses={202: {"description": "已開始在背景取得"}, 200: {"description": "正在取得，或近 6 小時內已取得"}},
-             summary="取得一隻美股的財報數據（任何已登入用戶；背景執行；近 6 小時內已取得則不重複）")
+             summary="取得一隻美股（SEC）或港股（D11 免費來源）的財報數據（任何已登入用戶；背景執行；近 6 小時內已取得則不重複）")
 def fetch(ticker: str, request: Request, response: Response, db: Session = Depends(get_db),
           p: Principal = Depends(current_principal), lang: str = Depends(lang_dep)) -> dict:
     t = ticker_or_400(ticker)
     lim = limits.get(db)
     limits.hit("lookup", limits.who(request, p.user.id if p.user else None), lim["lookup_per_minute"], 60)
-    if not statements.data_sources(db)["sec_ready"]:
-        raise http_error(400, "sec_contact_missing", lang)
-    if statements.known_us_filer(db, t) is False:
-        raise http_error(400, "sec_not_filer", lang, ticker=t)
+    if not is_hk_ticker(t):
+        if not statements.data_sources(db)["sec_ready"]:
+            raise http_error(400, "sec_contact_missing", lang)
+        if statements.known_us_filer(db, t) is False:
+            raise http_error(400, "sec_not_filer", lang, ticker=t)
     st = _status(db, t)
     f = statements.filer_for(db, t)
     if st["pending"] or (f is not None and f.synced_at and dt.datetime.now(dt.timezone.utc) - f.synced_at < FRESH):
@@ -185,6 +193,27 @@ def fetch(ticker: str, request: Request, response: Response, db: Session = Depen
         response.status_code = 202
     db.expire_all()
     return _status(db, t)
+
+
+@router.post("/stocks/{ticker}/statements/hkex-pdf", response_model=HkexPdfSyncOut,
+             summary="上傳港股年報 PDF 抽取 IFRS／HKFRS 財報數字並與 Yahoo 交叉核對（D11）")
+async def upload_hkex_pdf(
+    ticker: str,
+    file: UploadFile = File(...),
+    document_url: str | None = Form(None),
+    _: Principal = Depends(current_principal),
+    db: Session = Depends(get_db),
+    lang: str = Depends(lang_dep),
+) -> dict:
+    t = ticker_or_400(ticker)
+    if not is_hk_ticker(t):
+        raise http_error(400, "sec_not_filer", lang, ticker=t)
+    raw = await file.read(20 * 1024 * 1024 + 1)
+    if len(raw) > 20 * 1024 * 1024 or not raw:
+        raise http_error(400, "doc_empty_text", lang)
+    res = statements.sync_hkex(db, t, force=True, pdf_bytes=raw, document_url=(document_url or "").strip() or None)
+    db.commit()
+    return res
 
 
 @router.get("/stocks/{ticker}/statements/export", response_class=FileResponse,
