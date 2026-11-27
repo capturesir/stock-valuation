@@ -1034,3 +1034,48 @@ class StockMethodsOut(BaseModel):
     football_field: list[MethodBandOut] = Field(default_factory=list)
     methods: list[MethodDetailOut] = Field(default_factory=list)
     reverse_dcf: Optional[ReverseDcfOut] = None
+
+
+# ---------------------------------------------------------------- AI tasks & unified news (beta.2, D4)
+
+class NewsItemOut(BaseModel):
+    id: str
+    ticker: str
+    source: str
+    title: str
+    published_at: Optional[str] = None
+    url: str
+    summary: str = ""
+    kind: str = "news"
+
+
+class AiSuggestionOut(BaseModel):
+    id: int
+    ticker: str
+    task_key: str
+    title: str
+    detail: str
+    payload: dict = Field(default_factory=dict)
+    source_id: str
+    source_title: str
+    source_url: str
+    source_date: Optional[str] = None
+    status: Literal["pending", "accepted", "dismissed"]
+    decided_by: Optional[str] = None
+    decided_at: Optional[str] = None
+    created_at: str
+
+
+class AiSuggestionGenerateIn(BaseModel):
+    tasks: list[Literal["T1", "T2"]] = Field(default_factory=lambda: ["T1", "T2"])
+
+
+class AiSuggestionGenerateOut(BaseModel):
+    ticker: str
+    created: int
+    rejected_unverified: int
+    suggestions: list[AiSuggestionOut] = Field(default_factory=list)
+
+
+class AiSuggestionDecisionIn(BaseModel):
+    status: Literal["pending", "accepted", "dismissed"]

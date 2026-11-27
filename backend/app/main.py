@@ -22,6 +22,7 @@ from .routers import branding as branding_router
 from .routers import market as market_router
 from .routers import ops as ops_router
 from .routers import statements as statements_router
+from .routers import ai_tasks as ai_tasks_router
 from .routers import analytics as analytics_router
 from .routers import docs_qa as docs_qa_router
 from .routers import settings as settings_router
@@ -128,7 +129,7 @@ def create_app() -> FastAPI:
     secured = [Depends(current_principal)]
     for r in (auth_router.me_router, auth_router.admin, branding_router.admin, stocks.router, watchlist.router, valuations.router,
               settings_router.router, market_router.router, ops_router.router, statements_router.router, analytics_router.router,
-              docs_qa_router.router):
+              docs_qa_router.router, ai_tasks_router.router):
         app.include_router(r, prefix=API, dependencies=secured)
     return app
 

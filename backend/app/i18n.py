@@ -31,6 +31,7 @@ MESSAGES: dict[str, dict[str, str]] = {
     "thread_not_found": {"zh-Hant": "找不到這個對話。", "zh-Hans": "找不到这个对话。", "en": "Conversation thread not found."},
     "doc_unsupported_type": {"zh-Hant": "只支援上傳 PDF、Markdown、HTML 或純文字檔。", "zh-Hans": "只支持上传 PDF、Markdown、HTML 或纯文本文件。", "en": "Only PDF, Markdown, HTML, and plain-text files are supported."},
     "doc_empty_text": {"zh-Hant": "無法從檔案抽出可讀文字。", "zh-Hans": "无法从文件提取可读文本。", "en": "No readable text could be extracted from this file."},
+    "suggestion_not_found": {"zh-Hant": "找不到這項建議。", "zh-Hans": "找不到这项建议。", "en": "Suggestion not found."},
     "not_in_watchlist": {"zh-Hant": "{ticker} 不在觀察名單。", "zh-Hans": "{ticker} 不在自选列表。",
                          "en": "{ticker} is not on the watchlist."},
     "bad_request": {"zh-Hant": "{detail}", "zh-Hans": "{detail}", "en": "{detail}"},

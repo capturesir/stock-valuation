@@ -3,7 +3,7 @@
  "info": {
   "title": "估值工作台 API",
   "description": "股票估值系統 v2 後端。所有前端共用此 API。本系統產出不構成投資建議。",
-  "version": "2.0.0-alpha.5"
+  "version": "2.0.0-beta.1"
  },
  "paths": {
   "/api/v1/health": {
@@ -6540,6 +6540,342 @@
      }
     }
    }
+  },
+  "/api/v1/stocks/{ticker}/news": {
+   "get": {
+    "tags": [
+     "ai_tasks"
+    ],
+    "summary": "統一新聞與公告介面（D4：SEC 申報、披露易與 Yahoo 標題，每則附可點擊原文連結）",
+    "operationId": "stock_news_api_v1_stocks__ticker__news_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 50,
+       "minimum": 1,
+       "default": 25,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/NewsItemOut"
+         },
+         "title": "Response Stock News Api V1 Stocks  Ticker  News Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/suggestions": {
+   "get": {
+    "tags": [
+     "ai_tasks"
+    ],
+    "summary": "該股票的 AI 建議清單（T1 財報檢查異常、T2 新聞與催化劑，含採用／忽略狀態與可點擊來源）",
+    "operationId": "list_suggestions_api_v1_stocks__ticker__suggestions_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/AiSuggestionOut"
+         },
+         "title": "Response List Suggestions Api V1 Stocks  Ticker  Suggestions Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/suggestions/generate": {
+   "post": {
+    "tags": [
+     "ai_tasks"
+    ],
+    "summary": "執行 T1（以檢查層為輸入）與 T2（以統一新聞為輸入）產生建議並嚴格驗證來源引用",
+    "operationId": "generate_suggestions_api_v1_stocks__ticker__suggestions_generate_post",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AiSuggestionGenerateIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiSuggestionGenerateOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/suggestions/{suggestion_id}": {
+   "put": {
+    "tags": [
+     "ai_tasks"
+    ],
+    "summary": "採用（accepted）、忽略（dismissed）或重設（pending）一項 AI 建議",
+    "operationId": "update_suggestion_api_v1_suggestions__suggestion_id__put",
+    "parameters": [
+     {
+      "name": "suggestion_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Suggestion Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AiSuggestionDecisionIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiSuggestionOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -7203,6 +7539,172 @@
      "presets"
     ],
     "title": "AiSettingsOut"
+   },
+   "AiSuggestionDecisionIn": {
+    "properties": {
+     "status": {
+      "type": "string",
+      "enum": [
+       "pending",
+       "accepted",
+       "dismissed"
+      ],
+      "title": "Status"
+     }
+    },
+    "type": "object",
+    "required": [
+     "status"
+    ],
+    "title": "AiSuggestionDecisionIn"
+   },
+   "AiSuggestionGenerateIn": {
+    "properties": {
+     "tasks": {
+      "items": {
+       "type": "string",
+       "enum": [
+        "T1",
+        "T2"
+       ]
+      },
+      "type": "array",
+      "title": "Tasks"
+     }
+    },
+    "type": "object",
+    "title": "AiSuggestionGenerateIn"
+   },
+   "AiSuggestionGenerateOut": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "created": {
+      "type": "integer",
+      "title": "Created"
+     },
+     "rejected_unverified": {
+      "type": "integer",
+      "title": "Rejected Unverified"
+     },
+     "suggestions": {
+      "items": {
+       "$ref": "#/components/schemas/AiSuggestionOut"
+      },
+      "type": "array",
+      "title": "Suggestions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "created",
+     "rejected_unverified"
+    ],
+    "title": "AiSuggestionGenerateOut"
+   },
+   "AiSuggestionOut": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "task_key": {
+      "type": "string",
+      "title": "Task Key"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "detail": {
+      "type": "string",
+      "title": "Detail"
+     },
+     "payload": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Payload"
+     },
+     "source_id": {
+      "type": "string",
+      "title": "Source Id"
+     },
+     "source_title": {
+      "type": "string",
+      "title": "Source Title"
+     },
+     "source_url": {
+      "type": "string",
+      "title": "Source Url"
+     },
+     "source_date": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Date"
+     },
+     "status": {
+      "type": "string",
+      "enum": [
+       "pending",
+       "accepted",
+       "dismissed"
+      ],
+      "title": "Status"
+     },
+     "decided_by": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Decided By"
+     },
+     "decided_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Decided At"
+     },
+     "created_at": {
+      "type": "string",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "ticker",
+     "task_key",
+     "title",
+     "detail",
+     "source_id",
+     "source_title",
+     "source_url",
+     "status",
+     "created_at"
+    ],
+    "title": "AiSuggestionOut"
    },
    "AuthStatus": {
     "properties": {
@@ -8991,6 +9493,60 @@
      "value"
     ],
     "title": "MethodValue"
+   },
+   "NewsItemOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "source": {
+      "type": "string",
+      "title": "Source"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "published_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Published At"
+     },
+     "url": {
+      "type": "string",
+      "title": "Url"
+     },
+     "summary": {
+      "type": "string",
+      "title": "Summary",
+      "default": ""
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind",
+      "default": "news"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "ticker",
+     "source",
+     "title",
+     "url"
+    ],
+    "title": "NewsItemOut"
    },
    "OpsStatus": {
     "properties": {

@@ -508,3 +508,26 @@ class QaMessage(Base):
     insufficient_evidence: Mapped[bool] = mapped_column(Boolean, default=False)
     model: Mapped[Optional[str]] = mapped_column(String(80))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+# ------------------------------------------------------------------ AI suggestions (beta.2, T1/T2/T7)
+
+class AiSuggestion(Base):
+    """One verified, source-cited AI suggestion (T1 check anomaly, T2 news/catalyst, T7 thesis)
+    with explicit user Accept / Dismiss workflow."""
+    __tablename__ = "ai_suggestions"
+    __table_args__ = (UniqueConstraint("ticker", "task_key", "source_id", name="uq_ai_suggestions_source"),)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    ticker: Mapped[str] = mapped_column(String(20), index=True)
+    task_key: Mapped[str] = mapped_column(String(12))               # T1 | T2 | T7
+    title: Mapped[str] = mapped_column(String(200))
+    detail: Mapped[str] = mapped_column(Text)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    source_id: Mapped[str] = mapped_column(String(120))
+    source_title: Mapped[str] = mapped_column(String(240))
+    source_url: Mapped[str] = mapped_column(String(500))
+    source_date: Mapped[Optional[str]] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(16), default="pending")   # pending | accepted | dismissed
+    decided_by: Mapped[Optional[str]] = mapped_column(String(80))
+    decided_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)

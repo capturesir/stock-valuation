@@ -1227,6 +1227,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/news": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 統一新聞與公告介面（D4：SEC 申報、披露易與 Yahoo 標題，每則附可點擊原文連結） */
+        get: operations["stock_news_api_v1_stocks__ticker__news_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 該股票的 AI 建議清單（T1 財報檢查異常、T2 新聞與催化劑，含採用／忽略狀態與可點擊來源） */
+        get: operations["list_suggestions_api_v1_stocks__ticker__suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/suggestions/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 執行 T1（以檢查層為輸入）與 T2（以統一新聞為輸入）產生建議並嚴格驗證來源引用 */
+        post: operations["generate_suggestions_api_v1_stocks__ticker__suggestions_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/suggestions/{suggestion_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 採用（accepted）、忽略（dismissed）或重設（pending）一項 AI 建議 */
+        put: operations["update_suggestion_api_v1_suggestions__suggestion_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1461,6 +1529,66 @@ export interface components {
             presets: {
                 [key: string]: unknown;
             }[];
+        };
+        /** AiSuggestionDecisionIn */
+        AiSuggestionDecisionIn: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "dismissed";
+        };
+        /** AiSuggestionGenerateIn */
+        AiSuggestionGenerateIn: {
+            /** Tasks */
+            tasks?: ("T1" | "T2")[];
+        };
+        /** AiSuggestionGenerateOut */
+        AiSuggestionGenerateOut: {
+            /** Ticker */
+            ticker: string;
+            /** Created */
+            created: number;
+            /** Rejected Unverified */
+            rejected_unverified: number;
+            /** Suggestions */
+            suggestions?: components["schemas"]["AiSuggestionOut"][];
+        };
+        /** AiSuggestionOut */
+        AiSuggestionOut: {
+            /** Id */
+            id: number;
+            /** Ticker */
+            ticker: string;
+            /** Task Key */
+            task_key: string;
+            /** Title */
+            title: string;
+            /** Detail */
+            detail: string;
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** Source Id */
+            source_id: string;
+            /** Source Title */
+            source_title: string;
+            /** Source Url */
+            source_url: string;
+            /** Source Date */
+            source_date?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "dismissed";
+            /** Decided By */
+            decided_by?: string | null;
+            /** Decided At */
+            decided_at?: string | null;
+            /** Created At */
+            created_at: string;
         };
         /** AuthStatus */
         AuthStatus: {
@@ -2099,6 +2227,31 @@ export interface components {
             value: number | null;
             /** Weight */
             weight?: number | null;
+        };
+        /** NewsItemOut */
+        NewsItemOut: {
+            /** Id */
+            id: string;
+            /** Ticker */
+            ticker: string;
+            /** Source */
+            source: string;
+            /** Title */
+            title: string;
+            /** Published At */
+            published_at?: string | null;
+            /** Url */
+            url: string;
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+            /**
+             * Kind
+             * @default news
+             */
+            kind: string;
         };
         /** OpsStatus */
         OpsStatus: {
@@ -6605,6 +6758,152 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QaAskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stock_news_api_v1_stocks__ticker__news_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsItemOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suggestions_api_v1_stocks__ticker__suggestions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiSuggestionOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_suggestions_api_v1_stocks__ticker__suggestions_generate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiSuggestionGenerateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiSuggestionGenerateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_suggestion_api_v1_suggestions__suggestion_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                suggestion_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiSuggestionDecisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiSuggestionOut"];
                 };
             };
             /** @description Validation Error */
