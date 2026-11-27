@@ -6976,7 +6976,7 @@
     "tags": [
      "ai_tasks"
     ],
-    "summary": "執行 T1（以檢查層為輸入）與 T2（以統一新聞為輸入）產生建議並嚴格驗證來源引用",
+    "summary": "執行 T1（檢查層）、T2（統一新聞）與 T7（多方法估值解釋）產生建議並嚴格驗證來源引用",
     "operationId": "generate_suggestions_api_v1_stocks__ticker__suggestions_generate_post",
     "parameters": [
      {
@@ -7060,7 +7060,7 @@
     "tags": [
      "ai_tasks"
     ],
-    "summary": "採用（accepted）、忽略（dismissed）或重設（pending）一項 AI 建議",
+    "summary": "採用（accepted，可選 apply_to_plan 寫入調整方案）、忽略（dismissed）或重設（pending）一項 AI 建議",
     "operationId": "update_suggestion_api_v1_suggestions__suggestion_id__put",
     "parameters": [
      {
@@ -7812,6 +7812,36 @@
        "dismissed"
       ],
       "title": "Status"
+     },
+     "apply_to_plan": {
+      "type": "boolean",
+      "title": "Apply To Plan",
+      "description": "採用 T1 建議時是否同步寫入個人財報調整方案並留痕（架構 §2.5）",
+      "default": false
+     },
+     "adjustment_value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adjustment Value",
+      "description": "套用至調整方案時的目標數值（選填，預設使用建議 payload.value）"
+     },
+     "adjustment_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adjustment Reason",
+      "description": "寫入調整方案的理由（選填，預設使用建議標題）"
      }
     },
     "type": "object",
@@ -7827,7 +7857,8 @@
        "type": "string",
        "enum": [
         "T1",
-        "T2"
+        "T2",
+        "T7"
        ]
       },
       "type": "array",

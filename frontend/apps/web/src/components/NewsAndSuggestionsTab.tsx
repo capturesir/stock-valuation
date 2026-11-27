@@ -14,7 +14,7 @@ export function NewsAndSuggestionsTab({ ticker }: { ticker: string }) {
   const sugs = useQuery({ queryKey: ["suggestions", ticker], queryFn: () => api.suggestions(ticker), enabled: !!ticker });
 
   const genMut = useMutation({
-    mutationFn: () => api.generateSuggestions(ticker, ["T1", "T2"]),
+    mutationFn: () => api.generateSuggestions(ticker, ["T1", "T2", "T7"]),
     onSuccess: (res) => {
       setNotice(t("news.genDone", { created: res.created, rejected: res.rejected_unverified }));
       void qc.invalidateQueries({ queryKey: ["suggestions", ticker] });

@@ -50,7 +50,7 @@ def list_suggestions(ticker: str, db: Session = Depends(get_db)):
 
 
 @router.post("/stocks/{ticker}/suggestions/generate", response_model=AiSuggestionGenerateOut,
-             summary="執行 T1（以檢查層為輸入）與 T2（以統一新聞為輸入）產生建議並嚴格驗證來源引用")
+             summary="執行 T1（檢查層）、T2（統一新聞）與 T7（多方法估值解釋）產生建議並嚴格驗證來源引用")
 def generate_suggestions(ticker: str, body: AiSuggestionGenerateIn, db: Session = Depends(get_db)):
     t = ticker_or_400(ticker)
     res = ai_tasks.generate_and_store_suggestions(db, t, tasks=list(body.tasks))
@@ -63,7 +63,7 @@ def generate_suggestions(ticker: str, body: AiSuggestionGenerateIn, db: Session 
 
 
 @router.put("/suggestions/{suggestion_id}", response_model=AiSuggestionOut,
-            summary="採用（accepted）、忽略（dismissed）或重設（pending）一項 AI 建議")
+            summary="採用（accepted，可選 apply_to_plan 寫入調整方案）、忽略（dismissed）或重設（pending）一項 AI 建議")
 def update_suggestion(
     suggestion_id: int,
     body: AiSuggestionDecisionIn,
@@ -72,7 +72,16 @@ def update_suggestion(
     lang: str = Depends(lang_dep),
 ):
     actor = p.user.display_name or p.user.email if p.user else "token"
-    row = ai_tasks.decide_suggestion(db, suggestion_id, body.status, actor)
+    row = ai_tasks.decide_suggestion(
+        db,
+        suggestion_id,
+        body.status,
+        actor,
+        user=p.user,
+        apply_to_plan=body.apply_to_plan,
+        adjustment_value=body.adjustment_value,
+        adjustment_reason=body.adjustment_reason,
+    )
     if row is None:
         raise http_error(404, "suggestion_not_found", lang)
     return _sug_out(row)

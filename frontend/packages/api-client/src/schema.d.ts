@@ -1321,7 +1321,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 執行 T1（以檢查層為輸入）與 T2（以統一新聞為輸入）產生建議並嚴格驗證來源引用 */
+        /** 執行 T1（檢查層）、T2（統一新聞）與 T7（多方法估值解釋）產生建議並嚴格驗證來源引用 */
         post: operations["generate_suggestions_api_v1_stocks__ticker__suggestions_generate_post"];
         delete?: never;
         options?: never;
@@ -1337,7 +1337,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** 採用（accepted）、忽略（dismissed）或重設（pending）一項 AI 建議 */
+        /** 採用（accepted，可選 apply_to_plan 寫入調整方案）、忽略（dismissed）或重設（pending）一項 AI 建議 */
         put: operations["update_suggestion_api_v1_suggestions__suggestion_id__put"];
         post?: never;
         delete?: never;
@@ -1588,11 +1588,27 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "accepted" | "dismissed";
+            /**
+             * Apply To Plan
+             * @description 採用 T1 建議時是否同步寫入個人財報調整方案並留痕（架構 §2.5）
+             * @default false
+             */
+            apply_to_plan: boolean;
+            /**
+             * Adjustment Value
+             * @description 套用至調整方案時的目標數值（選填，預設使用建議 payload.value）
+             */
+            adjustment_value?: string | null;
+            /**
+             * Adjustment Reason
+             * @description 寫入調整方案的理由（選填，預設使用建議標題）
+             */
+            adjustment_reason?: string | null;
         };
         /** AiSuggestionGenerateIn */
         AiSuggestionGenerateIn: {
             /** Tasks */
-            tasks?: ("T1" | "T2")[];
+            tasks?: ("T1" | "T2" | "T7")[];
         };
         /** AiSuggestionGenerateOut */
         AiSuggestionGenerateOut: {

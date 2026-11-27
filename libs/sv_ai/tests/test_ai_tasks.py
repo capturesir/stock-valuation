@@ -7,6 +7,7 @@ from libs.sv_ai import (
     SuggestionCandidate,
     generate_t1_suggestions,
     generate_t2_suggestions,
+    generate_t7_suggestions,
     merge_news,
     validate_suggestions,
 )
@@ -71,3 +72,24 @@ def test_t1_reads_checks_layer_and_t2_reads_unified_news_interface():
     t2_list, t2_rej = generate_t2_suggestions("NVDA", items)
     assert t2_rej == 0 and len(t2_list) == 2
     assert all(s.source_url.startswith("https://") for s in t2_list)
+
+
+def test_t7_explains_valuation_synthesis_and_rejects_unverified_citations():
+    methods = {
+        "currency": "USD",
+        "composite_value": 165.0,
+        "price": 140.0,
+        "weights": {"dcf": 0.65, "relative": 0.35},
+        "warnings": ["methods_divergence_warning"],
+        "reverse_dcf": {"implied_growth": 0.145, "base_growth": 0.18, "wacc": 0.095, "terminal_g": 0.03, "assessment": "market_more_conservative"},
+    }
+    t7_list, t7_rej = generate_t7_suggestions("NVDA", methods, latest_run={"id": "run123", "valuation_date": "2026-11-28"})
+    assert t7_rej == 0 and len(t7_list) == 2
+    assert all(s.task_key == "T7" and s.source_url.startswith("/") for s in t7_list)
+
+    # Hallucinated source ID from LLM → 100% rejected
+    bad_list, bad_rej = generate_t7_suggestions(
+        "NVDA", methods,
+        llm_candidates=lambda m, allowed: [SuggestionCandidate("T7", "Fake", "Hallucinated", "val:fake")],
+    )
+    assert bad_list == [] and bad_rej == 1

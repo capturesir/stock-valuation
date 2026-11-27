@@ -8,6 +8,7 @@ from .suggestions import (
     VerifiedSuggestion,
     generate_t1_suggestions,
     generate_t2_suggestions,
+    generate_t7_suggestions,
     validate_suggestions,
 )
 
@@ -19,6 +20,7 @@ __all__ = [
     "VerifiedSuggestion",
     "generate_t1_suggestions",
     "generate_t2_suggestions",
+    "generate_t7_suggestions",
     "merge_news",
     "validate_suggestions",
 ]

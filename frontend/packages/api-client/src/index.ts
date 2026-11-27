@@ -279,10 +279,10 @@ export function createClient(cfg: ClientConfig = {}) {
 
     news: (ticker: string, limit = 25) => req<NewsItemOut[]>("GET", `/stocks/${enc(ticker)}/news${q({ limit })}`),
     suggestions: (ticker: string) => req<AiSuggestionOut[]>("GET", `/stocks/${enc(ticker)}/suggestions`),
-    generateSuggestions: (ticker: string, tasks: ("T1" | "T2")[] = ["T1", "T2"]) =>
+    generateSuggestions: (ticker: string, tasks: ("T1" | "T2" | "T7")[] = ["T1", "T2", "T7"]) =>
       req<AiSuggestionGenerateOut>("POST", `/stocks/${enc(ticker)}/suggestions/generate`, { tasks }),
-    decideSuggestion: (id: number, status: "pending" | "accepted" | "dismissed") =>
-      req<AiSuggestionOut>("PUT", `/suggestions/${id}`, { status }),
+    decideSuggestion: (id: number, status: "pending" | "accepted" | "dismissed", applyToPlan = false) =>
+      req<AiSuggestionOut>("PUT", `/suggestions/${id}`, { status, apply_to_plan: applyToPlan }),
   };
 }
 export type Api = ReturnType<typeof createClient>;

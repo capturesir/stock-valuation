@@ -19,6 +19,7 @@ docker compose up -d --build
 | 文件 | 內容 |
 | --- | --- |
 | [`INSTALL.md`](INSTALL.md) | 安裝（Docker／本機開發）、更新、備份、疑難排解 |
+| [`docs/使用手冊.md`](docs/使用手冊.md) | 系統功能及操作說明書（完整工作流、財報、多方法估值、文件問答與組合最佳化） |
 | [`docs/architecture.md`](docs/architecture.md) | 技術架構與理由、多語言、安全 |
 | [`docs/資料庫設計.md`](docs/資料庫設計.md) | 資料表、欄位、遷移紀錄 |
 | [`docs/接口文件.md`](docs/接口文件.md) | API 接口：用途、權限、格式、錯誤代碼 |

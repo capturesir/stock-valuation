@@ -189,3 +189,82 @@ def generate_t2_suggestions(
             if n.id in allowed
         ]
     return validate_suggestions(candidates, allowed)
+
+
+def generate_t7_suggestions(
+    ticker: str,
+    methods_out: dict[str, Any],
+    *,
+    latest_run: Optional[dict[str, Any]] = None,
+    llm_candidates: Optional[Callable[[dict[str, Any], dict[str, AllowedSource]], list[SuggestionCandidate]]] = None,
+) -> tuple[list[VerifiedSuggestion], int]:
+    """T7: Explain valuation synthesis, method divergence, D5 financial warnings, and Reverse DCF market expectations."""
+    allowed: dict[str, AllowedSource] = {}
+    candidates: list[SuggestionCandidate] = []
+    val_url = f"/stock/{ticker}/valuation"
+    run_id = (latest_run or {}).get("id")
+    run_date = (latest_run or {}).get("valuation_date")
+    report_url = f"/api/v1/runs/{run_id}/report" if run_id else val_url
+
+    composite = methods_out.get("composite_value")
+    price = methods_out.get("price")
+    ccy = methods_out.get("currency") or ""
+    weights = methods_out.get("weights") or {}
+    warnings = methods_out.get("warnings") or []
+    rdcf = methods_out.get("reverse_dcf")
+
+    if composite is not None:
+        sid = f"val:composite:{run_id or 'latest'}"
+        allowed[sid] = AllowedSource(
+            id=sid,
+            title=f"{ticker} multi-method valuation ({run_date or 'latest'})",
+            url=report_url,
+            date=run_date,
+        )
+        upside = ((float(composite) / float(price)) - 1.0) * 100.0 if (price and float(price) > 0) else None
+        w_text = ", ".join(f"{k.upper()} {round(float(w) * 100)}%" for k, w in weights.items())
+        detail = (
+            f"Composite fair value is {ccy} {float(composite):.2f}"
+            + (f" vs market price {ccy} {float(price):.2f} ({upside:+.1f}%)" if upside is not None else "")
+            + (f" using weights [{w_text}]." if w_text else ".")
+        )
+        if "financial_fcff_warning" in warnings:
+            detail += " D5 financial-sector rule active: RI/DDM/P/B-ROE are primary; FCFF is informational only."
+        if "methods_divergence_warning" in warnings:
+            detail += " Primary methods diverge by >35% — inspect individual Football Field ranges and assumptions."
+        candidates.append(SuggestionCandidate(
+            task_key="T7",
+            title=f"Valuation synthesis: {ccy} {float(composite):.2f}" + (f" ({upside:+.1f}%)" if upside is not None else ""),
+            detail=detail,
+            source_id=sid,
+            payload={"composite_value": composite, "price": price, "weights": weights, "warnings": warnings},
+        ))
+
+    if rdcf and rdcf.get("implied_growth") is not None:
+        sid = f"val:rdcf:{run_id or 'latest'}"
+        allowed[sid] = AllowedSource(
+            id=sid,
+            title=f"{ticker} Reverse DCF implied growth ({run_date or 'latest'})",
+            url=val_url,
+            date=run_date,
+        )
+        imp = float(rdcf["implied_growth"]) * 100.0
+        base_g = float(rdcf["base_growth"]) * 100.0 if rdcf.get("base_growth") is not None else None
+        assessment = str(rdcf.get("assessment") or "aligned")
+        detail = (
+            f"Current price implies a 5-year FCF CAGR of {imp:.1f}% (WACC {float(rdcf.get('wacc', 0)) * 100:.2f}%, "
+            f"terminal g {float(rdcf.get('terminal_g', 0)) * 100:.2f}%)"
+            + (f" vs model base growth {base_g:.1f}% ({assessment})." if base_g is not None else f" ({assessment}).")
+        )
+        candidates.append(SuggestionCandidate(
+            task_key="T7",
+            title=f"Reverse DCF implies {imp:.1f}% 5Y FCF CAGR ({assessment})",
+            detail=detail,
+            source_id=sid,
+            payload={"implied_growth": rdcf["implied_growth"], "base_growth": rdcf.get("base_growth"), "assessment": assessment},
+        ))
+
+    if llm_candidates is not None and allowed:
+        candidates = llm_candidates(methods_out, allowed)
+
+    return validate_suggestions(candidates, allowed)

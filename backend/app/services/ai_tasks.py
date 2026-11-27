@@ -9,10 +9,10 @@ from typing import Any, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from libs.sv_ai import NewsItem, generate_t1_suggestions, generate_t2_suggestions, merge_news
+from libs.sv_ai import NewsItem, generate_t1_suggestions, generate_t2_suggestions, generate_t7_suggestions, merge_news
 
-from ..models import AiSuggestion, Filing
-from . import statements
+from ..models import AiSuggestion, Filing, Run, User
+from . import adjustments, statements, valuation_methods
 
 log = logging.getLogger("sv.ai_tasks")
 
@@ -128,7 +128,7 @@ def generate_and_store_suggestions(
 ) -> dict[str, Any]:
     """Run T1 (checks-layer input) and/or T2 (unified news interface), reject 100% of unverified citations,
     and persist new suggestions idempotently."""
-    selected = set(tasks or ["T1", "T2"])
+    selected = set(tasks or ["T1", "T2", "T7"])
     verified = []
     rejected = 0
 
@@ -145,6 +145,25 @@ def generate_and_store_suggestions(
         v2, r2 = generate_t2_suggestions(ticker, news)
         verified.extend(v2)
         rejected += r2
+
+    if "T7" in selected:
+        try:
+            m_out = valuation_methods.compute_stock_methods(db, ticker)
+            latest_row = db.scalar(
+                select(Run)
+                .where(Run.ticker == ticker, Run.status == "done")
+                .order_by(Run.run_at.desc())
+                .limit(1)
+            )
+            latest_info = (
+                {"id": latest_row.id, "valuation_date": latest_row.valuation_date}
+                if latest_row is not None else None
+            )
+            v7, r7 = generate_t7_suggestions(ticker, m_out, latest_run=latest_info)
+            verified.extend(v7)
+            rejected += r7
+        except Exception as exc:
+            log.debug("T7 skipped for %s: %s", ticker, type(exc).__name__)
 
     created = 0
     for s in verified:
@@ -176,12 +195,52 @@ def generate_and_store_suggestions(
     return {"ticker": ticker, "created": created, "rejected_unverified": rejected, "rows": rows}
 
 
-def decide_suggestion(db: Session, suggestion_id: int, status: str, decided_by: str) -> Optional[AiSuggestion]:
+def decide_suggestion(
+    db: Session,
+    suggestion_id: int,
+    status: str,
+    decided_by: str,
+    *,
+    user: Optional[User] = None,
+    apply_to_plan: bool = False,
+    adjustment_value: Optional[str] = None,
+    adjustment_reason: Optional[str] = None,
+) -> Optional[AiSuggestion]:
     row = db.get(AiSuggestion, suggestion_id)
     if row is None:
         return None
     row.status = status
     row.decided_by = decided_by
     row.decided_at = dt.datetime.now(dt.timezone.utc)
+
+    # Architecture §2.5: adopting a T1 suggestion can write directly to the user's personal adjustment plan
+    if status == "accepted" and apply_to_plan and row.task_key == "T1" and user is not None:
+        payload = dict(row.payload or {})
+        item = payload.get("item")
+        period = payload.get("period")
+        val = adjustment_value if adjustment_value is not None else payload.get("value")
+        filer = statements.filer_for(db, row.ticker)
+        if item and period and val is not None and filer is not None:
+            existing_plan = adjustments.get_plan(db, row.ticker, "personal", user)
+            base_ver = existing_plan.current_version if existing_plan else 0
+            cur_rows = adjustments.rows(db, adjustments.version_row(db, existing_plan)) if existing_plan else []
+            items = [
+                {"item": r.item, "period": r.period, "value": format(r.value, "f"), "reason": r.reason, "basis": r.basis}
+                for r in cur_rows if not (r.item == item and r.period == period)
+            ]
+            items.append({
+                "item": str(item),
+                "period": str(period),
+                "value": str(val),
+                "reason": (adjustment_reason or f"[AI T1 #{row.id}] {row.title}")[:2000],
+                "basis": row.source_url,
+            })
+            saved_plan = adjustments.save(
+                db, filer, row.ticker, "personal", user, items,
+                note=f"Applied AI T1 suggestion #{row.id}", base_version=base_ver,
+            )
+            payload["applied_plan_version"] = saved_plan.current_version
+            row.payload = payload
+
     db.flush()
     return row

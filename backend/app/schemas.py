@@ -1128,7 +1128,7 @@ class AiSuggestionOut(BaseModel):
 
 
 class AiSuggestionGenerateIn(BaseModel):
-    tasks: list[Literal["T1", "T2"]] = Field(default_factory=lambda: ["T1", "T2"])
+    tasks: list[Literal["T1", "T2", "T7"]] = Field(default_factory=lambda: ["T1", "T2", "T7"])
 
 
 class AiSuggestionGenerateOut(BaseModel):
@@ -1140,3 +1140,6 @@ class AiSuggestionGenerateOut(BaseModel):
 
 class AiSuggestionDecisionIn(BaseModel):
     status: Literal["pending", "accepted", "dismissed"]
+    apply_to_plan: bool = Field(False, description="採用 T1 建議時是否同步寫入個人財報調整方案並留痕（架構 §2.5）")
+    adjustment_value: Optional[str] = Field(None, description="套用至調整方案時的目標數值（選填，預設使用建議 payload.value）")
+    adjustment_reason: Optional[str] = Field(None, description="寫入調整方案的理由（選填，預設使用建議標題）")
