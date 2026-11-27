@@ -890,5 +890,22 @@
   "qa.kind.valuation": "Valuation",
   "qa.kind.statements": "Statements",
   "qa.kind.web": "Web",
-  "qa.kind.upload": "Upload"
+  "qa.kind.upload": "Upload",
+  "val.ff.title": "Multi-method valuation & football field",
+  "val.ff.subtitle": "Bars show bear–bull ranges with dark base markers; financials use RI, DDM, and Justified P/B–ROE as primary methods.",
+  "val.ff.price": "Price",
+  "val.ff.refOnly": "Reference only (0%)",
+  "val.warn.financialFcff": "Financial sector warning (D5): debt is raw material for banks and insurers, making FCFF/WACC unsuitable. FCFF is kept at 0% weight for reference; composite fair value uses Residual Income (RI), DDM, and Justified P/B–ROE.",
+  "val.warn.divergence": "Note: primary valuation methods diverge by more than 35%; review underlying assumptions.",
+  "val.method.dcf": "FCFF DCF",
+  "val.method.relative": "Relative (historical multiples)",
+  "val.method.ddm": "Dividend Discount (DDM)",
+  "val.method.ri": "Residual Income (RI)",
+  "val.method.pb_roe": "Justified P/B–ROE",
+  "val.rdcf.title": "Reverse DCF (market-implied growth)",
+  "val.rdcf.implied": "Price implies {g} annual growth over {years} yrs",
+  "val.rdcf.base": "model base {g}",
+  "val.rdcf.market_more_optimistic": "Market more optimistic",
+  "val.rdcf.aligned": "Aligned with model",
+  "val.rdcf.market_more_conservative": "Market more conservative"
 }

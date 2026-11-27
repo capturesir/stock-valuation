@@ -74,6 +74,10 @@ export type QaThreadSummary = S["QaThreadSummary"];
 export type QaThreadOut = S["QaThreadOut"];
 export type QaAskIn = S["QaAskIn"];
 export type QaAskOut = S["QaAskOut"];
+export type StockMethodsOut = S["StockMethodsOut"];
+export type MethodBandOut = S["MethodBandOut"];
+export type MethodDetailOut = S["MethodDetailOut"];
+export type ReverseDcfOut = S["ReverseDcfOut"];
 
 export interface ClientConfig {
   /** "" = same origin (served behind Caddy); e.g. "https://valuation.example.com" for apps */
@@ -212,6 +216,7 @@ export function createClient(cfg: ClientConfig = {}) {
     saveLimits: (body: LimitsIn) => req<LimitsOut>("PUT", "/admin/limits", body),
     ops: () => req<OpsStatus>("GET", "/admin/ops"),
     valuations: (ticker: string) => req<StockValuations>("GET", `/stocks/${enc(ticker)}/valuations`),
+    methods: (ticker: string) => req<StockMethodsOut>("GET", `/stocks/${enc(ticker)}/methods`),
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),
     excelUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/excel${q({ lang })}`,
     reportUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/report${q({ lang })}`,

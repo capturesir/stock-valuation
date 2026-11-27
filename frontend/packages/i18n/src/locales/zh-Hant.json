@@ -890,5 +890,22 @@
   "qa.kind.valuation": "估值報告",
   "qa.kind.statements": "標準化財報",
   "qa.kind.web": "網上來源",
-  "qa.kind.upload": "上傳文件"
+  "qa.kind.upload": "上傳文件",
+  "val.ff.title": "多方法估值與足球場圖",
+  "val.ff.subtitle": "橫棒顯示悲觀至樂觀區間、深色短線為基準值；金融業自動改以 DDM／剩餘收益／P/B–ROE 為主。",
+  "val.ff.price": "市價",
+  "val.ff.refOnly": "僅供參考（權重 0%）",
+  "val.warn.financialFcff": "金融業警示（D5）：銀行與保險公司的負債屬營運原料，FCFF／WACC 定義不適用；系統保留 FCFF 供對照（權重 0%），改以剩餘收益（RI）、股息折現（DDM）與合理 P/B–ROE 計算綜合理論價。",
+  "val.warn.divergence": "提示：不同主要估值方法的基準結果分歧超過 35%，建議檢視各方法假設差異。",
+  "val.method.dcf": "FCFF DCF",
+  "val.method.relative": "相對估值（歷史倍數）",
+  "val.method.ddm": "股息折現（DDM）",
+  "val.method.ri": "剩餘收益（RI）",
+  "val.method.pb_roe": "合理 P/B–ROE",
+  "val.rdcf.title": "反向 DCF（市場隱含增長率）",
+  "val.rdcf.implied": "現價隱含未來 {years} 年年化增長 {g}",
+  "val.rdcf.base": "模型基準假設 {g}",
+  "val.rdcf.market_more_optimistic": "市場較模型樂觀",
+  "val.rdcf.aligned": "與模型假設接近",
+  "val.rdcf.market_more_conservative": "市場較模型保守"
 }

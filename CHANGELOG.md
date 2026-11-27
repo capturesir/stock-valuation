@@ -8,6 +8,16 @@
 
 下一版：估值方法（D5 金融業警示與 DDM／剩餘收益 RI／P/B–ROE、反向 DCF、相對估值、綜合理論價與足球場圖）。
 
+### 多方法估值與足球場圖（beta.1，D5）
+- **純 Python 估值模型程式庫 `libs/sv_valuation`**：
+  - 金融業方法（`financials.py`）：二階段股息折現（DDM）、剩餘收益模型（RI，含乾淨盈餘與 Ohlson 持續係數）、合理 P/B–ROE（`(ROE − g) / (Ke − g)`），各輸出悲觀／基準／樂觀區間。
+  - 反向 DCF（`reverse_dcf.py`）：二分法求解目前市價隱含的未來 5 年年化自由現金流增長率，並與模型基準增長假設比較。
+  - 相對估值（`relative.py`）：支援 P/E、P/B、EV/EBITDA、EV/Sales 倍數區間估值。
+  - 行業自動加權與足球場圖（`composite.py`）：銀行／保險（D5）改以 RI（45%）、DDM（35%）、P/B–ROE（20%）為主並保留 FCFF 附 `financial_fcff_warning` 警示（權重 0%）；一般企業以 DCF＋相對估值加權，並於主要方法分歧超過 35% 時發出提示；v1 FCFF 引擎數值逐位元不變。
+- **後端接口 `GET /api/v1/stocks/{ticker}/methods`**：整合最新估值、標準化財報與五年歷史股價倍數，支援傳入自訂權重即時試算。
+- **前端 `FootballFieldCard.tsx`**：於股票總覽與估值分頁顯示足球場圖橫棒、市價與綜合理論價豎線、D5 金融業警示橫幅與反向 DCF 隱含增長卡（三語齊全）。
+- **測試**：`libs/sv_valuation/tests/test_valuation_methods.py`（4 項）與 `backend/tests/test_valuation_methods_api.py`（2 項，涵蓋 JPM 銀行警示＋DDM/RI/P/B-ROE 與 NVDA DCF＋反向 DCF）。
+
 ---
 
 ## 2.0.0-alpha.5 — 2026-11-28

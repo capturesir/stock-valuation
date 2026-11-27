@@ -890,5 +890,22 @@
   "qa.kind.valuation": "估值报告",
   "qa.kind.statements": "标准化财报",
   "qa.kind.web": "网上来源",
-  "qa.kind.upload": "上传文件"
+  "qa.kind.upload": "上传文件",
+  "val.ff.title": "多方法估值与足球场图",
+  "val.ff.subtitle": "横棒显示悲观至乐观区间、深色短线为基准值；金融业自动改以 DDM／剩余收益／P/B–ROE 为主。",
+  "val.ff.price": "市价",
+  "val.ff.refOnly": "仅供参考（权重 0%）",
+  "val.warn.financialFcff": "金融业警示（D5）：银行与保险公司的负债属运营原料，FCFF／WACC 定义不适用；系统保留 FCFF 供对照（权重 0%），改以剩余收益（RI）、股息折现（DDM）与合理 P/B–ROE 计算综合理论价。",
+  "val.warn.divergence": "提示：不同主要估值方法的基准结果分歧超过 35%，建议检视各方法假设差异。",
+  "val.method.dcf": "FCFF DCF",
+  "val.method.relative": "相对估值（历史倍数）",
+  "val.method.ddm": "股息折现（DDM）",
+  "val.method.ri": "剩余收益（RI）",
+  "val.method.pb_roe": "合理 P/B–ROE",
+  "val.rdcf.title": "反向 DCF（市场隐含增长率）",
+  "val.rdcf.implied": "现价隐含未来 {years} 年年化增长 {g}",
+  "val.rdcf.base": "模型基准假设 {g}",
+  "val.rdcf.market_more_optimistic": "市场较模型乐观",
+  "val.rdcf.aligned": "与模型假设接近",
+  "val.rdcf.market_more_conservative": "市场较模型保守"
 }

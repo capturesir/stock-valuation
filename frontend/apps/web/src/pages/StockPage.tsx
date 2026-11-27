@@ -7,6 +7,7 @@ import { rememberTicker } from "../components/Layout";
 import { CompanyCard, TickerNotFound } from "../components/CompanyCard";
 import { DocumentQaTab } from "../components/DocumentQaTab";
 import { FiledData } from "../components/FiledData";
+import { FootballFieldCard } from "../components/FootballFieldCard";
 import { RunDrawer } from "../components/RunDrawer";
 import { TrendChart, type Range } from "../components/TrendChart";
 import { api } from "../lib/api";
@@ -33,6 +34,7 @@ export function StockPage() {
   const startCooldown = cool.from;      // stable (useCallback); the cool object itself changes every render
   useEffect(() => { if (profile.error) startCooldown(profile.error); }, [profile.error, startCooldown]);
   const vals = useQuery({ queryKey: ["valuations", ticker], queryFn: () => api.valuations(ticker), enabled: !!ticker && !notFound });
+  const methods = useQuery({ queryKey: ["methods", ticker], queryFn: () => api.methods(ticker), enabled: !!ticker && !notFound, retry: false });
   const prices = useQuery({ queryKey: ["prices", ticker], queryFn: () => api.prices(ticker, 400), enabled: !!ticker, staleTime: 3600e3, retry: false });
   const wl = useQuery({ queryKey: ["watchlist"], queryFn: api.watchlist });
   const add = useMutation({ mutationFn: () => api.addToWatchlist(ticker), onSuccess: () => void qc.invalidateQueries({ queryKey: ["watchlist"] }) });
@@ -144,6 +146,7 @@ export function StockPage() {
               </div>
             </aside>
           </div>
+          {methods.data && <FootballFieldCard data={methods.data} currency={ccy} />}
           {latest.data_gaps.length > 0 && (
             <section className="card" aria-labelledby="gaps-h">
               <h2 id="gaps-h">{t("stock.gaps")}</h2>
@@ -155,6 +158,7 @@ export function StockPage() {
         </>
       )}
 
+      {tab === "valuation" && methods.data && <FootballFieldCard data={methods.data} currency={ccy} />}
       {v && latest && tab === "valuation" && (
         <>
           <section className="card" aria-labelledby="scen-h">
