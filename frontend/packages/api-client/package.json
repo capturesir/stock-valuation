@@ -1,6 +1,6 @@
 {
   "name": "@sv/api-client",
-  "version": "2.0.0-alpha.4",
+  "version": "2.0.0-alpha.5",
   "private": true,
   "type": "module",
   "description": "由後端 OpenAPI 合約產生的型別與輕量請求函式；網頁、App、小程序共用",

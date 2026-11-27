@@ -1,6 +1,6 @@
 {
   "name": "stock-valuation-frontend",
-  "version": "2.0.0-alpha.4",
+  "version": "2.0.0-alpha.5",
   "private": true,
   "description": "估值工作台前端 monorepo：apps/*（各前端）與 packages/*（共用）",
   "packageManager": "pnpm@10.28.0",
