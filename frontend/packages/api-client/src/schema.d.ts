@@ -320,8 +320,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 下載該次估值的 Excel */
+        /** 下載該次估值的 Excel（按語言產生並蓋品牌） */
         get: operations["excel_api_v1_runs__run_id__excel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 下載該次估值的 Markdown 報告（按語言產生並蓋品牌） */
+        get: operations["report_api_v1_runs__run_id__report_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3829,7 +3846,45 @@ export interface operations {
     };
     excel_api_v1_runs__run_id__excel_get: {
         parameters: {
-            query?: never;
+            query?: {
+                lang?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_api_v1_runs__run_id__report_get: {
+        parameters: {
+            query?: {
+                lang?: string | null;
+            };
             header?: {
                 authorization?: string | null;
                 "accept-language"?: string | null;
