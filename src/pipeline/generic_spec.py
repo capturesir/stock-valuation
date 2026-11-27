@@ -434,7 +434,14 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     inv = _val(bs_a, bs0, "Inventory") or 0.0
     ap = _val(bs_a, bs0, "Accounts Payable") or 0.0
     defrev = _val(bs_a, bs0, "Current Deferred Revenue") or 0.0
-    nwc_pct = (ar + inv - ap - defrev) / rev
+    nwc_pct_raw = (ar + inv - ap - defrev) / rev
+    # Negative working capital (deferred revenue / payables > receivables + inventory) should not
+    # manufacture perpetual cash inflows when projecting 10-year revenue growth.
+    if nwc_pct_raw < 0.0:
+        nwc_pct = 0.0
+        gaps.append(Gap("negative_nwc_capped", raw=nwc_pct_raw))
+    else:
+        nwc_pct = nwc_pct_raw
 
     # history for percentages and growth
     hist_rev = [(dt, _val(is_a, dt, "Total Revenue", "Operating Revenue")) for dt in dates[:4]]
@@ -570,23 +577,26 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     g0 = _clamp_g(g0, "首年")
     g1 = _clamp_g(g1, "次年")
     starts = [float(g0)] + ([float(g1)] if g1 is not None else [])
-    growths = rules.fade_to_g(starts, terminal_g, n)
+    growths = rules.fade_growth_convex(starts, terminal_g, n)
     margins = [m0] + rules.fade_levels(m0, m_avg, n)[1:]
     da_pcts = [da_pct] * n
-    # Capex: holding the historical ratio flat for ten years turns a capex
-    # super-cycle into permanently negative FCFF (BYD 1211.HK: capex 18.8% of
-    # revenue vs D&A 7.5% gave a 4.28 fair value against a 69.2 price). Fade the
-    # ratio towards the steady state implied by the engine's own terminal
-    # formula: capex% = D&A% + (g / RONIC) × margin − ΔNWC% × g.
+    # Capex:
+    # 1) High-capex peak -> fade down to sustainable steady-state reinvestment ratio.
+    # 2) Low-capex / IFRS 16 (D&A >> CapEx because ROU lease amortization sits in D&A while lease
+    #    repayments sit in Financing CF) -> floor reinvestment at D&A and fade to max(D&A, steady)
+    #    so lease depreciation is never treated as perpetual free cash flow.
     steady_capex_pct = da_pct + (terminal_g / ronic) * max(m0, 0.0) - nwc_pct * terminal_g
-    steady_capex_pct = max(steady_capex_pct, da_pct * 0.8)
+    steady_capex_pct = max(steady_capex_pct, da_pct)
     if cpx_pct > steady_capex_pct + 0.01:
         capex_pcts = rules.fade_levels(cpx_pct, steady_capex_pct, n)
         gaps.append(Gap("capex_fade", years=len(cpx_hist) or 1, cpx=cpx_pct, da=da_pct, steady=steady_capex_pct))
+    elif cpx_pct < da_pct - 0.005:
+        capex_pcts = rules.fade_levels(da_pct, steady_capex_pct, n)
+        gaps.append(Gap("capex_reinvestment_floor", cpx=cpx_pct, da=da_pct, target=steady_capex_pct))
     else:
         capex_pcts = [cpx_pct] * n
 
-    growth_notes = [f"規則後備：{cons_note}；其後向終值 g {terminal_g:.2%} 直線淡化"] + ["向終值增長直線淡化"] * (n - 1)
+    growth_notes = [f"規則後備：{cons_note}；其後向終值 g {terminal_g:.2%} 凸形收斂"] + ["向終值增長收斂"] * (n - 1)
     margin_notes = [f"首年用最近年度 EBIT 利潤率 {m0:.2%}；其後向 {len(margins_hist)} 年平均 {m_avg:.2%} 淡化"] * n
     re_note = (f"總 D&A 取 {len(da_pcts_hist) or 1} 年平均 {da_pct:.2%} 營收；"
                f"Capex 由 {capex_pcts[0]:.2%} 過渡至 {capex_pcts[-1]:.2%} 營收"
@@ -632,7 +642,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     shf = rules.shares_floor(shares_m, sh_hist, years=n, dilution=0.01)
     cpx_ppe = [abs(_val(cf_a, d, "Depreciation") or 0) / r for d, r in hist_rev if _val(cf_a, d, "Depreciation")]
     floor = rules.capex_floor(cpx_ppe, cpx_hist)
-    floor_pct = floor["floor_pct"] if floor["floor_pct"] else cpx_pct
+    floor_pct = max(floor["floor_pct"] if floor["floor_pct"] else cpx_pct, da_pct)
     # The 9% floor scenario must not carry the capex super-cycle for ever: with
     # BYD's 18.8% the floor came out at -18 HKD per share, which is not a floor.
     if floor_pct > steady_capex_pct:
@@ -642,12 +652,40 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     # ---- FX: model currency (statements) vs market currency (price)
     val_date = dt.date.fromisoformat(snap.get("valuation_date") or dt.date.today().isoformat())
     base_end = dt.date.fromisoformat(d0)
-    years, discs = [], []
-    for i in range(n):
-        end = dt.date(base_end.year + 1 + i, base_end.month, min(base_end.day, 28))
-        years.append(f"FY{end.year}")
-        mid = dt.date(end.year, end.month, 1) - dt.timedelta(days=1) - dt.timedelta(days=182)
-        discs.append(rules.midyear_t(val_date, mid))
+    years, discs, periods = [], [], [1.0] * n
+    end_0 = dt.date(base_end.year + 1, base_end.month, min(base_end.day, 28))
+    days_left_0 = (end_0 - val_date).days
+    full_yr1_rev = rev / 1e6 * (1 + growths[0])
+    first_is_stub = False
+    stub_fields = None
+    ytd_actual_rev = None
+    first_delta_nwc = None
+    first_revenue = full_yr1_rev
+
+    # If >3 months of the first forecast year have already elapsed on val_date, count only the remaining stub
+    # (otherwise an entire nearly-finished year of cash flows is added undiscounted at t=0).
+    if val_date > base_end and 1 <= days_left_0 < 275:
+        frac = max(days_left_0, 15) / 365.25
+        first_is_stub = True
+        periods[0] = round(frac, 4)
+        first_revenue = full_yr1_rev * frac
+        ytd_actual_rev = full_yr1_rev - first_revenue
+        stub_fields = {"h1_actual_revenue": ytd_actual_rev, "fy2026_revenue": full_yr1_rev}
+        first_delta_nwc = nwc_pct * (full_yr1_rev - rev / 1e6) * frac
+        years = [f"FY{end_0.year}（剩餘 {round(frac * 12, 1):g} 個月）"] + [f"FY{end_0.year + i}" for i in range(1, n)]
+        discs = [frac / 2.0] + [frac + 0.5 + (i - 1) for i in range(1, n)]
+        gaps.append(Gap("first_year_stub", year=f"FY{end_0.year}", frac=frac))
+    elif days_left_0 <= 0:
+        # Valuation date is already past the first forecast year end (annual report not yet filed):
+        # discount forward from val_date using standard mid-year periods (0.5, 1.5, …).
+        years = [f"FY{base_end.year + 1 + i}" for i in range(n)]
+        discs = [0.5 + i for i in range(n)]
+    else:
+        for i in range(n):
+            end = dt.date(base_end.year + 1 + i, base_end.month, min(base_end.day, 28))
+            years.append(f"FY{end.year}")
+            mid = dt.date(end.year, end.month, 1) - dt.timedelta(days=1) - dt.timedelta(days=182)
+            discs.append(rules.midyear_t(val_date, mid))
 
     bridge = []
     if cash:
@@ -732,15 +770,20 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
         "beta_reg": info.get("beta"),
         "beta_reg_url": _url(ticker, "key-statistics"),
         "beta_reg_date": snap.get("price_date") or "",
-        "year_labels": years, "period_lengths": [1.0] * n, "discount_periods": discs,
+        "year_labels": years, "period_lengths": periods, "discount_periods": discs,
         "growths": growths, "margins": margins, "da_pcts": da_pcts, "capex_pcts": capex_pcts,
         "dnwc_pct": nwc_pct,
-        "dnwc_rule": f"ΔNWC＝{nwc_pct:.1%}×ΔRevenue（{bs0} 應收＋存貨−應付−遞延收入 ÷ 營收）",
+        "dnwc_rule": f"ΔNWC＝{nwc_pct:.1%}×ΔRevenue（{bs0} 應收＋存貨−應付−遞延收入 ÷ 營收；負值截斷為 0%）",
         "prev_revenue_for_first": rev / 1e6,
-        "first_revenue": rev / 1e6 * (1 + growths[0]),
-        "first_is_stub": False,
-        "static_keeps_first_revenue": False,
+        "first_revenue": first_revenue,
+        "first_delta_nwc": first_delta_nwc,
+        "first_is_stub": first_is_stub,
+        "stub_fields": stub_fields,
+        "ytd_actual_revenue": ytd_actual_rev,
+        "full_year_after_first": full_yr1_rev if first_is_stub else None,
+        "static_keeps_first_revenue": first_is_stub,
         "static_base_revenue": rev / 1e6,
+        "full_year_base_revenue": rev / 1e6,
         "growth_base_notes": growth_notes,
         "growth_rationales": growth_notes,
         "margin_rationales": margin_notes,

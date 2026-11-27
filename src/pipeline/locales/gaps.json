@@ -80,9 +80,9 @@
   "en": "Interest expense / total debt is not usable; Kd is Rf plus Damodaran's default spread for the country."
  },
  "financial_method": {
-  "zh-Hant": "⚠ 金融業（銀行、保險、券商等）：債務是業務原料而非融資，FCFF 與 WACC 的定義並不適用；此結果只作參考（決定 D5），應以 DDM／剩餘收益／P/B–ROE 估值（開發中）。",
-  "zh-Hans": "⚠ 金融业（银行、保险、券商等）：债务是业务原料而非融资，FCFF 与 WACC 的定义并不适用；此结果只作参考（决定 D5），应以 DDM／剩余收益／P/B–ROE 估值（开发中）。",
-  "en": "⚠ Financial company (bank, insurer, broker …): debt is raw material, not financing, so FCFF and WACC do not apply. This result is for reference only (decision D5); use DDM, residual income or P/B–ROE (in development)."
+  "zh-Hant": "⚠ 金融業（銀行、保險、券商等）：債務是業務原料而非融資，FCFF 與 WACC 的定義並不適用；此結果只作參考（決定 D5），請改看估值頁的 DDM／剩餘收益（RI）／P/B–ROE 多方法估值。",
+  "zh-Hans": "⚠ 金融业（银行、保险、券商等）：债务是业务原料而非融资，FCFF 与 WACC 的定义并不适用；此结果只作参考（决定 D5），请改看估值页的 DDM／剩余收益（RI）／P/B–ROE 多方法估值。",
+  "en": "⚠ Financial company (bank, insurer, broker …): debt is raw material, not financing, so FCFF and WACC do not apply. This result is for reference only (decision D5); use the DDM, Residual Income (RI) and P/B–ROE models on the Valuation tab."
  },
  "consensus_scale_mismatch": {
   "zh-Hant": "Yahoo 0y 的 yearAgoRevenue（{prev_m:,.0f} 百萬）與財報營收（{rev_m:,.0f} 百萬）規模不符，已改用「共識營收 ÷ 最新年度營收」計算首年增長（{g0:+.1%}）。",
@@ -258,5 +258,25 @@
   "zh-Hant": "標準層未涵蓋的項目仍取自 Yahoo 同一財年：{items}。",
   "zh-Hans": "标准层未涵盖的项目仍取自 Yahoo 同一财年：{items}。",
   "en": "Items the standard layer does not cover still come from Yahoo for the same fiscal year: {items}."
+ },
+ "capex_reinvestment_floor": {
+  "zh-Hant": "再投資下限校準：歷史現金 Capex（{cpx:.2%}）顯著低於總 D&A（{da:.2%}，常見於 IFRS 16 使用權資產租賃折舊）；預測期再投資已由 D&A 過渡至可持續水平 {target:.2%}，避免將租金折舊誤算為永久自由現金流。",
+  "zh-Hans": "再投资下限校准：历史现金 Capex（{cpx:.2%}）显著低于总 D&A（{da:.2%}，常见于 IFRS 16 使用权资产租赁折旧）；预测期再投资已由 D&A 过渡至可持续水平 {target:.2%}，避免将租金折旧误算为永久自由现金流。",
+  "en": "Reinvestment floor calibration: historical cash capex ({cpx:.2%}) is well below total D&A ({da:.2%}, typical of IFRS 16 right-of-use lease amortization); forecast reinvestment starts at D&A and fades to {target:.2%} so lease depreciation is not treated as perpetual free cash flow."
+ },
+ "negative_nwc_capped": {
+  "zh-Hant": "負營運資金保守截斷：歷史非現金 NWC 佔營收為 {raw:.1%}，為避免增長期間永久釋放現金虛增估值，預測期 ΔNWC 比率截斷為 0%。",
+  "zh-Hans": "负营运资金保守截断：历史非现金 NWC 占营收为 {raw:.1%}，为避免增长期间永久释放现金虚增估值，预测期 ΔNWC 比率截断为 0%。",
+  "en": "Conservative NWC cap: historical non-cash NWC was {raw:.1%} of revenue; ΔNWC ratio is capped at 0% in the forecast so negative working capital does not manufacture perpetual cash inflows."
+ },
+ "first_year_stub": {
+  "zh-Hant": "首年殘段折算：{year} 財年已過去大半，僅計入估值日後剩餘約 {frac:.2f} 年的現金流並按殘段中點折現，避免重複計入已過去的現金流。",
+  "zh-Hans": "首年残段折算：{year} 财年已过去大半，仅计入估值日后剩余约 {frac:.2f} 年的现金流并按残段中点折现，避免重复计入已过去的现金流。",
+  "en": "First-year stub proration: most of {year} has already elapsed; only the remaining {frac:.2f} years of cash flows are counted and discounted to the stub midpoint."
+ },
+ "valuation_high_vs_price": {
+  "zh-Hant": "⚠ 合理性提示：基準理論價（{fv:.2f}）為當前市價（{price:.2f}）的 {ratio:.1f} 倍，顯著高於市場定價；請核對增長假設、WACC 與終值倍數，並搭配反向 DCF 與相對估值交叉檢視。",
+  "zh-Hans": "⚠ 合理性提示：基准理论价（{fv:.2f}）为当前市价（{price:.2f}）的 {ratio:.1f} 倍，显著高于市场定价；请核对增长假设、WACC 与终值倍数，并搭配反向 DCF 与相对估值交叉检视。",
+  "en": "⚠ Sanity check: base fair value ({fv:.2f}) is {ratio:.1f}× the market price ({price:.2f}); review growth assumptions, WACC and terminal multiple alongside Reverse DCF and relative valuation."
  }
 }

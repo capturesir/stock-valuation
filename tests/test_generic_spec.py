@@ -289,3 +289,49 @@ def test_banks_get_the_d5_warning(monkeypatch):
 def test_first_accepts_a_single_row_name():
     block = {"2025-12-31": {"Minority Interest": 5.0}}
     assert G._first(block, "2025-12-31", "Minority Interest") == (5.0, "Minority Interest")
+
+
+def test_convex_growth_fade_prevents_ten_year_revenue_explosion():
+    from src.pipeline.rules import fade_growth_convex, fade_to_g
+
+    lin = fade_to_g([0.68], 0.03, 10)
+    conv = fade_growth_convex([0.68], 0.03, 10)
+    assert conv[0] == pytest.approx(0.68)
+    assert conv[-1] == pytest.approx(0.03)
+    # Compounded 10y multiple is dramatically more realistic under convex decay than linear
+    lin_mult = 1.0
+    conv_mult = 1.0
+    for g in lin:
+        lin_mult *= (1 + g)
+    for g in conv:
+        conv_mult *= (1 + g)
+    assert conv_mult < lin_mult * 0.35
+
+
+def test_ifrs16_capex_below_da_is_floored_and_late_year_uses_stub(tmp_path):
+    """When D&A >> CapEx (IFRS 16 leases) and val_date is late in FY, reinvestment floors at D&A and Year 1 is a stub."""
+    fund = _fund()
+    # Simulate an IFRS-16 lease-heavy firm (D&A = 12% of rev, CapEx = 3% of rev) with negative NWC
+    for dt_k, row in fund["cf_a"].items():
+        rev = fund["is_a"][dt_k]["Total Revenue"]
+        row["Depreciation And Amortization"] = rev * 0.12
+        row["Capital Expenditure"] = -rev * 0.03
+    for dt_k, row in fund["bs_a"].items():
+        rev = fund["is_a"].get(dt_k, {}).get("Total Revenue") or 400e9
+        row["Accounts Receivable"] = rev * 0.02
+        row["Inventory"] = 0.0
+        row["Accounts Payable"] = rev * 0.12
+    snap = dict(_snap(), valuation_date="2026-11-28")   # late in FY2026 after 2025-12-31 base year
+    spec = G.build_generic_spec(snap, fund, {}, use_llm=False)
+    assert spec["capex_pcts"][0] >= spec["da_pcts"][0] - 1e-9
+    assert spec["dnwc_pct"] == 0.0
+    assert spec["first_is_stub"] is True
+    assert 0.05 <= spec["period_lengths"][0] < 0.25
+    assert spec["discount_periods"][0] > 0.0
+    assert any("再投資下限校準" in g for g in spec["data_gaps"])
+    assert any("負營運資金保守截斷" in g for g in spec["data_gaps"])
+    assert any("首年殘段折算" in g for g in spec["data_gaps"])
+
+    # Engine + independent verify_fcff must pass with zero arithmetic errors
+    res = build_and_run(spec, out_dir=str(tmp_path))
+    assert res["verify_pass"] is True, res["verify_errors"]

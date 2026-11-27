@@ -19,6 +19,29 @@ def fade_to_g(start_growths: list[float], terminal_g: float, n: int) -> list[flo
     return out[:n]
 
 
+def fade_growth_convex(start_growths: list[float], terminal_g: float, n: int, decay: float = 0.58) -> list[float]:
+    """Convex (geometric) fade for high growth so a +50–100% consensus spike does not compound 20–35x over 10 years.
+
+    When the last explicit growth is >10pp above ``terminal_g``, excess growth decays geometrically by ``decay`` per
+    year (half-life ~1.3 years) and lands exactly on ``terminal_g`` in year N. Moderate/negative growth fades linearly.
+    """
+    out = list(start_growths[:n])
+    if len(out) >= n:
+        return out[:n]
+    if not out:
+        out = [terminal_g]
+    last = out[-1]
+    remain = n - len(out)
+    if last <= terminal_g + 0.10 or remain <= 1:
+        return fade_to_g(out, terminal_g, n)
+    tail = decay ** remain
+    denom = 1.0 - tail
+    for i in range(1, remain + 1):
+        w = ((decay ** i) - tail) / denom
+        out.append(terminal_g + (last - terminal_g) * w)
+    return out[:n]
+
+
 def fade_levels(start: float, end: float, n: int) -> list[float]:
     if n <= 1:
         return [start]

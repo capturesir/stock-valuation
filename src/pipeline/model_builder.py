@@ -337,6 +337,10 @@ def build_and_run(spec: dict, out_dir: str) -> dict:
         warning = Gap("negative_value", value=str(out["fair_value_per_share"]))
         out.setdefault("data_gaps", []).insert(0, warning)
         out["result_warning"] = warning
+    elif P and P > 0 and out["fair_value_per_share"] > 2.0 * P:
+        warning = Gap("valuation_high_vs_price", fv=out["fair_value_per_share"], price=P, ratio=out["fair_value_per_share"] / P)
+        out.setdefault("data_gaps", []).insert(0, warning)
+        out["result_warning"] = warning
 
     if spec.get("method_warning"):
         out["method_warning"] = spec["method_warning"]
