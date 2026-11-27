@@ -27,7 +27,7 @@ from libs.sv_valuation import (
     solve_implied_growth,
 )
 
-from ..models import PriceBar, Run
+from ..models import CorporateAction, PriceBar, Run
 from . import statements
 
 DEFAULT_RF = 0.042
@@ -46,31 +46,43 @@ def _dec(val: Any) -> Optional[float]:
         return None
 
 
+def _all_year_labels(std: dict) -> list[str]:
+    return [y["label"] for y in (std.get("years") or [])]
+
+
 def _latest_std_val(std: dict, code: str, years: list[str]) -> Optional[float]:
+    """Return the first non-null value among the requested ``years`` labels (respecting TTM column offset)."""
     row = next((r for r in (std.get("rows") or []) if r["code"] == code), None)
     if not row:
         return None
-    for y, cell in zip(years, row["cells"]):
-        if cell and cell.get("value") is not None:
-            return _dec(cell["value"])
+    idx_map = {lbl: i for i, lbl in enumerate(_all_year_labels(std))}
+    cells = row.get("cells") or []
+    for y in years:
+        i = idx_map.get(y)
+        if i is not None and i < len(cells) and cells[i] and cells[i].get("value") is not None:
+            return _dec(cells[i]["value"])
     return None
 
 
 def _std_series(std: dict, code: str, years: list[str]) -> dict[str, float]:
+    """Map each requested fiscal-year label to its exact cell value (never shifted by TTM column 0)."""
     row = next((r for r in (std.get("rows") or []) if r["code"] == code), None)
     if not row:
         return {}
+    idx_map = {lbl: i for i, lbl in enumerate(_all_year_labels(std))}
+    cells = row.get("cells") or []
     out: dict[str, float] = {}
-    for y, cell in zip(years, row["cells"]):
-        if cell and cell.get("value") is not None:
-            v = _dec(cell["value"])
+    for y in years:
+        i = idx_map.get(y)
+        if i is not None and i < len(cells) and cells[i] and cells[i].get("value") is not None:
+            v = _dec(cells[i]["value"])
             if v is not None:
                 out[y] = v
     return out
 
 
 def _year_end_prices(db: Session, ticker: str, year_ends: dict[str, str]) -> dict[str, float]:
-    """Closing price near each fiscal year end (from accumulated daily bars)."""
+    """Split-adjusted closing price near each fiscal year end (same share basis as split-adjusted EPS/shares)."""
     if not year_ends:
         return {}
     bars = db.execute(
@@ -78,18 +90,29 @@ def _year_end_prices(db: Session, ticker: str, year_ends: dict[str, str]) -> dic
     ).all()
     if not bars:
         return {}
+    splits = db.execute(
+        select(CorporateAction.date, CorporateAction.value)
+        .where(CorporateAction.ticker == ticker, CorporateAction.kind == "split")
+        .order_by(CorporateAction.date)
+    ).all()
     out: dict[str, float] = {}
     for label, end_iso in year_ends.items():
-        # Latest trading day <= fiscal year end (within 14 days)
-        best = None
+        best_date = None
+        best_close = None
         for d, close in bars:
             ds = d.isoformat()
             if ds <= end_iso:
-                best = float(close)
+                best_date = ds
+                best_close = float(close)
             else:
                 break
-        if best is not None and best > 0:
-            out[label] = best
+        if best_close is not None and best_close > 0 and best_date is not None:
+            # Divide unadjusted historical price by cumulative split ratio of all splits strictly AFTER best_date
+            cum_split = 1.0
+            for sp_date, sp_val in splits:
+                if sp_date.isoformat() > best_date and sp_val and float(sp_val) > 0:
+                    cum_split *= float(sp_val)
+            out[label] = best_close / cum_split
     return out
 
 
@@ -164,12 +187,18 @@ def compute_stock_methods(
         ni = _latest_std_val(std, "net_income_common", years) or _latest_std_val(std, "net_income_parent", years) or _latest_std_val(std, "net_income", years)
         divs = _latest_std_val(std, "dividends_paid", years)
 
-        # Average 3-year ROE from standardized ratios when available, else latest NI / Equity
+        # Average 3-year annual ROE from standardized ratios (respecting TTM column offset)
         roe_vals = []
+        idx_map = {lbl: i for i, lbl in enumerate(_all_year_labels(std))}
         for rr in (std.get("ratios") or {}).get("rows") or []:
             if rr["code"] in ("roe", "roce"):
-                roe_vals = [_dec(c["value"]) for c in rr["cells"][:3] if c and c.get("value") is not None]
-                roe_vals = [v for v in roe_vals if v is not None and -0.3 < v < 0.5]
+                cells = rr.get("cells") or []
+                for y in years[:3]:
+                    i = idx_map.get(y)
+                    if i is not None and i < len(cells) and cells[i] and cells[i].get("value") is not None:
+                        v = _dec(cells[i]["value"])
+                        if v is not None and -0.3 < v < 0.5:
+                            roe_vals.append(v)
                 if roe_vals:
                     break
         roe = (sum(roe_vals) / len(roe_vals)) if roe_vals else ((ni / eq) if (ni and eq and eq > 0) else None)
@@ -185,7 +214,9 @@ def compute_stock_methods(
             ri_res = residual_income(bvps_0=bvps, roe=roe, ke=ke, payout=payout)
             if ri_res:
                 methods.append(ri_res)
-            pb_res = pb_roe_justified(bvps_0=bvps, roe=roe, ke=ke, g_term=DEFAULT_TERM_G)
+            # Sustainable ROE for perpetual Justified P/B-ROE fades excess ROE halfway toward Ke (capped at +6pp)
+            sust_roe = ke + 0.5 * min(max(roe - ke, -0.06), 0.06) if roe > ke else roe
+            pb_res = pb_roe_justified(bvps_0=bvps, roe=sust_roe, ke=ke, g_term=DEFAULT_TERM_G)
             if pb_res:
                 methods.append(pb_res)
         if dps and dps > 0:

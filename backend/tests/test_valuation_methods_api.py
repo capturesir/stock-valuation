@@ -79,3 +79,46 @@ def test_general_stock_methods_include_dcf_reverse_dcf_and_custom_weights(client
     assert len(body["football_field"]) >= 1
     assert body["reverse_dcf"] is not None
     assert -0.35 <= body["reverse_dcf"]["implied_growth"] <= 0.80
+
+
+def test_relative_valuation_adjusts_historical_prices_for_stock_splits(client):
+    """Unadjusted pre-split PriceBars must be divided by subsequent split factors to match split-adjusted EPS/shares."""
+    from backend.app.models import CorporateAction
+
+    cik = "0009999999"
+    now = dt.datetime.now(dt.timezone.utc)
+    with session() as db:
+        db.add(Security(ticker="SPLT", name="Split Corp", currency="USD"))
+        db.add(SecTicker(ticker="SPLT", cik=cik, title="Split Corp", updated_at=now))
+        db.add(Filer(cik=cik, name="Split Corp", sic="3674", tickers=["SPLT"], synced_at=now))
+        raw = RawDocumentRow(source="sec", kind="companyfacts", key=cik, url="https://data.sec.gov/test",
+                             sha256="b" * 64, bytes=10, content_type="application/json", path="raw/b", http_status=200)
+        db.add(raw)
+        db.flush()
+
+        # 10-for-1 split on 2024-06-10: pre-split price $500 -> split-adjusted $50 (20x P/E on $2.50 EPS)
+        db.add(CorporateAction(ticker="SPLT", date=dt.date(2024, 6, 10), kind="split", value=10.0))
+        for yr, rev, eq, sh, eps, raw_px in (
+            (2023, "1000000000", "500000000", "100000000", "2.50", 500.0),   # pre-split: $500 / 10 = $50 -> 20x P/E, 10x P/B
+            (2024, "1200000000", "600000000", "100000000", "3.00", 60.0),    # post-split: $60 -> 20x P/E, 10x P/B
+            (2025, "1400000000", "700000000", "100000000", "3.50", 70.0),    # post-split: $70 -> 20x P/E, 10x P/B
+        ):
+            ps, pe, acc = dt.date(yr, 1, 1), dt.date(yr, 12, 31), f"0009999999-{str(yr)[2:]}-000001"
+            for concept, val, unit, start in (
+                ("Revenues", rev, "USD", ps),
+                ("StockholdersEquity", eq, "USD", None),
+                ("WeightedAverageNumberOfDilutedSharesOutstanding", sh, "shares", ps),
+                ("EarningsPerShareDiluted", eps, "USD/shares", ps),
+            ):
+                db.add(FiledFactRow(
+                    cik=cik, taxonomy="us-gaap", concept=concept, unit=unit, value=Decimal(val),
+                    period_start=start, period_end=pe, fy=yr, fp="FY", form="10-K",
+                    accession=acc, filed=dt.date(yr + 1, 2, 15), raw_document_id=raw.id,
+                ))
+            db.add(PriceBar(ticker="SPLT", date=dt.date(yr, 12, 29), open=raw_px, high=raw_px, low=raw_px, close=raw_px, volume=1000))
+
+    r = client.get("/api/v1/stocks/SPLT/methods")
+    assert r.status_code == 200, r.text
+    rel = next(m for m in r.json()["methods"] if m["method"] == "relative")
+    # True multiple is 20x P/E on $3.50 EPS = $70 (NOT $500+ from unadjusted pre-split price!)
+    assert 60.0 <= rel["base"] <= 80.0, rel
