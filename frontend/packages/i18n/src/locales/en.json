@@ -907,5 +907,20 @@
   "val.rdcf.base": "model base {g}",
   "val.rdcf.market_more_optimistic": "Market more optimistic",
   "val.rdcf.aligned": "Aligned with model",
-  "val.rdcf.market_more_conservative": "Market more conservative"
+  "val.rdcf.market_more_conservative": "Market more conservative",
+  "news.sugsTitle": "AI Review Suggestions (T1 Checks · T2 News)",
+  "news.sugsSubtitle": "Every item is citation-verified with a clickable source; accept or dismiss individually.",
+  "news.generate": "Run T1 / T2 analysis",
+  "news.generating": "Analyzing & verifying sources…",
+  "news.genDone": "Added {created} verified suggestions ({rejected} unverified items rejected).",
+  "news.emptySugs": "No suggestions yet. Press “Run T1 / T2 analysis” to review check findings and news.",
+  "news.status.pending": "Pending",
+  "news.status.accepted": "Accepted",
+  "news.status.dismissed": "Dismissed",
+  "news.source": "Source",
+  "news.accept": "Accept",
+  "news.dismiss": "Dismiss",
+  "news.reset": "Reset",
+  "news.feedTitle": "Filings & News Feed",
+  "news.emptyFeed": "No filings or news found."
 }

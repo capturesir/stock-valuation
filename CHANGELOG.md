@@ -8,6 +8,15 @@
 
 下一版：AI 任務（T1 以檢查層為輸入、T2 統一新聞來源介面、建議採用／忽略流程與引用來源嚴格驗證）。
 
+### AI 任務、統一新聞來源介面與來源引用嚴格驗證（beta.2，D4）
+- **純 Python 程式庫 `libs/sv_ai`**：
+  - 統一新聞來源介面（`news.py`，D4）：`NewsProvider` 協定整合免費來源（SEC 8-K／10-K／10-Q 申報、披露易公告、Yahoo 新聞標題），去重並保留可點擊原文連結，日後可無縫接入付費新聞商。
+  - T1／T2 建議與 100% 引用驗證關卡（`suggestions.py`）：T1 直接以財報檢查層失敗項目與重編紀錄為輸入；T2 以統一新聞來源為輸入；`validate_suggestions()` 對引用不在輸入清單中或缺少可點擊網址的建議 **100% 拒絕**並回報 `rejected_unverified`。
+- **資料庫遷移 `0011`**：新增 `ai_suggestions` 資料表，記錄建議、驗證來源連結、採用／忽略狀態與審查人／時間。
+- **後端接口**：`GET /api/v1/stocks/{ticker}/news`、`GET /api/v1/stocks/{ticker}/suggestions`、`POST /api/v1/stocks/{ticker}/suggestions/generate`、`PUT /api/v1/suggestions/{suggestion_id}`。
+- **前端 `NewsAndSuggestionsTab.tsx`**：補齊股票頁「新資訊」分頁，提供一鍵產生 T1／T2 建議、逐項「採用／忽略／重設」審查流程、可點擊來源連結與申報新聞動態（三語齊全）。
+- **測試**：`libs/sv_ai/tests/test_ai_tasks.py`（2 項，驗證 100% 拒絕未驗證來源）與 `backend/tests/test_ai_tasks_api.py`（1 項，涵蓋統一新聞、T2 產生、採用／忽略流程與遷移 `0011`）。
+
 ---
 
 ## 2.0.0-beta.1 — 2026-11-28

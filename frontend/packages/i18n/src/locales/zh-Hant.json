@@ -907,5 +907,20 @@
   "val.rdcf.base": "模型基準假設 {g}",
   "val.rdcf.market_more_optimistic": "市場較模型樂觀",
   "val.rdcf.aligned": "與模型假設接近",
-  "val.rdcf.market_more_conservative": "市場較模型保守"
+  "val.rdcf.market_more_conservative": "市場較模型保守",
+  "news.sugsTitle": "AI 審查建議（T1 財報檢查 · T2 新聞催化劑）",
+  "news.sugsSubtitle": "每項建議均經來源引用驗證並附可點擊原文，可逐項採用或忽略。",
+  "news.generate": "產生 T1／T2 建議",
+  "news.generating": "分析與驗證來源中…",
+  "news.genDone": "已新增 {created} 項經驗證建議（拒絕未附有效來源 {rejected} 項）。",
+  "news.emptySugs": "尚無建議。按「產生 T1／T2 建議」由財報檢查層與新聞來源產生待審查項目。",
+  "news.status.pending": "待審查",
+  "news.status.accepted": "已採用",
+  "news.status.dismissed": "已忽略",
+  "news.source": "來源",
+  "news.accept": "採用",
+  "news.dismiss": "忽略",
+  "news.reset": "重設為待審查",
+  "news.feedTitle": "申報與新聞動態",
+  "news.emptyFeed": "暫無申報或新聞紀錄。"
 }

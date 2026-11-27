@@ -78,6 +78,9 @@ export type StockMethodsOut = S["StockMethodsOut"];
 export type MethodBandOut = S["MethodBandOut"];
 export type MethodDetailOut = S["MethodDetailOut"];
 export type ReverseDcfOut = S["ReverseDcfOut"];
+export type NewsItemOut = S["NewsItemOut"];
+export type AiSuggestionOut = S["AiSuggestionOut"];
+export type AiSuggestionGenerateOut = S["AiSuggestionGenerateOut"];
 
 export interface ClientConfig {
   /** "" = same origin (served behind Caddy); e.g. "https://valuation.example.com" for apps */
@@ -260,6 +263,13 @@ export function createClient(cfg: ClientConfig = {}) {
     qaThread: (ticker: string, threadId: string) => req<QaThreadOut>("GET", `/stocks/${enc(ticker)}/qa/threads/${enc(threadId)}`),
     deleteQaThread: (ticker: string, threadId: string) => req<void>("DELETE", `/stocks/${enc(ticker)}/qa/threads/${enc(threadId)}`),
     qaAsk: (ticker: string, body: QaAskIn) => req<QaAskOut>("POST", `/stocks/${enc(ticker)}/qa/ask`, body),
+
+    news: (ticker: string, limit = 25) => req<NewsItemOut[]>("GET", `/stocks/${enc(ticker)}/news${q({ limit })}`),
+    suggestions: (ticker: string) => req<AiSuggestionOut[]>("GET", `/stocks/${enc(ticker)}/suggestions`),
+    generateSuggestions: (ticker: string, tasks: ("T1" | "T2")[] = ["T1", "T2"]) =>
+      req<AiSuggestionGenerateOut>("POST", `/stocks/${enc(ticker)}/suggestions/generate`, { tasks }),
+    decideSuggestion: (id: number, status: "pending" | "accepted" | "dismissed") =>
+      req<AiSuggestionOut>("PUT", `/suggestions/${id}`, { status }),
   };
 }
 export type Api = ReturnType<typeof createClient>;

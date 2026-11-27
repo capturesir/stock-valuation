@@ -8,6 +8,7 @@ import { CompanyCard, TickerNotFound } from "../components/CompanyCard";
 import { DocumentQaTab } from "../components/DocumentQaTab";
 import { FiledData } from "../components/FiledData";
 import { FootballFieldCard } from "../components/FootballFieldCard";
+import { NewsAndSuggestionsTab } from "../components/NewsAndSuggestionsTab";
 import { RunDrawer } from "../components/RunDrawer";
 import { TrendChart, type Range } from "../components/TrendChart";
 import { api } from "../lib/api";
@@ -103,7 +104,7 @@ export function StockPage() {
       {tab === "overview" && profile.data && !latest && <CompanyCard p={profile.data} />}
       {vals.isLoading && <p className="muted">{t("common.loading")}</p>}
       {vals.error && <div className="banner err" role="alert">{t("common.error", { message: (vals.error as Error).message })}</div>}
-      {v && !latest && tab !== "history" && tab !== "statements" && tab !== "qa" && (
+      {v && !latest && tab !== "history" && tab !== "statements" && tab !== "qa" && tab !== "news" && (
         <div className="card"><h2>{t("stock.noValuation", { ticker })}</h2><p className="muted" style={{ margin: 0 }}>{t("stock.noValuationHint")}</p>
           <div><button className="btn primary" type="button" onClick={() => setDrawer(true)}>{t("stock.revalue")}</button></div></div>
       )}
@@ -190,7 +191,7 @@ export function StockPage() {
 
       {tab === "statements" && <FiledData ticker={ticker} />}
       {tab === "qa" && <DocumentQaTab ticker={ticker} />}
-      {tab === "news" && <div className="banner info">{t("stock.phaseNote", { what: t("stock.phase.news") })}</div>}
+      {tab === "news" && <NewsAndSuggestionsTab ticker={ticker} />}
 
       {v && tab === "history" && (
         <section className="card" style={{ padding: 0, overflow: "hidden" }} aria-label={t("stock.tab.history")}>

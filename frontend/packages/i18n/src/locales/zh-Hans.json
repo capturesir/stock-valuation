@@ -907,5 +907,20 @@
   "val.rdcf.base": "模型基准假设 {g}",
   "val.rdcf.market_more_optimistic": "市场较模型乐观",
   "val.rdcf.aligned": "与模型假设接近",
-  "val.rdcf.market_more_conservative": "市场较模型保守"
+  "val.rdcf.market_more_conservative": "市场较模型保守",
+  "news.sugsTitle": "AI 审查建议（T1 财报检查 · T2 新闻催化剂）",
+  "news.sugsSubtitle": "每项建议均经来源引用验证并附可点击原文，可逐项采用或忽略。",
+  "news.generate": "生成 T1／T2 建议",
+  "news.generating": "分析与验证来源中…",
+  "news.genDone": "已新增 {created} 项经验证建议（拒绝未附有效来源 {rejected} 项）。",
+  "news.emptySugs": "尚无建议。点击“生成 T1／T2 建议”由财报检查层与新闻来源生成待审查项目。",
+  "news.status.pending": "待审查",
+  "news.status.accepted": "已采用",
+  "news.status.dismissed": "已忽略",
+  "news.source": "来源",
+  "news.accept": "采用",
+  "news.dismiss": "忽略",
+  "news.reset": "重置为待审查",
+  "news.feedTitle": "申报与新闻动态",
+  "news.emptyFeed": "暂无申报或新闻记录。"
 }
