@@ -347,6 +347,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 多方法估值（金融業 DDM／RI／P/B-ROE 與警示、反向 DCF、相對估值、綜合理論價與足球場圖） */
+        get: operations["stock_methods_api_v1_stocks__ticker__methods_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/watchlist": {
         parameters: {
             query?: never;
@@ -2040,6 +2057,38 @@ export interface components {
             display_name?: string | null;
             prefs?: components["schemas"]["Prefs"] | null;
         };
+        /** MethodBandOut */
+        MethodBandOut: {
+            /** Method */
+            method: string;
+            /** Low */
+            low: number;
+            /** Mid */
+            mid: number;
+            /** High */
+            high: number;
+            /** Weight */
+            weight: number;
+            /** Primary */
+            primary: boolean;
+            /** Warning Code */
+            warning_code?: string | null;
+        };
+        /** MethodDetailOut */
+        MethodDetailOut: {
+            /** Method */
+            method: string;
+            /** Bear */
+            bear: number;
+            /** Base */
+            base: number;
+            /** Bull */
+            bull: number;
+            /** Assumptions */
+            assumptions?: {
+                [key: string]: unknown;
+            };
+        };
         /** MethodValue */
         MethodValue: {
             /** Method */
@@ -2614,6 +2663,31 @@ export interface components {
              * @description 相對強弱：標的 ÷ benchmark，起點為 100
              */
             values: number[];
+        };
+        /** ReverseDcfOut */
+        ReverseDcfOut: {
+            /** Implied Growth */
+            implied_growth: number;
+            /** Base Growth */
+            base_growth?: number | null;
+            /** Gap Pp */
+            gap_pp?: number | null;
+            /**
+             * Assessment
+             * @enum {string}
+             */
+            assessment: "market_more_optimistic" | "aligned" | "market_more_conservative";
+            /** Price */
+            price: number;
+            /** Wacc */
+            wacc: number;
+            /** Terminal G */
+            terminal_g: number;
+            /**
+             * Years
+             * @default 5
+             */
+            years: number;
         };
         /** RevisionOut */
         RevisionOut: {
@@ -3289,6 +3363,32 @@ export interface components {
             status: string;
             /** Created At */
             created_at: string;
+        };
+        /** StockMethodsOut */
+        StockMethodsOut: {
+            /** Ticker */
+            ticker: string;
+            /** Currency */
+            currency?: string | null;
+            /** Template */
+            template: string;
+            /** Is Financial */
+            is_financial: boolean;
+            /** Composite Value */
+            composite_value?: number | null;
+            /** Weights */
+            weights?: {
+                [key: string]: number;
+            };
+            /** Price */
+            price?: number | null;
+            /** Warnings */
+            warnings?: string[];
+            /** Football Field */
+            football_field?: components["schemas"]["MethodBandOut"][];
+            /** Methods */
+            methods?: components["schemas"]["MethodDetailOut"][];
+            reverse_dcf?: components["schemas"]["ReverseDcfOut"] | null;
         };
         /**
          * StockProfile
@@ -4238,6 +4338,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stock_methods_api_v1_stocks__ticker__methods_get: {
+        parameters: {
+            query?: {
+                w_dcf?: number | null;
+                w_relative?: number | null;
+                w_ri?: number | null;
+                w_ddm?: number | null;
+                w_pb_roe?: number | null;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockMethodsOut"];
                 };
             };
             /** @description Validation Error */

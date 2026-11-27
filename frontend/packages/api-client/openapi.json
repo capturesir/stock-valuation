@@ -3,7 +3,7 @@
  "info": {
   "title": "估值工作台 API",
   "description": "股票估值系統 v2 後端。所有前端共用此 API。本系統產出不構成投資建議。",
-  "version": "2.0.0-alpha.4"
+  "version": "2.0.0-alpha.5"
  },
  "paths": {
   "/api/v1/health": {
@@ -1399,6 +1399,170 @@
       "content": {
        "application/json": {
         "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/stocks/{ticker}/methods": {
+   "get": {
+    "tags": [
+     "stocks"
+    ],
+    "summary": "多方法估值（金融業 DDM／RI／P/B-ROE 與警示、反向 DCF、相對估值、綜合理論價與足球場圖）",
+    "operationId": "stock_methods_api_v1_stocks__ticker__methods_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "w_dcf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "number",
+         "maximum": 100,
+         "minimum": 0
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "W Dcf"
+      }
+     },
+     {
+      "name": "w_relative",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "number",
+         "maximum": 100,
+         "minimum": 0
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "W Relative"
+      }
+     },
+     {
+      "name": "w_ri",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "number",
+         "maximum": 100,
+         "minimum": 0
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "W Ri"
+      }
+     },
+     {
+      "name": "w_ddm",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "number",
+         "maximum": 100,
+         "minimum": 0
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "W Ddm"
+      }
+     },
+     {
+      "name": "w_pb_roe",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "number",
+         "maximum": 100,
+         "minimum": 0
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "W Pb Roe"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StockMethodsOut"
+        }
        }
       }
      },
@@ -8705,6 +8869,88 @@
     "type": "object",
     "title": "MeIn"
    },
+   "MethodBandOut": {
+    "properties": {
+     "method": {
+      "type": "string",
+      "title": "Method"
+     },
+     "low": {
+      "type": "number",
+      "title": "Low"
+     },
+     "mid": {
+      "type": "number",
+      "title": "Mid"
+     },
+     "high": {
+      "type": "number",
+      "title": "High"
+     },
+     "weight": {
+      "type": "number",
+      "title": "Weight"
+     },
+     "primary": {
+      "type": "boolean",
+      "title": "Primary"
+     },
+     "warning_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Warning Code"
+     }
+    },
+    "type": "object",
+    "required": [
+     "method",
+     "low",
+     "mid",
+     "high",
+     "weight",
+     "primary"
+    ],
+    "title": "MethodBandOut"
+   },
+   "MethodDetailOut": {
+    "properties": {
+     "method": {
+      "type": "string",
+      "title": "Method"
+     },
+     "bear": {
+      "type": "number",
+      "title": "Bear"
+     },
+     "base": {
+      "type": "number",
+      "title": "Base"
+     },
+     "bull": {
+      "type": "number",
+      "title": "Bull"
+     },
+     "assumptions": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Assumptions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "method",
+     "bear",
+     "base",
+     "bull"
+    ],
+    "title": "MethodDetailOut"
+   },
    "MethodValue": {
     "properties": {
      "method": {
@@ -10137,6 +10383,71 @@
      "values"
     ],
     "title": "RelativeOut"
+   },
+   "ReverseDcfOut": {
+    "properties": {
+     "implied_growth": {
+      "type": "number",
+      "title": "Implied Growth"
+     },
+     "base_growth": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Base Growth"
+     },
+     "gap_pp": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Gap Pp"
+     },
+     "assessment": {
+      "type": "string",
+      "enum": [
+       "market_more_optimistic",
+       "aligned",
+       "market_more_conservative"
+      ],
+      "title": "Assessment"
+     },
+     "price": {
+      "type": "number",
+      "title": "Price"
+     },
+     "wacc": {
+      "type": "number",
+      "title": "Wacc"
+     },
+     "terminal_g": {
+      "type": "number",
+      "title": "Terminal G"
+     },
+     "years": {
+      "type": "integer",
+      "title": "Years",
+      "default": 5
+     }
+    },
+    "type": "object",
+    "required": [
+     "implied_growth",
+     "assessment",
+     "price",
+     "wacc",
+     "terminal_g"
+    ],
+    "title": "ReverseDcfOut"
    },
    "RevisionOut": {
     "properties": {
@@ -11951,6 +12262,100 @@
      "created_at"
     ],
     "title": "StockDocumentOut"
+   },
+   "StockMethodsOut": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "template": {
+      "type": "string",
+      "title": "Template"
+     },
+     "is_financial": {
+      "type": "boolean",
+      "title": "Is Financial"
+     },
+     "composite_value": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Composite Value"
+     },
+     "weights": {
+      "additionalProperties": {
+       "type": "number"
+      },
+      "type": "object",
+      "title": "Weights"
+     },
+     "price": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Price"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Warnings"
+     },
+     "football_field": {
+      "items": {
+       "$ref": "#/components/schemas/MethodBandOut"
+      },
+      "type": "array",
+      "title": "Football Field"
+     },
+     "methods": {
+      "items": {
+       "$ref": "#/components/schemas/MethodDetailOut"
+      },
+      "type": "array",
+      "title": "Methods"
+     },
+     "reverse_dcf": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ReverseDcfOut"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "template",
+     "is_financial"
+    ],
+    "title": "StockMethodsOut"
    },
    "StockProfile": {
     "properties": {

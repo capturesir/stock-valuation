@@ -19,8 +19,8 @@ from ..auth import Principal, current_principal
 from ..db import get_db
 from ..i18n import DEFAULT as DEFAULT_LANG, http_error, lang_dep, pick
 from ..models import Run, Security, WatchlistItem
-from ..schemas import PriceSeries, StockProfile, StockValuations
-from ..services import branding, market
+from ..schemas import PriceSeries, StockMethodsOut, StockProfile, StockValuations
+from ..services import branding, market, valuation_methods
 from .common import iso, run_out, ticker_or_400
 
 router = APIRouter(tags=["stocks"])
@@ -175,3 +175,20 @@ def report(run_id: str, lang_q: Optional[str] = Query(default=None, alias="lang"
     branding.stamp_run_files(db, [str(out)])
     return FileResponse(out, filename=filename, background=BackgroundTask(shutil.rmtree, tmp, ignore_errors=True),
                         media_type="text/markdown; charset=utf-8")
+
+
+@router.get("/stocks/{ticker}/methods", response_model=StockMethodsOut,
+            summary="多方法估值（金融業 DDM／RI／P/B-ROE 與警示、反向 DCF、相對估值、綜合理論價與足球場圖）")
+def stock_methods(
+    ticker: str,
+    w_dcf: Optional[float] = Query(default=None, ge=0, le=100),
+    w_relative: Optional[float] = Query(default=None, ge=0, le=100),
+    w_ri: Optional[float] = Query(default=None, ge=0, le=100),
+    w_ddm: Optional[float] = Query(default=None, ge=0, le=100),
+    w_pb_roe: Optional[float] = Query(default=None, ge=0, le=100),
+    db: Session = Depends(get_db),
+):
+    t = ticker_or_400(ticker)
+    raw_w = {"dcf": w_dcf, "relative": w_relative, "ri": w_ri, "ddm": w_ddm, "pb_roe": w_pb_roe}
+    custom = {k: v for k, v in raw_w.items() if v is not None} or None
+    return valuation_methods.compute_stock_methods(db, t, custom_weights=custom)

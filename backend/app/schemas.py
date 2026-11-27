@@ -989,3 +989,48 @@ class QaAskOut(BaseModel):
     message: QaMessageOut
     retrieved_chunks: int
     top_score: float
+
+
+# ---------------------------------------------------------------- multi-method valuation (beta.1, D5)
+
+class MethodBandOut(BaseModel):
+    method: str
+    low: float
+    mid: float
+    high: float
+    weight: float
+    primary: bool
+    warning_code: Optional[str] = None
+
+
+class MethodDetailOut(BaseModel):
+    method: str
+    bear: float
+    base: float
+    bull: float
+    assumptions: dict = Field(default_factory=dict)
+
+
+class ReverseDcfOut(BaseModel):
+    implied_growth: float
+    base_growth: Optional[float] = None
+    gap_pp: Optional[float] = None
+    assessment: Literal["market_more_optimistic", "aligned", "market_more_conservative"]
+    price: float
+    wacc: float
+    terminal_g: float
+    years: int = 5
+
+
+class StockMethodsOut(BaseModel):
+    ticker: str
+    currency: Optional[str] = None
+    template: str
+    is_financial: bool
+    composite_value: Optional[float] = None
+    weights: dict[str, float] = Field(default_factory=dict)
+    price: Optional[float] = None
+    warnings: list[str] = Field(default_factory=list)
+    football_field: list[MethodBandOut] = Field(default_factory=list)
+    methods: list[MethodDetailOut] = Field(default_factory=list)
+    reverse_dcf: Optional[ReverseDcfOut] = None
