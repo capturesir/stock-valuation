@@ -5,6 +5,7 @@ import { Link, NavLink, useNavigate, useParams } from "react-router-dom";
 import { Refresh } from "../components/Icons";
 import { rememberTicker } from "../components/Layout";
 import { CompanyCard, TickerNotFound } from "../components/CompanyCard";
+import { DocumentQaTab } from "../components/DocumentQaTab";
 import { FiledData } from "../components/FiledData";
 import { RunDrawer } from "../components/RunDrawer";
 import { TrendChart, type Range } from "../components/TrendChart";
@@ -12,7 +13,7 @@ import { api } from "../lib/api";
 import { useCooldown } from "../lib/cooldown";
 import { useI18n } from "../lib/i18n";
 
-const TABS = ["overview", "valuation", "statements", "news", "history"] as const;
+const TABS = ["overview", "valuation", "statements", "qa", "news", "history"] as const;
 type Tab = (typeof TABS)[number];
 const SCEN = ["bear", "base", "bull", "static", "floor9"] as const;
 const dcf = (r: RunOut | null | undefined, s: string) => r?.methods.find((m) => m.method === "dcf" && m.scenario === s)?.value ?? null;
@@ -100,7 +101,7 @@ export function StockPage() {
       {tab === "overview" && profile.data && !latest && <CompanyCard p={profile.data} />}
       {vals.isLoading && <p className="muted">{t("common.loading")}</p>}
       {vals.error && <div className="banner err" role="alert">{t("common.error", { message: (vals.error as Error).message })}</div>}
-      {v && !latest && tab !== "history" && tab !== "statements" && (
+      {v && !latest && tab !== "history" && tab !== "statements" && tab !== "qa" && (
         <div className="card"><h2>{t("stock.noValuation", { ticker })}</h2><p className="muted" style={{ margin: 0 }}>{t("stock.noValuationHint")}</p>
           <div><button className="btn primary" type="button" onClick={() => setDrawer(true)}>{t("stock.revalue")}</button></div></div>
       )}
@@ -184,6 +185,7 @@ export function StockPage() {
       )}
 
       {tab === "statements" && <FiledData ticker={ticker} />}
+      {tab === "qa" && <DocumentQaTab ticker={ticker} />}
       {tab === "news" && <div className="banner info">{t("stock.phaseNote", { what: t("stock.phase.news") })}</div>}
 
       {v && tab === "history" && (

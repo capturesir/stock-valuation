@@ -65,6 +65,15 @@ export type AdjustmentOut = S["AdjustmentOut"];
 export type AdjustmentIn = S["AdjustmentIn"];
 export type AdjustmentPlanIn = S["AdjustmentPlanIn"];
 export type PlanChoice = "auto" | "central" | "personal" | "none";
+export type StockDocumentOut = S["StockDocumentOut"];
+export type StockDocumentDetail = S["StockDocumentDetail"];
+export type DocSyncOut = S["DocSyncOut"];
+export type QaCitationOut = S["QaCitationOut"];
+export type QaMessageOut = S["QaMessageOut"];
+export type QaThreadSummary = S["QaThreadSummary"];
+export type QaThreadOut = S["QaThreadOut"];
+export type QaAskIn = S["QaAskIn"];
+export type QaAskOut = S["QaAskOut"];
 
 export interface ClientConfig {
   /** "" = same origin (served behind Caddy); e.g. "https://valuation.example.com" for apps */
@@ -230,6 +239,22 @@ export function createClient(cfg: ClientConfig = {}) {
     priceTable: () => req<PriceRow[]>("GET", "/settings/prices"),
     savePrice: (row: PriceRow) => req<PriceRow>("PUT", "/settings/prices", row),
     usage: (month?: string) => req<UsageOut>("GET", `/ai/usage${q({ month })}`),
+
+    documents: (ticker: string) => req<StockDocumentOut[]>("GET", `/stocks/${enc(ticker)}/documents`),
+    syncDocuments: (ticker: string, includeSec = true, maxFilings = 3) =>
+      req<DocSyncOut>("POST", `/stocks/${enc(ticker)}/documents/sync${q({ include_sec: includeSec ? "true" : "false", max_filings: maxFilings })}`),
+    uploadDocument: (ticker: string, file: Blob, filename: string, title?: string) => {
+      const fd = new FormData();
+      fd.append("file", file, filename);
+      if (title) fd.append("title", title);
+      return req<StockDocumentOut>("POST", `/stocks/${enc(ticker)}/documents/upload`, undefined, fd);
+    },
+    documentDetail: (ticker: string, docId: number) => req<StockDocumentDetail>("GET", `/stocks/${enc(ticker)}/documents/${docId}`),
+    deleteDocument: (ticker: string, docId: number) => req<void>("DELETE", `/stocks/${enc(ticker)}/documents/${docId}`),
+    qaThreads: (ticker: string) => req<QaThreadSummary[]>("GET", `/stocks/${enc(ticker)}/qa/threads`),
+    qaThread: (ticker: string, threadId: string) => req<QaThreadOut>("GET", `/stocks/${enc(ticker)}/qa/threads/${enc(threadId)}`),
+    deleteQaThread: (ticker: string, threadId: string) => req<void>("DELETE", `/stocks/${enc(ticker)}/qa/threads/${enc(threadId)}`),
+    qaAsk: (ticker: string, body: QaAskIn) => req<QaAskOut>("POST", `/stocks/${enc(ticker)}/qa/ask`, body),
   };
 }
 export type Api = ReturnType<typeof createClient>;
