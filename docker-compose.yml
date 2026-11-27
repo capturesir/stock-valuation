@@ -6,7 +6,7 @@ x-backend: &backend
   build:
     context: .
     dockerfile: backend/Dockerfile
-  image: stock-valuation-api:${APP_VERSION:-2.0.0-alpha.3}
+  image: stock-valuation-api:${APP_VERSION:-2.0.0-alpha.4}
   restart: unless-stopped
   environment:
     DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-valuation}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-valuation}
@@ -69,7 +69,7 @@ services:
     build:
       context: .
       dockerfile: deploy/web.Dockerfile
-    image: stock-valuation-web:${APP_VERSION:-2.0.0-alpha.3}
+    image: stock-valuation-web:${APP_VERSION:-2.0.0-alpha.4}
     restart: unless-stopped
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-:80}

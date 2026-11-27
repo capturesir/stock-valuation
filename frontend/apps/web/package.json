@@ -1,6 +1,6 @@
 {
   "name": "@sv/web",
-  "version": "2.0.0-alpha.3",
+  "version": "2.0.0-alpha.4",
   "private": true,
   "type": "module",
   "description": "電腦網站＋手機網站（PWA）",
