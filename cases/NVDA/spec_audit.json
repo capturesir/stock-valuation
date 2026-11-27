@@ -5,8 +5,8 @@
  "currency": "USD",
  "units": "百萬美元（USD millions）；每股理論價 US$",
  "valuation_date": "2026-11-11",
- "price": 168.88999938964844,
- "price_date": "2026-11-10",
+ "price": 146.93499755859375,
+ "price_date": "2026-11-27",
  "price_url": "https://finance.yahoo.com/quote/NVDA",
  "price_source": "Yahoo Finance",
  "convention": "年中折現；估值日 2026-11-11（澳門）。最新資產負債表 2026-07-26／Yahoo 欄 2026-07-31。FY2027 下半年殘段剩餘期間中點約 2026-12-21，t=0.110；FY2028 年中約 2027-07-31，t=0.717；其後各年 +1。終值按最後預測年年中 t_N 折現。",
@@ -25,13 +25,13 @@
  "D_source": "Yahoo Finance quarterly balance sheet",
  "D_url": "https://finance.yahoo.com/quote/NVDA/balance-sheet",
  "D_date": "2026-07-31",
- "E_basis": "市值 = US$168.88999938964844 × 24242m 攤薄股（2026-11-10 收市）",
+ "E_basis": "市值 = US$146.93499755859375 × 24242m 攤薄股（2026-11-27 收市）",
  "rf": {
-  "value": 0.049830002784729,
-  "basis": "市場數據：美國 10 年期國債 Yahoo ^TNX 收市 4.983%（2026-11-10）",
+  "value": 0.049060001373291015,
+  "basis": "市場數據：美國 10 年期國債 Yahoo ^TNX 收市 4.906%（2026-11-27）",
   "source_name": "Yahoo Finance ^TNX",
   "url": "https://finance.yahoo.com/quote/%5ETNX",
-  "data_date": "2026-11-10"
+  "data_date": "2026-11-27"
  },
  "crp": {
   "value": 0.0,
@@ -41,8 +41,8 @@
   "data_date": "2026-07-01"
  },
  "kd_pre": {
-  "value": 0.04223898219221751,
-  "basis": "分析師假設（規則）：FY2026 利息 US$259m ÷ 年末債務 US$11,040m ＝ 2.35% 用於舊債務；Q2 債務增至 US$38,351m（約增 US$27,311m）。8-K 票息因 EDGAR HTML 403 未讀到，新增債務暫按 Rf 4.983% 計，加權 Kd＝4.22%。實際票息若更高／更低，WACC 須修訂。",
+  "value": 0.04169063903173192,
+  "basis": "分析師假設（規則）：FY2026 利息 US$259m ÷ 年末債務 US$11,040m ＝ 2.35% 用於舊債務；Q2 債務增至 US$38,351m（約增 US$27,311m）。8-K 票息因 EDGAR HTML 403 未讀到，新增債務暫按 Rf 4.906% 計，加權 Kd＝4.17%。實際票息若更高／更低，WACC 須修訂。",
   "source_name": "Yahoo income/balance；Rf 見折現率",
   "url": "https://finance.yahoo.com/quote/NVDA/financials",
   "data_date": "2026-07-31"
@@ -57,7 +57,7 @@
  },
  "beta_reg": 2.247,
  "beta_reg_url": "https://finance.yahoo.com/quote/NVDA/key-statistics",
- "beta_reg_date": "2026-11-10",
+ "beta_reg_date": "2026-11-27",
  "year_labels": [
   "FY2027 H2（stub）",
   "FY2028",
@@ -220,11 +220,12 @@
  "row_sources": [
   "https://finance.yahoo.com/quote/NVDA/analysis/",
   "https://finance.yahoo.com/quote/NVDA/financials",
+  "https://finance.yahoo.com/quote/NVDA/cash-flow",
   "https://data.sec.gov/submissions/CIK0001045810.json"
  ],
  "terminal_g": 0.03,
  "ronic": 0.2,
- "g_rationale": "分析師假設（規則）：終值 g＝3.0%，不高於美元 Rf 4.983%，約對應美國長期名目增長下沿。",
+ "g_rationale": "分析師假設（規則）：終值 g＝3.0%，不高於美元 Rf 4.906%，約對應美國長期名目增長下沿。",
  "method_rationale": "價值驅動終值：FCFF_{N+1}＝NOPAT_N×(1+g)×(1−g/RONIC)；RONIC＝20%（AI 資本開支周期下的中期投入資本回報假設，非公司指引）。",
  "tv_method": "value_driver",
  "bridge": [
@@ -361,19 +362,19 @@
   {
    "name": "Yahoo Finance Analysis NVDA",
    "url": "https://finance.yahoo.com/quote/NVDA/analysis/",
-   "data_date": "2026-11-10"
+   "data_date": "2026-11-27"
   }
  ],
  "ib_compare": {
   "consensus": {
    "source": "Yahoo Finance Analysis / info targets",
    "url": "https://finance.yahoo.com/quote/NVDA/analysis/",
-   "data_date": "2026-11-10",
-   "mean": 325.7772,
-   "high": 515.0,
-   "low": 180.0,
-   "median": 315.0,
-   "n_analysts": 57,
+   "data_date": "2026-11-27",
+   "mean": 242.4278,
+   "high": 425.0,
+   "low": 130.0,
+   "median": 240.0,
+   "n_analysts": 59,
    "currency": "USD"
   },
   "named_brokers": [],
@@ -395,6 +396,8 @@
   "data_date": "2026-01-25"
  },
  "data_gaps": [
+  "EDGAR HTML HTTP 403（常見為 Cloudflare／403；改用 data.sec.gov JSON 或 Yahoo／IR）",
+  "SEC EDGAR 網頁檔（10-Q／8-K HTML）回傳 HTTP 403；本次財務數字改用 Yahoo Finance 報表（並以 data.sec.gov submissions 核對最新 10-Q 報告期為 2026-07-26，呈交 2026-08-26）。未讀到 2026-08-17 發債 8-K 票息。",
   "Yahoo 未提供 FY2025–FY2026 單獨 PPE 折舊（只有 Reconciled D&A）；9%地板的折舊側用總 D&A／營收，可能略高於純 PPE 折舊。因平均 Capex% 高於平均 D&A%，地板仍由 Capex 決定。",
   "Q3 FY2027（約 2026-10 季結）尚未見 10-Q；H2 stub 營收採 Yahoo 本財年一致預期減上半年實際。",
   "Yahoo Q2 資產負債表出現 Restricted Cash US$36.9bn，與現金＋短期投資 US$62.5bn 加總不合理，疑為欄位錯置；橋接不加該項。",
@@ -403,8 +406,8 @@
  "assumption_source": "rules_fallback",
  "llm_status": {
   "available": false,
-  "base_url": "https://api.openai.com/v1",
-  "model": "gpt-4o-mini",
+  "base_url": null,
+  "model": null,
   "used": false,
   "errors": []
  }

@@ -322,3 +322,43 @@ def test_earnings_per_share_by_share_class():
     split = class_eps(facts, years, splits=[Split(D(2025, 6, 1), Decimal(2))])
     b23 = next(c for c in split if c.member == B and c.fiscal_year == "FY2023")
     assert b23.value == 20 and b23.split_factor == 2
+
+
+def test_52_53_week_early_january_year_end_does_not_collide_with_december():
+    """A 52/53-week calendar-year filer (e.g. JNJ) whose FY2022 ends on 2023-01-01 must not
+    collide with FY2023 ending on 2023-12-31, while late-January filers (NVDA/WMT) keep end.year."""
+    facts = [
+        fact("Revenues", 80, D(2021, 1, 4), D(2022, 1, 2), D(2022, 2, 15)),
+        fact("Revenues", 90, D(2022, 1, 3), D(2023, 1, 1), D(2023, 2, 15)),
+        fact("Revenues", 100, D(2023, 1, 2), D(2023, 12, 31), D(2024, 2, 15)),
+    ]
+    ys = fiscal_years(facts)
+    assert [(y.label, y.end) for y in ys] == [
+        ("FY2021", D(2022, 1, 2)),
+        ("FY2022", D(2023, 1, 1)),
+        ("FY2023", D(2023, 12, 31)),
+    ]
+    nvda = fiscal_years([fact("Revenues", 60, D(2025, 1, 27), D(2026, 1, 25), D(2026, 2, 25))])
+    assert [(y.label, y.end) for y in nvda] == [("FY2026", D(2026, 1, 25))]
+
+
+def test_mezzanine_equity_reconciles_balance_parts_and_other_ppe_capex():
+    from libs.sv_data.checks import grades, load_checks, run_checks
+
+    facts = [
+        fact("Assets", 309581, None, D(2025, 12, 31), D(2026, 2, 20)),
+        fact("LiabilitiesAndStockholdersEquity", 309581, None, D(2025, 12, 31), D(2026, 2, 20)),
+        fact("Liabilities", 207883, None, D(2025, 12, 31), D(2026, 2, 20)),
+        fact("RedeemableNoncontrollingInterestEquityCarryingAmount", 1608, None, D(2025, 12, 31), D(2026, 2, 20)),
+        fact("StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest", 100090, None, D(2025, 12, 31), D(2026, 2, 20)),
+        fact("Revenues", 400000, D(2025, 1, 1), D(2025, 12, 31), D(2026, 2, 20)),
+        fact("NetCashProvidedByUsedInOperatingActivities", 25000, D(2025, 1, 1), D(2025, 12, 31), D(2026, 2, 20)),
+        fact("PaymentsToAcquireOtherPropertyPlantAndEquipment", 7841, D(2025, 1, 1), D(2025, 12, 31), D(2026, 2, 20)),
+    ]
+    std = standardize(facts, load_ruleset("general"))
+    assert std.get("mezzanine_equity", "FY2025").value == 1608
+    assert std.get("capex", "FY2025").value == 7841
+    assert std.get("free_cash_flow", "FY2025").value == 17159
+    res = run_checks(std, load_checks("checks_general"))
+    bp = next(r for r in res if r.rule_id == "balance_parts" and r.period == "FY2025")
+    assert bp.status == "pass" and grades(res)["FY2025"] == "A"

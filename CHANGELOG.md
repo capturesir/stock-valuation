@@ -48,6 +48,15 @@
 - 尚未做：估值記錄所用方案與版本（第 10 步估值改讀標準層時加入）；追蹤他人方案、共享審批屬後期功能。
 - 測試：程式庫新增 4 項，後端新增 1 項（權限、版本、私隱、衝突、合併、驗證、匯出）；在瀏覽器實測 NVDA 調整資本開支，自由現金流隨之重算。
 
+### 20 家美股抽樣驗收與規則補齊（alpha.3 第 11 步）
+- 抽樣 20 家橫跨科技、消費、醫療、能源、工業、綜合企業、銀行與保險的美股（`AAPL`、`NVDA`、`MSFT`、`GOOGL`、`META`、`AMZN`、`WMT`、`KO`、`COST`、`PG`、`JNJ`、`UNH`、`LLY`、`CVX`、`CAT`、`BRK-B`、`JPM`、`BAC`、`TRV`、`MET`），全數完成 SEC 同步、標準化、勾稽檢查與出處核對：近五年共 100 個財年 0 錯誤（0 個 C 級）、96 個 A 級、4 個 B 級（`CVX` FY2022–2025 SEC 總營收含聯營與其他收入對比 Yahoo 營業收入差異 2–4%，屬預期提示）、出處連結 100% 可回溯。
+- 依驗收發現修正四項實務規則與財年邏輯：
+  - **52/53 週財年結算日標籤**（`libs/sv_data/standard.py`）：結算日落在一月 1–7 日的曆年制公司（如 `JNJ` FY2022 結算於 2023-01-01）改歸屬佔比近全年的前一個曆年，避免與同年 12 月底的下一財年撞名而遺失整年財報；一月底結算公司（如 `NVDA`、`WMT`）不受影響。
+  - **夾層／可贖回權益**（`general.yaml` `2026.11.3`、`insurance.yaml`／`bank.yaml` `2026.11.2`、三套檢查規則 `2026.11.2`）：新增選填項目 `mezzanine_equity`（含三語字典 `std.item.mezzanine_equity`）並納入 `balance_parts` 與 `total_liabilities` 後備公式，修正含可贖回非控股權益公司（如 `UNH`）的資產負債表勾稽誤差（由全 C 轉為全 A）。
+  - **資本開支與保險投資收益對照補齊**：`general.yaml` 補上 `PaymentsToAcquireOtherPropertyPlantAndEquipment`（修正 `LLY` 缺資本開支與自由現金流）；`insurance.yaml` 補上 `InvestmentIncomeInterestAndDividend`（補齊 `UNH` 淨投資收益）。
+- 前端股票頁新增多語言「下載報告」按鈕（`stock.downloadReport`），後端新增 `/api/v1/runs/{run_id}/excel?lang=` 與 `/report?lang=` 多語與品牌浮水印測試；同步更新 `docs/architecture.md` 與路線圖。
+- 測試：`libs/sv_data/tests/test_standard.py` 新增 2 項回歸測試，`backend/tests/test_branding.py` 補齊多語言下載端點驗證。
+
 ### 引擎輸出多語言：Excel 與估值報告（alpha.3 第 10 步之四）
 - 新增三語匯出字典 `src/export/locales/export.json` 與輔助模組 `src/export/i18n.py`（繁體中文、简体中文、English），涵蓋估值 Excel 七張工作表、附加研究工作表、計算表公式核對標籤／條件格式與 Markdown 估值報告。
 - `build_workbook()`、`add_calc_sheet()`、`add_research_sheets()` 與 `write_report()` 新增 `lang` 參數（預設 `zh-Hant`，與 v1 輸出完全相容）；資料缺口優先讀取 `data_gap_codes` 並按目標語言渲染。

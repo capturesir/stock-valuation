@@ -1,7 +1,7 @@
 {
- "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
- "http_status": 200,
- "ok": true,
- "bytes": 1517519,
- "error": null
+ "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/nvda-20261117.htm",
+ "http_status": 403,
+ "ok": false,
+ "bytes": 4819,
+ "error": "EDGAR HTML HTTP 403\uff08\u5e38\u898b\u70ba Cloudflare\uff0f403\uff1b\u6539\u7528 data.sec.gov JSON \u6216 Yahoo\uff0fIR\uff09"
 }

@@ -79,6 +79,7 @@ export function StockPage() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button className="btn primary" type="button" onClick={() => setDrawer(true)}><Refresh size={16} />{t("stock.revalue")}</button>
             {latest?.has_excel && <a className="btn secondary" href={api.excelUrl(latest.id, locale)}>{t("stock.downloadExcel")}</a>}
+            {latest?.has_excel && <a className="btn secondary" href={api.reportUrl(latest.id, locale)}>{t("stock.downloadReport")}</a>}
             {!inList && <button className="btn secondary" type="button" onClick={() => add.mutate()}>{t("stock.addToWatchlist")}</button>}
           </div>
         </div>

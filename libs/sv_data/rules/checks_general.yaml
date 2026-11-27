@@ -12,7 +12,7 @@
 # the items it was computed from proves nothing. Values derived from year-to-date filings are checked.
 
 checks: general
-version: "2026.11.1"
+version: "2026.11.2"
 
 rules:
   # ---------------------------------------------------------------- reconciliation (勾稽)
@@ -27,7 +27,7 @@ rules:
     kind: equal
     severity: error
     left: total_assets
-    right: total_liabilities + total_equity
+    right: total_liabilities + mezzanine_equity? + total_equity
     tolerance: 0.005
 
   - id: gross_profit

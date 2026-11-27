@@ -115,3 +115,30 @@ def test_run_excel_and_report_carry_the_brand_but_out_stays_neutral(configured, 
     # the engine's shared output is untouched
     assert load_workbook(out / "2026-11-18_NVDA_FCFF.xlsx")["摘要"]["A2"].value is None
     assert (out / "2026-11-18_NVDA_valuation.md").read_text(encoding="utf-8").startswith("# ")
+
+    # localized Excel & Markdown report endpoints (?lang= and Accept-Language), stamped with brand
+    en_xlsx = configured.get(f"/api/v1/runs/{run['id']}/excel", params={"lang": "en"})
+    assert en_xlsx.status_code == 200
+    dl_en = tmp_path / "dl_en.xlsx"
+    dl_en.write_bytes(en_xlsx.content)
+    wb_en = load_workbook(dl_en)
+    assert wb_en.sheetnames[0] == "Summary"
+    assert wb_en["Summary"]["A2"].value == "Hoi 投資研究" and len(wb_en["Summary"]._images) == 1
+
+    hans_xlsx = configured.get(f"/api/v1/runs/{run['id']}/excel", headers={"Accept-Language": "zh-CN"})
+    assert hans_xlsx.status_code == 200
+    dl_hans = tmp_path / "dl_hans.xlsx"
+    dl_hans.write_bytes(hans_xlsx.content)
+    assert load_workbook(dl_hans).sheetnames[1] == "计算"
+
+    en_md = configured.get(f"/api/v1/runs/{run['id']}/report", params={"lang": "en"})
+    assert en_md.status_code == 200
+    assert en_md.text.startswith("> Hoi 投資研究\n\n# ")
+    assert "## Five-Scenario Fair Value per Share" in en_md.text
+
+    hans_md = configured.get(f"/api/v1/runs/{run['id']}/report", headers={"Accept-Language": "zh-CN"})
+    assert hans_md.status_code == 200
+    assert "## 五情景每股理论价" in hans_md.text
+
+    missing = configured.get("/api/v1/runs/does-not-exist/report", headers={"Accept-Language": "en"})
+    assert missing.status_code == 404 and missing.json()["detail"]["code"] == "no_report"

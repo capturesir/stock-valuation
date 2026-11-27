@@ -3,55 +3,55 @@
  "url": "https://finance.yahoo.com/quote/%5ETNX",
  "ok": true,
  "chart": {
-  "url": "https://query1.finance.yahoo.com/v8/finance/chart/^TNX?period1=1793580939&period2=1794444939&interval=1d&events=div,split",
+  "url": "https://query1.finance.yahoo.com/v8/finance/chart/^TNX?period1=1795015661&period2=1795879661&interval=1d&events=div,split",
   "http_status": 200,
   "ok": true,
   "meta": {
    "currency": "USD",
    "exchange": "CGI",
    "symbol": "^TNX",
-   "regularMarketPrice": 4.983,
-   "regularMarketTime": 1794340794,
+   "regularMarketPrice": 4.906,
+   "regularMarketTime": 1795792354,
    "gmtoffset": -21600,
    "shortName": "CBOE Interest Rate 10 Year T No",
    "instrumentType": "INDEX"
   },
   "closes": [
    {
-    "date": "2026-11-02",
-    "close": 4.894000053405762
+    "date": "2026-11-18",
+    "close": 5.065999984741211
    },
    {
-    "date": "2026-11-03",
-    "close": 4.952000141143799
+    "date": "2026-11-19",
+    "close": 5.052000045776367
    },
    {
-    "date": "2026-11-04",
-    "close": 4.894000053405762
+    "date": "2026-11-20",
+    "close": 4.9120001792907715
    },
    {
-    "date": "2026-11-05",
-    "close": 4.836999893188477
+    "date": "2026-11-23",
+    "close": 4.918000221252441
    },
    {
-    "date": "2026-11-06",
-    "close": 4.859000205993652
+    "date": "2026-11-24",
+    "close": 4.9039998054504395
    },
    {
-    "date": "2026-11-09",
-    "close": 4.863999843597412
+    "date": "2026-11-25",
+    "close": 4.8480000495910645
    },
    {
-    "date": "2026-11-10",
-    "close": 4.9830002784729
+    "date": "2026-11-27",
+    "close": 4.906000137329102
    }
   ],
   "last": {
-   "date": "2026-11-10",
-   "close": 4.9830002784729
+   "date": "2026-11-27",
+   "close": 4.906000137329102
   }
  },
- "value": 0.049830002784729,
- "data_date": "2026-11-10",
- "basis": "市場數據：美國 10 年期國債 Yahoo ^TNX 收市 4.983%（2026-11-10）"
+ "value": 0.049060001373291015,
+ "data_date": "2026-11-27",
+ "basis": "市場數據：美國 10 年期國債 Yahoo ^TNX 收市 4.906%（2026-11-27）"
 }

@@ -4,7 +4,7 @@
 # Concepts were chosen from what Travelers and MetLife actually file (companyfacts, FY2025 10-K).
 
 ruleset: insurance
-version: 2026.11.1
+version: "2026.11.2"
 template: insurance
 display:
   income:
@@ -43,6 +43,7 @@ display:
   - separate_account_liabilities
   - debt
   - total_liabilities
+  - mezzanine_equity
   - equity_parent
   - equity_nci
   - total_equity
@@ -80,6 +81,7 @@ items:
   - id: net_investment_income.1
     sources:
     - us-gaap:NetInvestmentIncome
+    - us-gaap:InvestmentIncomeInterestAndDividend
 - code: investment_gains
   statement: income
   period: duration
@@ -355,6 +357,17 @@ items:
     - us-gaap:DebtLongtermAndShorttermCombinedAmount
     - us-gaap:DebtAndCapitalLeaseObligations
     - us-gaap:LongTermDebt
+- code: mezzanine_equity
+  statement: balance
+  period: instant
+  unit: money
+  rules:
+  - id: mezzanine_equity.1
+    sources:
+    - us-gaap:TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests
+    - us-gaap:RedeemableNoncontrollingInterestEquityCarryingAmount
+    - us-gaap:RedeemableNoncontrollingInterestEquityCommonCarryingAmount
+    - us-gaap:TemporaryEquityCarryingAmountAttributableToParent
 - code: equity_parent
   statement: balance
   period: instant
@@ -401,7 +414,7 @@ items:
     sources:
     - us-gaap:Liabilities
     - ifrs-full:Liabilities
-    formula: liabilities_and_equity - total_equity
+    formula: liabilities_and_equity - mezzanine_equity? - total_equity
 - code: shares_outstanding
   statement: balance
   period: instant

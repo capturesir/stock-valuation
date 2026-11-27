@@ -1,11 +1,11 @@
 # Check rules for the insurance chart (same format as checks_general.yaml).
 
 checks: insurance
-version: "2026.11.1"
+version: "2026.11.2"
 
 rules:
   - {id: balance_total, kind: equal, severity: error, left: total_assets, right: liabilities_and_equity, tolerance: 0.005}
-  - {id: balance_parts, kind: equal, severity: error, left: total_assets, right: total_liabilities + total_equity, tolerance: 0.005}
+  - {id: balance_parts, kind: equal, severity: error, left: total_assets, right: "total_liabilities + mezzanine_equity? + total_equity", tolerance: 0.005}
   # some insurers (e.g. Berkshire) book investment gains outside revenue, so this does not hold everywhere: a note only
   - {id: insurance_pretax, kind: equal, severity: info, left: pretax_income, right: revenue - total_benefits_and_expenses, tolerance: 0.005}
   - {id: net_income_split, kind: equal, severity: warning, left: net_income, right: net_income_parent + net_income_nci, tolerance: 0.005}

@@ -334,6 +334,13 @@ def reporting_currency(facts: Iterable[FactRef]) -> Optional[str]:
     return c.most_common(1)[0][0] if c else None
 
 
+def _fy_label(end: dt.date) -> str:
+    """FY label for a year-end: a 52/53-week calendar-year filer (e.g. JNJ) whose fiscal year
+    spills 1–7 days into January belongs to the calendar year holding ~98 % of the period;
+    late-January filers (e.g. NVDA, WMT ending Jan 25–31) keep ``end.year``."""
+    return f"FY{(end - dt.timedelta(days=7)).year}"
+
+
 def fiscal_years(facts: Iterable[FactRef]) -> list[FiscalYear]:
     """Annual periods from annual reports: for each year-end, the start most facts agree on."""
     starts: dict[dt.date, Counter] = defaultdict(Counter)
@@ -343,7 +350,7 @@ def fiscal_years(facts: Iterable[FactRef]) -> list[FiscalYear]:
     by_label: dict[str, tuple[int, FiscalYear]] = {}
     for end, c in starts.items():
         start, n = c.most_common(1)[0]
-        fy = FiscalYear(f"FY{end.year}", start, end)
+        fy = FiscalYear(_fy_label(end), start, end)
         if fy.label not in by_label or n > by_label[fy.label][0]:
             by_label[fy.label] = (n, fy)
     return sorted((fy for _, fy in by_label.values()), key=lambda y: y.end)
@@ -367,7 +374,7 @@ def fiscal_quarters(facts: Iterable[FactRef], years: list[FiscalYear]) -> list[F
     fys = list(years)
     if fys:      # the fiscal year in progress
         start = fys[-1].end + dt.timedelta(days=1)
-        fys.append(FiscalYear(f"FY{(start + dt.timedelta(days=364)).year}", start, start + dt.timedelta(days=380), kind="open"))
+        fys.append(FiscalYear(_fy_label(start + dt.timedelta(days=364)), start, start + dt.timedelta(days=380), kind="open"))
     out: list[FiscalYear] = []
     for fy in fys:
         ytd: dict[int, Counter] = defaultdict(Counter)

@@ -25,11 +25,12 @@
 │ 驗證、查詢、開工作      │ 執行估值：抓資料 → AI 任務 → 引擎 → 驗證 │
 │ 估算 AI 費用、讀紀錄    │ 回報進度與每項 AI 費用                   │
 ├───────────────────────┴───────────────────────────────────────┤
-│ src/（現有 Python 估值引擎，原封不動重用）                         │
+│ libs/（共用領域程式庫：sv_data 四層財報與檢查、sv_market 指標）  │
+│ src/（估值引擎、多語言匯出與驗證，v1/v2 共用）                  │
 ├────────────────────────────┬──────────────────────────────────┤
 │ PostgreSQL 16              │ Redis 7                           │
-│ 估值紀錄、方法結果、AI 任務、 │ 工作佇列、工作進度、取消訊號          │
-│ 觀察名單、設定、價格表        │                                   │
+│ 用戶、市場數據、四層財報、  │ 工作佇列、工作進度、取消訊號          │
+│ 調整方案、估值紀錄、組合場景 │                                   │
 └────────────────────────────┴──────────────────────────────────┘
 ```
 
@@ -67,7 +68,10 @@ stock-valuation/
 ├── docker-compose.yml          # 正式／本機一條指令啟動
 ├── docker-compose.dev.yml      # 開發用覆寫（熱重載、開放埠）
 ├── .env.example                # Docker 環境變數範例
-├── src/                        # v1 估值引擎（重用，v1 網頁與 CLI 照常可用）
+├── libs/                       # 共用領域程式庫（不依賴 FastAPI／ORM）
+│   ├── sv_data/                # 四層財報（原始、申報、標準、檢查）與調整方案、SEC XBRL 解析與 YAML 規則
+│   └── sv_market/              # 市場數據純函數、交易日曆完整性、CFA 績效指標與投資組合最佳化
+├── src/                        # 估值引擎與多語言 Excel／Markdown 匯出（v1 網頁與 CLI 照常可用）
 ├── backend/                    # v2 API 與 worker
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -112,7 +116,7 @@ stock-valuation/
 | 數字格式 | `createFormat(locale)`：千分位、貨幣符號（HK$、US$、¥）、正負號（−，U+2212）、百分比、日期一律 YYYY-MM-DD |
 | API | 狀態、步驟、略過原因、錯誤都以固定代碼回傳（`skip_code`、`note_code`、`detail.code`），前端按代碼翻譯；錯誤文字另按 `Accept-Language` 回覆繁／簡／英 |
 | AI 產出 | 第 2 階段起，AI 任務的提示詞加入用戶語言，報告與理由以該語言產生；數字由引擎計算，不受語言影響 |
-| 引擎說明 | v1 引擎的「資料缺口」等說明目前只有繁體中文，第 3 階段改為代碼＋參數 |
+| 引擎說明 | 資料缺口（`src/pipeline/locales/gaps.json`）、估值 Excel 與 Markdown 報告（`src/export/locales/export.json`）均支援繁體中文、简体中文與 English；後端依 `?lang=` 或 `Accept-Language` 輸出 |
 
 ## 6. 安全
 

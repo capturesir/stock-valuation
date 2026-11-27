@@ -3,11 +3,11 @@
 # total assets are cross-checked.
 
 checks: bank
-version: "2026.11.1"
+version: "2026.11.2"
 
 rules:
   - {id: balance_total, kind: equal, severity: error, left: total_assets, right: liabilities_and_equity, tolerance: 0.005}
-  - {id: balance_parts, kind: equal, severity: error, left: total_assets, right: total_liabilities + total_equity, tolerance: 0.005}
+  - {id: balance_parts, kind: equal, severity: error, left: total_assets, right: "total_liabilities + mezzanine_equity? + total_equity", tolerance: 0.005}
   - {id: net_interest_income, kind: equal, severity: warning, left: net_interest_income, right: interest_income - interest_expense, tolerance: 0.005}
   - {id: bank_revenue, kind: equal, severity: warning, left: revenue, right: net_interest_income + noninterest_income, tolerance: 0.005}
   - {id: net_income_split, kind: equal, severity: warning, left: net_income, right: net_income_parent + net_income_nci, tolerance: 0.005}

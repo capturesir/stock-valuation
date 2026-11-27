@@ -21,7 +21,7 @@
 # Formulas may only use items defined above them.
 
 ruleset: general
-version: "2026.11.2"
+version: "2026.11.3"
 template: general
 
 display:
@@ -30,7 +30,7 @@ display:
            eps_basic, eps_diluted, shares_basic_weighted, shares_diluted_weighted]
   balance: [cash, short_term_investments, receivables, inventory, current_assets, ppe_net, goodwill, intangibles,
             total_assets, accounts_payable, current_liabilities, debt_current, debt_noncurrent, total_liabilities,
-            equity_parent, equity_nci, total_equity, liabilities_and_equity, shares_outstanding]
+            mezzanine_equity, equity_parent, equity_nci, total_equity, liabilities_and_equity, shares_outstanding]
   cash_flow: [cfo, depreciation_amortization, share_based_compensation, capex, cfi, dividends_paid, share_repurchases,
               cff, free_cash_flow]
 totals: [gross_profit, operating_income, net_income_parent, total_assets, total_liabilities, total_equity,
@@ -373,6 +373,18 @@ items:
           - us-gaap:LongTermDebtAndCapitalLeaseObligations
           - ifrs-full:NoncurrentPortionOfNoncurrentBorrowings
 
+  - code: mezzanine_equity
+    statement: balance
+    period: instant
+    unit: money
+    rules:
+      - id: mezzanine_equity.1
+        sources:
+          - us-gaap:TemporaryEquityCarryingAmountIncludingPortionAttributableToNoncontrollingInterests
+          - us-gaap:RedeemableNoncontrollingInterestEquityCarryingAmount
+          - us-gaap:RedeemableNoncontrollingInterestEquityCommonCarryingAmount
+          - us-gaap:TemporaryEquityCarryingAmountAttributableToParent
+
   - code: equity_parent
     statement: balance
     period: instant
@@ -424,7 +436,7 @@ items:
         sources:
           - us-gaap:Liabilities
           - ifrs-full:Liabilities
-        formula: liabilities_and_equity - total_equity
+        formula: liabilities_and_equity - mezzanine_equity? - total_equity
 
   - code: shares_outstanding
     statement: balance
@@ -479,6 +491,7 @@ items:
         sources:
           - us-gaap:PaymentsToAcquirePropertyPlantAndEquipment
           - us-gaap:PaymentsToAcquireProductiveAssets
+          - us-gaap:PaymentsToAcquireOtherPropertyPlantAndEquipment
           - ifrs-full:PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities
 
   - code: cfi
