@@ -6,7 +6,27 @@
 
 ## 未發布
 
-後續規劃：港股年報 PDF 財報自動抽取交叉核對（D11）、多家公司財報並排比較、以及 v2.0.0 正式版發布前整合驗證。
+---
+
+## 2.0.0 — 2026-11-28
+
+**主題：v2.0 正式版 — 完成路線圖 v2.1 全數核心里程碑（D1–D13），整合港股免費財報與年報 PDF 交叉核對、杜邦／盈利質素／同業財報並排比較、估值方法統一介面、T7 解釋與系統操作說明書；v1 FCFF 引擎數值逐位元不變。**
+
+### 新增
+- **港股免費財報來源與年報 PDF 抽取核對（D11）**：
+  - 於 `libs/sv_data/sources/base.py` 定義統一 `FinancialDataProvider` 協定（供 SEC、港股免費來源與未來付費數據商共用）。
+  - 新增 `libs/sv_data/sources/hkex_free.py`：整合 Yahoo 年度 IFRS 財報與中英文港股年報 PDF 財報表抽取（自動識別 `HK$'000`、`RMB million`、`人民幣百萬元` 等貨幣與倍率，內建純 Python PDF 串流後備解析器），逐項以 1% 門檻與 Yahoo 交叉核對，正式年報數字優先進入標準層。
+  - 後端支援 `*.HK` 代號同步並新增 `POST /api/v1/stocks/{ticker}/statements/hkex-pdf`；前端財報頁新增港股年報 PDF 上傳與核對結果橫幅（三語齊全）。
+- **財報進階分析與同業並排比較（§6）**：
+  - 新增 `libs/sv_data/analytics.py`：3／5 因子杜邦 ROE 拆解、盈利質素（CFO／淨利、FCF／淨利、Sloan 應計比率與評級）與最多 10 家公司並排財報比較及同業中位數。
+  - 新增 `GET /api/v1/stocks/{ticker}/statements/analytics` 與 `GET /api/v1/statements/compare`；前端於股票財報頁與走勢比較頁整合顯示（三語齊全）。
+- **估值方法統一介面與獨立驗算（架構 §2.6）**：
+  - 新增 `libs/sv_valuation/registry.py`（`ValuationMethod` 協定、`METHOD_REGISTRY` 與六種估值方法獨立 `verify()` 重算檢核）。
+- **AI 任務 T7 解釋與 T1 調整方案聯動留痕（架構 §2.5）**：
+  - 新增 `generate_t7_suggestions()` 解釋多方法綜合理論價、D5 金融業規則、方法分歧與反向 DCF 市價隱含增長，沿用 100% 來源引用拒絕關卡。
+  - `PUT /api/v1/suggestions/{suggestion_id}` 支援 `apply_to_plan=true`，採用 T1 建議時直接寫入用戶個人調整方案新版本並保留來源依據與審查人紀錄。
+- **系統功能及操作說明書（§8）**：新增 [`docs/使用手冊.md`](docs/使用手冊.md) 涵蓋完整安裝、角色權限、美港股財報、進階分析、多方法估值、文件庫問答、AI 建議與組合最佳化操作流程。
+- **測試**：新增 `libs/sv_data/tests/test_hkex_pdf.py`、`libs/sv_data/tests/test_analytics.py`、`libs/sv_valuation/tests/test_method_registry.py`、`backend/tests/test_hkex_financials.py`、`backend/tests/test_financial_analytics_api.py`，並擴充 `libs/sv_ai/tests/test_ai_tasks.py` 與 `backend/tests/test_ai_tasks_api.py`。
 
 ---
 
