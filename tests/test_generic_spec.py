@@ -313,7 +313,9 @@ def test_ifrs16_capex_below_da_is_floored_and_late_year_uses_stub(tmp_path):
     fund = _fund()
     # Simulate an IFRS-16 lease-heavy firm (D&A = 12% of rev, CapEx = 3% of rev) with negative NWC
     for dt_k, row in fund["cf_a"].items():
-        rev = fund["is_a"][dt_k]["Total Revenue"]
+        rev = (fund["is_a"].get(dt_k) or {}).get("Total Revenue")
+        if not rev:
+            continue
         row["Depreciation And Amortization"] = rev * 0.12
         row["Capital Expenditure"] = -rev * 0.03
     for dt_k, row in fund["bs_a"].items():
