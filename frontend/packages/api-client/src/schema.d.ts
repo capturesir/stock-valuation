@@ -1089,6 +1089,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 股票文件庫清單 */
+        get: operations["list_documents_api_v1_stocks__ticker__documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/documents/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 同步估值報告、財報摘要與近期 SEC 申報正文入庫 */
+        post: operations["sync_documents_api_v1_stocks__ticker__documents_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/documents/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 上傳 PDF／Markdown／HTML／純文字檔至該股票文件庫 */
+        post: operations["upload_document_api_v1_stocks__ticker__documents_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/documents/{doc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 單份文件的章節摘要與切段內容 */
+        get: operations["get_document_api_v1_stocks__ticker__documents__doc_id__get"];
+        put?: never;
+        post?: never;
+        /** 從文件庫移除文件（管理員） */
+        delete: operations["delete_document_api_v1_stocks__ticker__documents__doc_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/qa/threads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 我在這隻股票的私人問答對話清單 */
+        get: operations["list_threads_api_v1_stocks__ticker__qa_threads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/qa/threads/{thread_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 讀取私人對話內容與出處 */
+        get: operations["get_thread_api_v1_stocks__ticker__qa_threads__thread_id__get"];
+        put?: never;
+        post?: never;
+        /** 刪除私人問答對話 */
+        delete: operations["delete_thread_api_v1_stocks__ticker__qa_threads__thread_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stocks/{ticker}/qa/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 向這隻股票的文件庫提問（先文件庫與標準層數字，不足時可上網並標示來源） */
+        post: operations["ask_api_v1_stocks__ticker__qa_ask_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1332,6 +1453,13 @@ export interface components {
              */
             needs_setup: boolean;
         };
+        /** Body_upload_document_api_v1_stocks__ticker__documents_upload_post */
+        Body_upload_document_api_v1_stocks__ticker__documents_upload_post: {
+            /** File */
+            file: string;
+            /** Title */
+            title?: string | null;
+        };
         /** Body_upload_logo_api_v1_admin_branding_logo__variant__post */
         Body_upload_logo_api_v1_admin_branding_logo__variant__post: {
             /** File */
@@ -1552,6 +1680,19 @@ export interface components {
             statements_last_run?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** DocSyncOut */
+        DocSyncOut: {
+            /** Ticker */
+            ticker: string;
+            /** Added */
+            added: number;
+            /** Skipped */
+            skipped: number;
+            /** Total Documents */
+            total_documents: number;
+            /** Errors */
+            errors?: string[];
         };
         /** FiledConceptOut */
         FiledConceptOut: {
@@ -2290,6 +2431,123 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** QaAskIn */
+        QaAskIn: {
+            /** Question */
+            question: string;
+            /** Thread Id */
+            thread_id?: string | null;
+            /**
+             * Allow Web
+             * @description 文件庫證據不足時是否允許上網補充並存入文件庫
+             * @default false
+             */
+            allow_web: boolean;
+        };
+        /** QaAskOut */
+        QaAskOut: {
+            /** Thread Id */
+            thread_id: string;
+            message: components["schemas"]["QaMessageOut"];
+            /** Retrieved Chunks */
+            retrieved_chunks: number;
+            /** Top Score */
+            top_score: number;
+        };
+        /** QaCitationOut */
+        QaCitationOut: {
+            /** Id */
+            id: string;
+            /**
+             * Source Type
+             * @enum {string}
+             */
+            source_type: "library" | "web" | "statements";
+            /** Title */
+            title: string;
+            /** Section */
+            section?: string | null;
+            /** Doc Date */
+            doc_date?: string | null;
+            /** Fetched At */
+            fetched_at?: string | null;
+            /** Url */
+            url?: string | null;
+            /**
+             * Quote
+             * @default
+             */
+            quote: string;
+            /** Document Id */
+            document_id?: number | null;
+            /** Chunk Id */
+            chunk_id?: number | null;
+        };
+        /** QaMessageOut */
+        QaMessageOut: {
+            /** Id */
+            id: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Content */
+            content: string;
+            /** Citations */
+            citations?: components["schemas"]["QaCitationOut"][];
+            /**
+             * Used Web
+             * @default false
+             */
+            used_web: boolean;
+            /**
+             * Used Statements
+             * @default false
+             */
+            used_statements: boolean;
+            /**
+             * Insufficient Evidence
+             * @default false
+             */
+            insufficient_evidence: boolean;
+            /** Model */
+            model?: string | null;
+            /** Created At */
+            created_at: string;
+        };
+        /** QaThreadOut */
+        QaThreadOut: {
+            /** Id */
+            id: string;
+            /** Ticker */
+            ticker: string;
+            /** Title */
+            title: string;
+            /** Summary */
+            summary?: string | null;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+            /** Messages */
+            messages?: components["schemas"]["QaMessageOut"][];
+        };
+        /** QaThreadSummary */
+        QaThreadSummary: {
+            /** Id */
+            id: string;
+            /** Ticker */
+            ticker: string;
+            /** Title */
+            title: string;
+            /** Summary */
+            summary?: string | null;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
         /** RatioCell */
         RatioCell: {
             /**
@@ -2954,6 +3212,83 @@ export interface components {
             fiscal_year?: string | null;
             /** Quarter */
             quarter?: number | null;
+        };
+        /** StockDocumentChunkOut */
+        StockDocumentChunkOut: {
+            /** Id */
+            id: number;
+            /** Seq */
+            seq: number;
+            /** Section */
+            section: string;
+            /** Page */
+            page?: number | null;
+            /** Content */
+            content: string;
+            /** Token Count */
+            token_count: number;
+            /** Url */
+            url?: string | null;
+        };
+        /** StockDocumentDetail */
+        StockDocumentDetail: {
+            /** Id */
+            id: number;
+            /** Ticker */
+            ticker: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Title */
+            title: string;
+            /** Doc Date */
+            doc_date?: string | null;
+            /** Form */
+            form?: string | null;
+            /** Accession */
+            accession?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** Chunk Count */
+            chunk_count: number;
+            /** Status */
+            status: string;
+            /** Created At */
+            created_at: string;
+            /** Section Summaries */
+            section_summaries?: {
+                [key: string]: unknown;
+            }[];
+            /** Chunks */
+            chunks?: components["schemas"]["StockDocumentChunkOut"][];
+        };
+        /** StockDocumentOut */
+        StockDocumentOut: {
+            /** Id */
+            id: number;
+            /** Ticker */
+            ticker: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Title */
+            title: string;
+            /** Doc Date */
+            doc_date?: string | null;
+            /** Form */
+            form?: string | null;
+            /** Accession */
+            accession?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** Chunk Count */
+            chunk_count: number;
+            /** Status */
+            status: string;
+            /** Created At */
+            created_at: string;
         };
         /**
          * StockProfile
@@ -5813,6 +6148,323 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecomputeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_api_v1_stocks__ticker__documents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockDocumentOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_documents_api_v1_stocks__ticker__documents_sync_post: {
+        parameters: {
+            query?: {
+                include_sec?: boolean;
+                max_filings?: number;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocSyncOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_document_api_v1_stocks__ticker__documents_upload_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_document_api_v1_stocks__ticker__documents_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_api_v1_stocks__ticker__documents__doc_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockDocumentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_document_api_v1_stocks__ticker__documents__doc_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+                doc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_threads_api_v1_stocks__ticker__qa_threads_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QaThreadSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_thread_api_v1_stocks__ticker__qa_threads__thread_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QaThreadOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_thread_api_v1_stocks__ticker__qa_threads__thread_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+                thread_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_api_v1_stocks__ticker__qa_ask_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QaAskIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QaAskOut"];
                 };
             };
             /** @description Validation Error */

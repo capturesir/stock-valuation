@@ -898,3 +898,94 @@ class RecomputeOut(BaseModel):
     original: dict
     recomputed: dict
     weight_changes: dict[str, list[int]] = Field(default_factory=dict, description="權重有變的資產：[原本, 重算]")
+
+
+# ---------------------------------------------------------------- document library & Q&A (D13, alpha.5)
+
+class StockDocumentOut(BaseModel):
+    id: int
+    ticker: str
+    source_kind: str
+    title: str
+    doc_date: Optional[str] = None
+    form: Optional[str] = None
+    accession: Optional[str] = None
+    url: Optional[str] = None
+    summary: Optional[str] = None
+    chunk_count: int
+    status: str
+    created_at: str
+
+
+class StockDocumentChunkOut(BaseModel):
+    id: int
+    seq: int
+    section: str
+    page: Optional[int] = None
+    content: str
+    token_count: int
+    url: Optional[str] = None
+
+
+class StockDocumentDetail(StockDocumentOut):
+    section_summaries: list[dict] = Field(default_factory=list)
+    chunks: list[StockDocumentChunkOut] = Field(default_factory=list)
+
+
+class DocSyncOut(BaseModel):
+    ticker: str
+    added: int
+    skipped: int
+    total_documents: int
+    errors: list[str] = Field(default_factory=list)
+
+
+class QaCitationOut(BaseModel):
+    id: str
+    source_type: Literal["library", "web", "statements"]
+    title: str
+    section: Optional[str] = None
+    doc_date: Optional[str] = None
+    fetched_at: Optional[str] = None
+    url: Optional[str] = None
+    quote: str = ""
+    document_id: Optional[int] = None
+    chunk_id: Optional[int] = None
+
+
+class QaMessageOut(BaseModel):
+    id: int
+    role: Literal["user", "assistant"]
+    content: str
+    citations: list[QaCitationOut] = Field(default_factory=list)
+    used_web: bool = False
+    used_statements: bool = False
+    insufficient_evidence: bool = False
+    model: Optional[str] = None
+    created_at: str
+
+
+class QaThreadSummary(BaseModel):
+    id: str
+    ticker: str
+    title: str
+    summary: Optional[str] = None
+    created_at: str
+    updated_at: str
+
+
+class QaThreadOut(QaThreadSummary):
+    messages: list[QaMessageOut] = Field(default_factory=list)
+
+
+class QaAskIn(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+    thread_id: Optional[str] = None
+    allow_web: bool = Field(default=False, description="文件庫證據不足時是否允許上網補充並存入文件庫")
+
+
+class QaAskOut(BaseModel):
+    thread_id: str
+    message: QaMessageOut
+    retrieved_chunks: int
+    top_score: float

@@ -441,3 +441,70 @@ class AdjustmentRow(Base):
     basis: Mapped[Optional[str]] = mapped_column(Text)            # e.g. "10-K 2024 note 7" or a link
     adjusted_by: Mapped[Optional[str]] = mapped_column(String(80))       # who made this adjustment (carried across versions)
     adjusted_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+# ------------------------------------------------------------------ document library & Q&A (D13, alpha.5)
+
+class StockDocument(Base):
+    """One document in a stock's library: SEC filing text, HKEX annual report PDF, valuation report,
+    standardized statements overview, uploaded research note, or archived web source."""
+    __tablename__ = "stock_documents"
+    __table_args__ = (UniqueConstraint("ticker", "sha256", name="uq_stock_documents_ticker_sha"),)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    ticker: Mapped[str] = mapped_column(String(20), index=True)
+    source_kind: Mapped[str] = mapped_column(String(20))            # sec_filing | hkex_pdf | valuation | statements | web | upload
+    title: Mapped[str] = mapped_column(String(240))
+    doc_date: Mapped[Optional[str]] = mapped_column(String(16))     # YYYY-MM-DD (filing date or fetch date)
+    form: Mapped[Optional[str]] = mapped_column(String(20))         # 10-K | 10-Q | 8-K | PDF | ...
+    accession: Mapped[Optional[str]] = mapped_column(String(24))
+    url: Mapped[Optional[str]] = mapped_column(String(500))
+    sha256: Mapped[str] = mapped_column(String(64))
+    summary: Mapped[Optional[str]] = mapped_column(Text)            # document-level summary
+    section_summaries: Mapped[list] = mapped_column(JSON, default=list)   # [{section, page, summary}]
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(16), default="ready")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class DocumentChunk(Base):
+    """One section-preserving ~500-token chunk of a stock document with vector embedding for hybrid search."""
+    __tablename__ = "document_chunks"
+    __table_args__ = (UniqueConstraint("document_id", "seq", name="uq_document_chunks_doc_seq"),)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("stock_documents.id", ondelete="CASCADE"), index=True)
+    ticker: Mapped[str] = mapped_column(String(20), index=True)
+    seq: Mapped[int] = mapped_column(Integer)
+    section: Mapped[str] = mapped_column(String(200), default="")
+    page: Mapped[Optional[int]] = mapped_column(Integer)
+    content: Mapped[str] = mapped_column(Text)
+    token_count: Mapped[int] = mapped_column(Integer, default=0)
+    url: Mapped[Optional[str]] = mapped_column(String(500))
+    embedding: Mapped[Optional[list]] = mapped_column(JSON)         # L2-normalized dense vector
+
+
+class QaThread(Base):
+    """Per-user private Q&A conversation thread on a stock (D13)."""
+    __tablename__ = "qa_threads"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    ticker: Mapped[str] = mapped_column(String(20), index=True)
+    title: Mapped[str] = mapped_column(String(160))
+    summary: Mapped[Optional[str]] = mapped_column(Text)            # compressed history for long conversations
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+
+
+class QaMessage(Base):
+    """One turn in a private Q&A thread, storing verified clickable citations."""
+    __tablename__ = "qa_messages"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    thread_id: Mapped[str] = mapped_column(ForeignKey("qa_threads.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(String(16))                   # user | assistant
+    content: Mapped[str] = mapped_column(Text)
+    citations: Mapped[list] = mapped_column(JSON, default=list)     # [{id, source_type, title, section, url, quote, ...}]
+    used_web: Mapped[bool] = mapped_column(Boolean, default=False)
+    used_statements: Mapped[bool] = mapped_column(Boolean, default=False)
+    insufficient_evidence: Mapped[bool] = mapped_column(Boolean, default=False)
+    model: Mapped[Optional[str]] = mapped_column(String(80))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=_now)
