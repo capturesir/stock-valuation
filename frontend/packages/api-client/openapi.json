@@ -4016,6 +4016,184 @@
     }
    }
   },
+  "/api/v1/stocks/{ticker}/statements/analytics": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "財報進階分析（§6）：3／5 因子杜邦分析與盈利質素（CFO／淨利、FCF 轉換、Sloan 應計比率）",
+    "operationId": "statement_analytics_route_api_v1_stocks__ticker__statements_analytics_get",
+    "parameters": [
+     {
+      "name": "ticker",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ticker"
+      }
+     },
+     {
+      "name": "years",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 40,
+       "minimum": 1,
+       "default": 10,
+       "title": "Years"
+      }
+     },
+     {
+      "name": "plan",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "auto",
+        "central",
+        "personal",
+        "none"
+       ],
+       "type": "string",
+       "default": "auto",
+       "title": "Plan"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/StatementAnalyticsOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/statements/compare": {
+   "get": {
+    "tags": [
+     "statements"
+    ],
+    "summary": "多家公司財報並排比較（§6）：最多 10 隻已同步財報的股票，含毛利率、ROE、ROIC、盈利質素與同業中位數",
+    "operationId": "peer_compare_route_api_v1_statements_compare_get",
+    "parameters": [
+     {
+      "name": "tickers",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "description": "以逗號分隔的股票代號，例如 NVDA,AAPL,MSFT",
+       "title": "Tickers"
+      },
+      "description": "以逗號分隔的股票代號，例如 NVDA,AAPL,MSFT"
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PeerFinancialCompareOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/v1/stocks/{ticker}/statements/status": {
    "get": {
     "tags": [
@@ -8419,6 +8597,162 @@
     ],
     "title": "DocSyncOut"
    },
+   "DupointRowOut": {
+    "properties": {
+     "period": {
+      "type": "string",
+      "title": "Period"
+     },
+     "period_end": {
+      "type": "string",
+      "title": "Period End"
+     },
+     "avg_basis": {
+      "type": "string",
+      "title": "Avg Basis"
+     },
+     "roe": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Roe"
+     },
+     "net_margin": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Net Margin"
+     },
+     "asset_turnover": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Asset Turnover"
+     },
+     "equity_multiplier": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Equity Multiplier"
+     },
+     "tax_burden": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tax Burden"
+     },
+     "interest_burden": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Interest Burden"
+     },
+     "ebit_margin": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ebit Margin"
+     }
+    },
+    "type": "object",
+    "required": [
+     "period",
+     "period_end",
+     "avg_basis"
+    ],
+    "title": "DupointRowOut"
+   },
+   "EarningsQualityRowOut": {
+    "properties": {
+     "period": {
+      "type": "string",
+      "title": "Period"
+     },
+     "period_end": {
+      "type": "string",
+      "title": "Period End"
+     },
+     "cfo_to_net_income": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cfo To Net Income"
+     },
+     "fcf_to_net_income": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Fcf To Net Income"
+     },
+     "sloan_accrual_ratio": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sloan Accrual Ratio"
+     },
+     "quality_flag": {
+      "type": "string",
+      "title": "Quality Flag"
+     }
+    },
+    "type": "object",
+    "required": [
+     "period",
+     "period_end",
+     "quality_flag"
+    ],
+    "title": "EarningsQualityRowOut"
+   },
    "FiledConceptOut": {
     "properties": {
      "taxonomy": {
@@ -10100,6 +10434,128 @@
      "new_password"
     ],
     "title": "PasswordIn"
+   },
+   "PeerCompanyOut": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "template": {
+      "type": "string",
+      "title": "Template"
+     },
+     "period": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Period"
+     },
+     "grade": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Grade"
+     },
+     "values": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "object",
+      "title": "Values",
+      "default": {}
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "template"
+    ],
+    "title": "PeerCompanyOut"
+   },
+   "PeerFinancialCompareOut": {
+    "properties": {
+     "metrics": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Metrics",
+      "default": []
+     },
+     "companies": {
+      "items": {
+       "$ref": "#/components/schemas/PeerCompanyOut"
+      },
+      "type": "array",
+      "title": "Companies",
+      "default": []
+     },
+     "medians": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "object",
+      "title": "Medians",
+      "default": {}
+     },
+     "missing": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Missing",
+      "default": []
+     }
+    },
+    "type": "object",
+    "title": "PeerFinancialCompareOut"
    },
    "Plan": {
     "properties": {
@@ -12066,6 +12522,51 @@
      "rows"
     ],
     "title": "StandardStatements"
+   },
+   "StatementAnalyticsOut": {
+    "properties": {
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "template": {
+      "type": "string",
+      "title": "Template"
+     },
+     "currency": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Currency"
+     },
+     "dupont": {
+      "items": {
+       "$ref": "#/components/schemas/DupointRowOut"
+      },
+      "type": "array",
+      "title": "Dupont",
+      "default": []
+     },
+     "earnings_quality": {
+      "items": {
+       "$ref": "#/components/schemas/EarningsQualityRowOut"
+      },
+      "type": "array",
+      "title": "Earnings Quality",
+      "default": []
+     }
+    },
+    "type": "object",
+    "required": [
+     "ticker",
+     "template"
+    ],
+    "title": "StatementAnalyticsOut"
    },
    "StatementChecks": {
     "properties": {

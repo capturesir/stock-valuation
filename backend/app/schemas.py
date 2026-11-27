@@ -553,6 +553,53 @@ class HkexPdfSyncOut(BaseModel):
     cross_check: Optional[dict] = None
 
 
+class DupointRowOut(BaseModel):
+    period: str
+    period_end: str
+    avg_basis: str
+    roe: Optional[float] = None
+    net_margin: Optional[float] = None
+    asset_turnover: Optional[float] = None
+    equity_multiplier: Optional[float] = None
+    tax_burden: Optional[float] = None
+    interest_burden: Optional[float] = None
+    ebit_margin: Optional[float] = None
+
+
+class EarningsQualityRowOut(BaseModel):
+    period: str
+    period_end: str
+    cfo_to_net_income: Optional[float] = None
+    fcf_to_net_income: Optional[float] = None
+    sloan_accrual_ratio: Optional[float] = None
+    quality_flag: str
+
+
+class StatementAnalyticsOut(BaseModel):
+    ticker: str
+    template: str
+    currency: Optional[str] = None
+    dupont: list[DupointRowOut] = []
+    earnings_quality: list[EarningsQualityRowOut] = []
+
+
+class PeerCompanyOut(BaseModel):
+    ticker: str
+    name: Optional[str] = None
+    currency: Optional[str] = None
+    template: str
+    period: Optional[str] = None
+    grade: Optional[str] = None
+    values: dict[str, Optional[float]] = {}
+
+
+class PeerFinancialCompareOut(BaseModel):
+    metrics: list[str] = []
+    companies: list[PeerCompanyOut] = []
+    medians: dict[str, Optional[float]] = {}
+    missing: list[str] = []
+
+
 class StdYear(BaseModel):
     label: str = Field(description="FY2025｜FY2025 Q1｜TTM")
     start: str

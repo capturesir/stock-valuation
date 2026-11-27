@@ -865,3 +865,82 @@ def standard_statements(db: Session, filer: Filer, view: str = "latest", as_of: 
             "plan": ({k: plan[k] for k in ("kind", "id", "version", "label")} if plan else None),
             "adjustments_not_shown": sorted(f"{a.item} {a.period}" for a in (plan or {}).get("adjustments") or []
                                             if a.period not in {y.label for y in fys})}
+
+
+def statement_analytics(db: Session, filer: Filer, ticker: str, years: int = 10, plan: Optional[dict] = None) -> dict:
+    """DuPont (3-factor & 5-factor) + Earnings Quality (CFO/NI, FCF/NI, Sloan accrual ratio) for one company."""
+    from libs.sv_data.adjust import apply as apply_adjustments
+    from libs.sv_data.analytics import dupont_analysis, earnings_quality
+
+    std, rs, template = standardized(db, filer, view="latest", ticker=ticker)
+    if plan and plan.get("adjustments"):
+        std = apply_adjustments(std, rs, plan["adjustments"])
+    return {
+        "ticker": ticker,
+        "template": template,
+        "currency": std.currency,
+        "dupont": dupont_analysis(std, years=years),
+        "earnings_quality": earnings_quality(std, years=years),
+    }
+
+
+def peer_financial_compare(db: Session, tickers: list[str]) -> dict:
+    """Side-by-side standardized financial comparison + peer medians for up to 10 synced companies."""
+    from libs.sv_data.analytics import PeerEntry, earnings_quality, peer_comparison
+    from libs.sv_data.checks import grades, load_checks, run_checks
+    from libs.sv_data.ratios import compute_ratios, growth, load_ratios
+
+    entries: list[PeerEntry] = []
+    missing: list[str] = []
+    seen: set[str] = set()
+    for raw_t in tickers[:10]:
+        t = raw_t.strip().upper()
+        if not t or t in seen:
+            continue
+        seen.add(t)
+        f = filer_for(db, t)
+        if f is None or f.synced_at is None:
+            missing.append(t)
+            continue
+        std, rs, template = standardized(db, f, view="latest", ticker=t)
+        if not std.fiscal_years:
+            missing.append(t)
+            continue
+        latest_fy = std.fiscal_years[-1].label
+        rr = load_ratios(f"ratios_{template}")
+        rv = compute_ratios(std, rr, rs)
+        gv = growth(std, rr.growth)
+        eq_rows = earnings_quality(std, years=1)
+        eq0 = eq_rows[0] if eq_rows else {}
+
+        cs = load_checks(f"checks_{template}")
+        yahoo, _ = yahoo_figures(db, t)
+        gr = grades(run_checks(std, cs, external={"yahoo": yahoo} if yahoo is not None else None))
+
+        def _r(code: str) -> Optional[float]:
+            v = rv.get((code, latest_fy))
+            return float(v.value) if v is not None else None
+
+        metrics = {
+            "gross_margin": _r("gross_margin"),
+            "operating_margin": _r("operating_margin"),
+            "net_margin": _r("net_margin"),
+            "roe": _r("roe"),
+            "roic": _r("roic"),
+            "debt_to_equity": _r("debt_to_equity"),
+            "cfo_to_net_income": eq0.get("cfo_to_net_income"),
+            "sloan_accrual_ratio": eq0.get("sloan_accrual_ratio"),
+            "revenue_growth_yoy": float(gv[("revenue", latest_fy)]) if ("revenue", latest_fy) in gv else None,
+        }
+        entries.append(PeerEntry(
+            ticker=t,
+            name=f.name,
+            currency=std.currency,
+            template=template,
+            period=latest_fy,
+            grade=gr.get(latest_fy),
+            metrics=metrics,
+        ))
+    out = peer_comparison(entries)
+    out["missing"] = missing
+    return out

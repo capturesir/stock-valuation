@@ -49,6 +49,15 @@ export function ComparePage() {
     if (!selected || !data.lines.some((l) => l.key === selected)) setSelected(data.lines.find((l) => l.key !== data.benchmark)?.key ?? null);
   }, [data, selected]);
 
+  const tickerRefs = useMemo(() => lines.filter((l) => l.kind === "ticker").map((l) => l.ref), [lines]);
+  const peerFin = useQuery({
+    queryKey: ["peer-fin", tickerRefs],
+    queryFn: () => api.peerFinancialCompare(tickerRefs),
+    enabled: tickerRefs.length >= 2,
+    retry: false,
+    staleTime: 5 * 60e3,
+  });
+
   const portfolios = useQuery({ queryKey: ["portfolios"], queryFn: api.portfolios });
   const saved = useQuery({ queryKey: ["comparisons"], queryFn: api.comparisons });
   const save = useMutation({ mutationFn: () => api.saveComparison(name.trim(), body, savedId),
@@ -196,6 +205,43 @@ export function ComparePage() {
               ))}</tbody>
             </table>
           </div>
+        </section>
+      )}
+
+      {peerFin.data && (peerFin.data.companies?.length ?? 0) > 0 && (
+        <section className="card" aria-labelledby="cmp-peer-fin" style={{ gap: 8 }}>
+          <h2 id="cmp-peer-fin" style={{ fontSize: "var(--sv-fs-lg)" }}>{t("analytics.peer.title")}</h2>
+          <span className="muted small">{t("analytics.peer.subtitle")}</span>
+          <div className="tbl-wrap">
+            <table className="tbl" style={{ minWidth: 220 + (peerFin.data.companies?.length ?? 0) * 110 }}>
+              <thead><tr>
+                <th scope="col" className="l">{t("cmp.metric")}</th>
+                {(peerFin.data.companies ?? []).map((c) => (
+                  <th key={c.ticker} scope="col">{c.ticker}<br /><span className="muted small">{c.period ?? "—"} {c.grade ? `(${c.grade})` : ""}</span></th>
+                ))}
+                <th scope="col">{t("analytics.peer.median")}</th>
+              </tr></thead>
+              <tbody>
+                {(peerFin.data.metrics ?? []).map((k) => {
+                  const fmtVal = (val: number | null | undefined) => {
+                    if (val == null) return "—";
+                    if (k === "debt_to_equity" || k === "cfo_to_net_income") return `${val.toFixed(2)}×`;
+                    return f.pct(val, 1, k === "revenue_growth_yoy");
+                  };
+                  return (
+                    <tr key={k}>
+                      <th scope="row" className="l">{t(`analytics.peer.m.${k}`)}</th>
+                      {(peerFin.data.companies ?? []).map((c) => <td key={c.ticker}>{fmtVal(c.values?.[k])}</td>)}
+                      <td><strong>{fmtVal(peerFin.data.medians?.[k])}</strong></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {(peerFin.data.missing?.length ?? 0) > 0 && (
+            <span className="muted small">{t("analytics.peer.missing", { list: (peerFin.data.missing ?? []).join(", ") })}</span>
+          )}
         </section>
       )}
 

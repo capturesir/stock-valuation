@@ -811,6 +811,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/stocks/{ticker}/statements/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 財報進階分析（§6）：3／5 因子杜邦分析與盈利質素（CFO／淨利、FCF 轉換、Sloan 應計比率） */
+        get: operations["statement_analytics_route_api_v1_stocks__ticker__statements_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/statements/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 多家公司財報並排比較（§6）：最多 10 隻已同步財報的股票，含毛利率、ROE、ROIC、盈利質素與同業中位數 */
+        get: operations["peer_compare_route_api_v1_statements_compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stocks/{ticker}/statements/status": {
         parameters: {
             query?: never;
@@ -1863,6 +1897,44 @@ export interface components {
             /** Errors */
             errors?: string[];
         };
+        /** DupointRowOut */
+        DupointRowOut: {
+            /** Period */
+            period: string;
+            /** Period End */
+            period_end: string;
+            /** Avg Basis */
+            avg_basis: string;
+            /** Roe */
+            roe?: number | null;
+            /** Net Margin */
+            net_margin?: number | null;
+            /** Asset Turnover */
+            asset_turnover?: number | null;
+            /** Equity Multiplier */
+            equity_multiplier?: number | null;
+            /** Tax Burden */
+            tax_burden?: number | null;
+            /** Interest Burden */
+            interest_burden?: number | null;
+            /** Ebit Margin */
+            ebit_margin?: number | null;
+        };
+        /** EarningsQualityRowOut */
+        EarningsQualityRowOut: {
+            /** Period */
+            period: string;
+            /** Period End */
+            period_end: string;
+            /** Cfo To Net Income */
+            cfo_to_net_income?: number | null;
+            /** Fcf To Net Income */
+            fcf_to_net_income?: number | null;
+            /** Sloan Accrual Ratio */
+            sloan_accrual_ratio?: number | null;
+            /** Quality Flag */
+            quality_flag: string;
+        };
         /** FiledConceptOut */
         FiledConceptOut: {
             /** Taxonomy */
@@ -2486,6 +2558,53 @@ export interface components {
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** PeerCompanyOut */
+        PeerCompanyOut: {
+            /** Ticker */
+            ticker: string;
+            /** Name */
+            name?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /** Template */
+            template: string;
+            /** Period */
+            period?: string | null;
+            /** Grade */
+            grade?: string | null;
+            /**
+             * Values
+             * @default {}
+             */
+            values: {
+                [key: string]: number | null;
+            };
+        };
+        /** PeerFinancialCompareOut */
+        PeerFinancialCompareOut: {
+            /**
+             * Metrics
+             * @default []
+             */
+            metrics: string[];
+            /**
+             * Companies
+             * @default []
+             */
+            companies: components["schemas"]["PeerCompanyOut"][];
+            /**
+             * Medians
+             * @default {}
+             */
+            medians: {
+                [key: string]: number | null;
+            };
+            /**
+             * Missing
+             * @default []
+             */
+            missing: string[];
         };
         /** Plan */
         Plan: {
@@ -3202,6 +3321,25 @@ export interface components {
              * @description 方案中不在所顯示期間的調整（項目 期間）
              */
             adjustments_not_shown?: string[];
+        };
+        /** StatementAnalyticsOut */
+        StatementAnalyticsOut: {
+            /** Ticker */
+            ticker: string;
+            /** Template */
+            template: string;
+            /** Currency */
+            currency?: string | null;
+            /**
+             * Dupont
+             * @default []
+             */
+            dupont: components["schemas"]["DupointRowOut"][];
+            /**
+             * Earnings Quality
+             * @default []
+             */
+            earnings_quality: components["schemas"]["EarningsQualityRowOut"][];
         };
         /** StatementChecks */
         StatementChecks: {
@@ -5684,6 +5822,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandardStatements"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    statement_analytics_route_api_v1_stocks__ticker__statements_analytics_get: {
+        parameters: {
+            query?: {
+                years?: number;
+                plan?: "auto" | "central" | "personal" | "none";
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementAnalyticsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    peer_compare_route_api_v1_statements_compare_get: {
+        parameters: {
+            query: {
+                /** @description 以逗號分隔的股票代號，例如 NVDA,AAPL,MSFT */
+                tickers: string;
+            };
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeerFinancialCompareOut"];
                 };
             };
             /** @description Validation Error */

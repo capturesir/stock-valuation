@@ -16,8 +16,8 @@ from ..auth import Principal, current_principal, require_admin, require_user
 from ..db import get_db
 from ..i18n import AppError, http_error, lang_dep
 from ..models import FiledConceptRow, FiledFactRow, Filer, Filing, InstanceFactRow
-from ..schemas import (AdjustmentPlanIn, AdjustmentPlansOut, AdjustmentVersionOut, DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, HkexPdfSyncOut, StandardStatements,
-                       StatementsStatus, StatementsSyncResult)
+from ..schemas import (AdjustmentPlanIn, AdjustmentPlansOut, AdjustmentVersionOut, DataSourcesIn, DataSourcesOut, FiledConceptOut, FiledFactOut, FilerOut, HkexPdfSyncOut, PeerFinancialCompareOut,
+                       StandardStatements, StatementAnalyticsOut, StatementsStatus, StatementsSyncResult)
 from ..services import adjustments, statements
 from .common import iso, ticker_or_400
 
@@ -141,6 +141,32 @@ def standard(ticker: str, view: Literal["latest", "original"] = "latest", as_of:
     t = ticker_or_400(ticker)
     return {"ticker": t, **statements.standard_statements(db, f, view=view, as_of=as_of, years=years, ticker=t, period=period,
                                                           plan=_plan(db, t, p, plan))}
+
+
+@router.get("/stocks/{ticker}/statements/analytics", response_model=StatementAnalyticsOut,
+            summary="財報進階分析（§6）：3／5 因子杜邦分析與盈利質素（CFO／淨利、FCF 轉換、Sloan 應計比率）")
+def statement_analytics_route(
+    ticker: str,
+    years: int = Query(10, ge=1, le=40),
+    plan: PlanChoice = "auto",
+    p: Principal = Depends(current_principal),
+    db: Session = Depends(get_db),
+    lang: str = Depends(lang_dep),
+) -> dict:
+    f = _filer_or_404(db, ticker, lang)
+    t = ticker_or_400(ticker)
+    return statements.statement_analytics(db, f, t, years=years, plan=_plan(db, t, p, plan))
+
+
+@router.get("/statements/compare", response_model=PeerFinancialCompareOut,
+            summary="多家公司財報並排比較（§6）：最多 10 隻已同步財報的股票，含毛利率、ROE、ROIC、盈利質素與同業中位數")
+def peer_compare_route(
+    tickers: str = Query(..., description="以逗號分隔的股票代號，例如 NVDA,AAPL,MSFT"),
+    _: Principal = Depends(current_principal),
+    db: Session = Depends(get_db),
+) -> dict:
+    parsed = [ticker_or_400(x) for x in tickers.split(",") if x.strip()]
+    return statements.peer_financial_compare(db, parsed)
 
 
 def _plan(db: Session, t: str, p: Principal, which: str) -> dict | None:

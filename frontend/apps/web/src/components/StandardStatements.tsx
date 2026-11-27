@@ -145,9 +145,60 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
         );
       })}
       <Ratios d={d} />
+      <AnalyticsPanel ticker={ticker} plan={plan} />
       <Checks d={d} />
       <AdjustmentPlans ticker={ticker} />
     </section>
+  );
+}
+
+const QUALITY_TAG: Record<string, string> = { strong: "ok", moderate: "warn", weak: "bad", negative_earnings: "bad", insufficient_data: "neutral" };
+
+function AnalyticsPanel({ ticker, plan }: { ticker: string; plan: PlanChoice }) {
+  const { t, f } = useI18n();
+  const q = useQuery({ queryKey: ["stmt-analytics", ticker, plan], queryFn: () => api.statementAnalytics(ticker, 8, plan) });
+  const d = q.data;
+  if (!d || (!(d.dupont?.length) && !(d.earnings_quality?.length))) return null;
+  const dup = d.dupont ?? [];
+  const eq = d.earnings_quality ?? [];
+  const pct = (v?: number | null) => (v == null ? "—" : f.pct(v, 1, false));
+  const mul = (v?: number | null) => (v == null ? "—" : `${v.toFixed(2)}×`);
+  return (
+    <div style={{ borderTop: "1px solid var(--sv-line-faint)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+      <h3 style={{ margin: 0 }}>{t("analytics.dupont.title")}</h3>
+      <span className="muted small">{t("analytics.dupont.subtitle")}</span>
+      <div className="tbl-wrap">
+        <table className="tbl std" style={{ minWidth: 160 + dup.length * 95 }}>
+          <thead><tr><th scope="col" className="l">{t("std.col.item")}</th>
+            {dup.map((r) => <th key={r.period} scope="col">{r.period}</th>)}</tr></thead>
+          <tbody>
+            <tr><th scope="row" className="l"><strong>{t("analytics.dupont.roe")}</strong></th>{dup.map((r) => <td key={r.period}><strong>{pct(r.roe)}</strong></td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.dupont.netMargin")}</th>{dup.map((r) => <td key={r.period}>{pct(r.net_margin)}</td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.dupont.assetTurnover")}</th>{dup.map((r) => <td key={r.period}>{mul(r.asset_turnover)}</td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.dupont.equityMult")}</th>{dup.map((r) => <td key={r.period}>{mul(r.equity_multiplier)}</td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.dupont.taxBurden")}</th>{dup.map((r) => <td key={r.period}>{mul(r.tax_burden)}</td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.dupont.interestBurden")}</th>{dup.map((r) => <td key={r.period}>{mul(r.interest_burden)}</td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.dupont.ebitMargin")}</th>{dup.map((r) => <td key={r.period}>{pct(r.ebit_margin)}</td>)}</tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style={{ margin: "6px 0 0" }}>{t("analytics.quality.title")}</h3>
+      <span className="muted small">{t("analytics.quality.subtitle")}</span>
+      <div className="tbl-wrap">
+        <table className="tbl std" style={{ minWidth: 160 + eq.length * 95 }}>
+          <thead><tr><th scope="col" className="l">{t("std.col.item")}</th>
+            {eq.map((r) => <th key={r.period} scope="col">{r.period}</th>)}</tr></thead>
+          <tbody>
+            <tr><th scope="row" className="l">{t("analytics.quality.cfoNi")}</th>{eq.map((r) => <td key={r.period}>{mul(r.cfo_to_net_income)}</td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.quality.fcfNi")}</th>{eq.map((r) => <td key={r.period}>{mul(r.fcf_to_net_income)}</td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.quality.sloan")}</th>{eq.map((r) => <td key={r.period}>{pct(r.sloan_accrual_ratio)}</td>)}</tr>
+            <tr><th scope="row" className="l">{t("analytics.quality.flag")}</th>
+              {eq.map((r) => <td key={r.period}><span className={`tag ${QUALITY_TAG[r.quality_flag] ?? "neutral"}`}>{t(`analytics.quality.flag.${r.quality_flag}`)}</span></td>)}</tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

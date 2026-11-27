@@ -57,6 +57,8 @@ export type PortfolioIn = S["PortfolioIn"];
 export type PortfolioOut = S["PortfolioOut"];
 export type StatementsStatus = S["StatementsStatus"];
 export type HkexPdfSyncOut = S["HkexPdfSyncOut"];
+export type StatementAnalyticsOut = S["StatementAnalyticsOut"];
+export type PeerFinancialCompareOut = S["PeerFinancialCompareOut"];
 export type StdRow = S["StdRow"];
 export type StdCell = S["StdCell"];
 export type AdjustmentPlansOut = S["AdjustmentPlansOut"];
@@ -210,6 +212,10 @@ export function createClient(cfg: ClientConfig = {}) {
     standardStatements: (ticker: string, view: "latest" | "original" = "latest", period: "annual" | "quarterly" = "annual", years = 10,
                          plan: PlanChoice = "auto") =>
       req<StandardStatements>("GET", `/stocks/${enc(ticker)}/statements${q({ view, period, years: period === "quarterly" ? Math.max(years, 12) : years, plan })}`),
+    statementAnalytics: (ticker: string, years = 10, plan: PlanChoice = "auto") =>
+      req<StatementAnalyticsOut>("GET", `/stocks/${enc(ticker)}/statements/analytics${q({ years, plan })}`),
+    peerFinancialCompare: (tickers: string[]) =>
+      req<PeerFinancialCompareOut>("GET", `/statements/compare${q({ tickers: tickers.join(",") })}`),
     adjustmentPlans: (ticker: string) => req<AdjustmentPlansOut>("GET", `/stocks/${enc(ticker)}/adjustment-plans`),
     adjustmentVersion: (planId: string, version: number) =>
       req<AdjustmentVersionOut>("GET", `/adjustment-plans/${enc(planId)}/versions/${version}`),
