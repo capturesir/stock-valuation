@@ -1,7 +1,7 @@
 # 可攜式、可換模型的股票估值系統（A 組 FCFF 框架）
 
-- 版本：2.0.0-alpha.2（v2 預覽版；v1.1 功能照常可用）；2.0.0-alpha.3 開發中：美股財報已可從 SEC 取得並逐筆累積，標準化年度及季度財報（一般企業、銀行、保險三套科目表，含近十二個月，附每個數字的出處、每期數據品質檢查、比率與增長，可匯出 Excel／CSV；讀取年報 XBRL 原文補上按股份類別的每股盈利與公司自訂科目；中央與個人調整方案，全部版本保留）已可查看；alpha.4：市場數據完整性檢查、與試算表核對的績效指標、走勢比較圖、投資組合最佳化（含效率前緣、樣本外檢驗與可重算核對的場景）；規劃中：alpha.5 每隻股票的文件庫與 AI 問答（見路線圖 D13）
-- 日期：2026-11-18（亞洲／澳門時間，UTC+8）
+- 版本：2.0.0-beta.2（v2 測試版；v1.1 功能與 FCFF 引擎照常可用且逐位元一致）：已全數完成 alpha.2（PostgreSQL、多用戶角色、品牌、證券主檔與市場數據）、alpha.3（四層財報架構、SEC XBRL、三套行業科目表、品質檢查、調整方案、估值接軌標準層與多語言 Excel／Markdown 匯出）、alpha.4（市場數據完整性檢查、績效指標、走勢比較圖、投資組合最佳化與場景重現）、alpha.5（每隻股票文件庫與混合檢索附出處問答，D13）、beta.1（多方法估值：金融業警示與 DDM／RI／P/B–ROE、反向 DCF、相對估值與足球場圖，D5）與 beta.2（AI 任務 T1／T2、統一新聞來源介面 D4、採用／忽略流程與 100% 來源引用驗證）
+- 日期：2026-11-28（亞洲／澳門時間，UTC+8）
 - 語言：繁體中文（介面另支援简体中文、English）
 - 倉庫：[https://github.com/capturesir/stock-valuation](https://github.com/capturesir/stock-valuation)
 - 本系統把既有 A 組 FCFF 框架（方法 A 折現率、五情境、可驗證 Excel）打包成可在 **Windows、macOS 與 Linux** 本機運行、並改接其他大語言模型（含本地 OpenAI 相容伺服器）的程式集。
@@ -25,7 +25,7 @@ docker compose up -d --build
 | [`docs/財報數據與估值架構.md`](docs/財報數據與估值架構.md) | 財報四層架構、會計準則變更、獨立程式庫（`libs/`） |
 | [`docs/design-system.html`](docs/design-system.html) | 設計規範（顏色、字體、元件、圖表、跨平台） |
 | [`docs/versioning.md`](docs/versioning.md) | 版本規則、發佈步驟、資料庫遷移 |
-| [`docs/決策紀錄與路線圖-v2.1.md`](docs/決策紀錄與路線圖-v2.1.md) | 擁有者決定（D1–D12）與路線圖 |
+| [`docs/決策紀錄與路線圖-v2.1.md`](docs/決策紀錄與路線圖-v2.1.md) | 擁有者決定（D1–D13）與路線圖 |
 | [`docs/系統改進計劃-v2.md`](docs/系統改進計劃-v2.md) | 改進計劃（v2.0 初版） |
 | [`CHANGELOG.md`](CHANGELOG.md) | 更新日誌 |
 
