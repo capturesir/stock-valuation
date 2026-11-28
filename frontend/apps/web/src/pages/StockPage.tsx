@@ -5,6 +5,7 @@ import { Link, NavLink, useNavigate, useParams } from "react-router-dom";
 import { Refresh } from "../components/Icons";
 import { rememberTicker } from "../components/Layout";
 import { CompanyCard, TickerNotFound } from "../components/CompanyCard";
+import { DcfProjectionsCard } from "../components/DcfProjectionsCard";
 import { DocumentQaTab } from "../components/DocumentQaTab";
 import { FiledData } from "../components/FiledData";
 import { FootballFieldCard } from "../components/FootballFieldCard";
@@ -210,6 +211,7 @@ export function StockPage() {
           </section>
           <RunAiAnalysisCard runId={latest.id} currency={ccy} />
           {runDetail.data && <ValuationWaterfallCard detail={runDetail.data} />}
+          {runDetail.data && <DcfProjectionsCard detail={runDetail.data} />}
           <SensitivityMonteCarloCard runId={latest.id} currency={ccy} />
         </>
       )}
