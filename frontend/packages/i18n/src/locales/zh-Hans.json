@@ -1116,5 +1116,21 @@
   "wacc.cfo.cfo": "经营活动现金流（CFO）",
   "wacc.cfo.capex": "资本开支（CapEx）",
   "wacc.cfo.cfoFcff": "CFO 公式估算 FCFF",
-  "wacc.cfo.nopatDa": "NOPAT ＋ D&A（盈利现金基准）"
+  "wacc.cfo.nopatDa": "NOPAT ＋ D&A（盈利现金基准）",
+  "val.ff.consensus": "市场分析师一致目标价",
+  "val.ff.consensusCount": "仅供对照（{n} 位分析师）",
+  "val.ff.breakdownToggle": "展开各估值方法倍数与公式明细（{n} 项）",
+  "val.ff.tunerTitle": "互动权重调校器（实时预览综合理论价）",
+  "val.ff.tunerHint": "拖动滑杆实时调整各方法权重（系统自动归一化至 100%），仅在画面上实时试算，不会覆写数据库记录。",
+  "val.ff.tunerReset": "重置默认权重",
+  "val.ff.tunedBadge": "自定义权重试算中",
+  "val.ff.tunerCompare": "默认综合价 {base} → 调校后 {tuned}（{delta}）",
+  "val.rel.metric": "估值倍数指标",
+  "val.rel.multiples": "熊／基准／牛倍数",
+  "val.rel.m.pe": "自身历史 P/E",
+  "val.rel.m.pb": "自身历史 P/B",
+  "val.rel.m.ev_ebitda": "自身历史 EV/EBITDA",
+  "val.rel.m.ev_sales": "自身历史 EV/Sales",
+  "val.rel.m.peer_pe": "同业中位数 P/E",
+  "val.rel.m.peer_ev_ebitda": "同业中位数 EV/EBITDA"
 }

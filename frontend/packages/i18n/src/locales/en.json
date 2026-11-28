@@ -1116,5 +1116,21 @@
   "wacc.cfo.cfo": "Cash from Operations (CFO)",
   "wacc.cfo.capex": "Capital Expenditure (CapEx)",
   "wacc.cfo.cfoFcff": "CFO-Formula FCFF",
-  "wacc.cfo.nopatDa": "NOPAT + D&A (Earnings Cash Base)"
+  "wacc.cfo.nopatDa": "NOPAT + D&A (Earnings Cash Base)",
+  "val.ff.consensus": "Analyst Consensus Target",
+  "val.ff.consensusCount": "Reference ({n} analysts)",
+  "val.ff.breakdownToggle": "Inspect method multiples & formula breakdown ({n} methods)",
+  "val.ff.tunerTitle": "Interactive Weight Tuner (Live Composite Preview)",
+  "val.ff.tunerHint": "Drag sliders to re-weight valuation methods (normalized to 100% automatically). Live preview only; saved runs are unchanged.",
+  "val.ff.tunerReset": "Reset Default Weights",
+  "val.ff.tunedBadge": "Custom Weights",
+  "val.ff.tunerCompare": "Default Composite {base} → Tuned {tuned} ({delta})",
+  "val.rel.metric": "Multiple",
+  "val.rel.multiples": "Bear / Base / Bull",
+  "val.rel.m.pe": "Historical P/E",
+  "val.rel.m.pb": "Historical P/B",
+  "val.rel.m.ev_ebitda": "Historical EV/EBITDA",
+  "val.rel.m.ev_sales": "Historical EV/Sales",
+  "val.rel.m.peer_pe": "Peer Median P/E",
+  "val.rel.m.peer_ev_ebitda": "Peer Median EV/EBITDA"
 }

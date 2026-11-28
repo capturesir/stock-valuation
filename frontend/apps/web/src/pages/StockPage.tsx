@@ -171,7 +171,7 @@ export function StockPage() {
               </div>
             </aside>
           </div>
-          {methods.data && <FootballFieldCard data={methods.data} currency={ccy} />}
+          {methods.data && <FootballFieldCard data={methods.data} currency={ccy} ticker={ticker} consensus={runDetail.data?.ib_compare} />}
           {latest.data_gaps.length > 0 && (
             <section className="card" aria-labelledby="gaps-h">
               <h2 id="gaps-h">{t("stock.gaps")}</h2>
@@ -183,7 +183,7 @@ export function StockPage() {
         </>
       )}
 
-      {tab === "valuation" && methods.data && <FootballFieldCard data={methods.data} currency={ccy} />}
+      {tab === "valuation" && methods.data && <FootballFieldCard data={methods.data} currency={ccy} ticker={ticker} consensus={runDetail.data?.ib_compare} />}
       {v && latest && tab === "valuation" && (
         <>
           <section className="card" aria-labelledby="scen-h">

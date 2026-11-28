@@ -1116,5 +1116,21 @@
   "wacc.cfo.cfo": "經營活動現金流（CFO）",
   "wacc.cfo.capex": "資本開支（CapEx）",
   "wacc.cfo.cfoFcff": "CFO 公式估算 FCFF",
-  "wacc.cfo.nopatDa": "NOPAT ＋ D&A（盈利現金基準）"
+  "wacc.cfo.nopatDa": "NOPAT ＋ D&A（盈利現金基準）",
+  "val.ff.consensus": "市場分析師一致目標價",
+  "val.ff.consensusCount": "僅供對照（{n} 位分析師）",
+  "val.ff.breakdownToggle": "展開各估值方法倍數與公式明細（{n} 項）",
+  "val.ff.tunerTitle": "互動權重調校器（即時預覽綜合理論價）",
+  "val.ff.tunerHint": "拖曳滑桿即時調整各方法權重（系統自動正規化至 100%），僅在畫面上即時試算，不會覆寫資料庫紀錄。",
+  "val.ff.tunerReset": "重設預設權重",
+  "val.ff.tunedBadge": "自訂權重試算中",
+  "val.ff.tunerCompare": "預設綜合價 {base} → 調校後 {tuned}（{delta}）",
+  "val.rel.metric": "估值倍數指標",
+  "val.rel.multiples": "熊／基準／牛倍數",
+  "val.rel.m.pe": "自身歷史 P/E",
+  "val.rel.m.pb": "自身歷史 P/B",
+  "val.rel.m.ev_ebitda": "自身歷史 EV/EBITDA",
+  "val.rel.m.ev_sales": "自身歷史 EV/Sales",
+  "val.rel.m.peer_pe": "同業中位數 P/E",
+  "val.rel.m.peer_ev_ebitda": "同業中位數 EV/EBITDA"
 }

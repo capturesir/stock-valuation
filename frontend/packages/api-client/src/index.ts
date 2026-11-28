@@ -233,7 +233,18 @@ export function createClient(cfg: ClientConfig = {}) {
     saveLimits: (body: LimitsIn) => req<LimitsOut>("PUT", "/admin/limits", body),
     ops: () => req<OpsStatus>("GET", "/admin/ops"),
     valuations: (ticker: string) => req<StockValuations>("GET", `/stocks/${enc(ticker)}/valuations`),
-    methods: (ticker: string) => req<StockMethodsOut>("GET", `/stocks/${enc(ticker)}/methods`),
+    methods: (ticker: string, weights?: Record<string, number>) => {
+      const qs = weights
+        ? q({
+            w_dcf: weights.dcf,
+            w_relative: weights.relative,
+            w_ri: weights.ri,
+            w_ddm: weights.ddm,
+            w_pb_roe: weights.pb_roe,
+          })
+        : "";
+      return req<StockMethodsOut>("GET", `/stocks/${enc(ticker)}/methods${qs}`);
+    },
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),
     excelUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/excel${q({ lang })}`,
     reportUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/report${q({ lang })}`,
