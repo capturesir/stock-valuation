@@ -224,7 +224,7 @@ def compute_stock_methods(
             if ddm_res:
                 methods.append(ddm_res)
 
-    # 3. Relative Valuation (own 5-year historical P/E, P/B, EV/Sales bands from accumulated prices + statements)
+    # 3. Relative Valuation (own 5-year historical P/E, P/B, EV/EBITDA, EV/Sales + synced peer multiples)
     if std:
         fy_objs = [y for y in (std.get("years") or []) if y.get("kind") == "annual"][:5]
         years = [y["label"] for y in fy_objs]
@@ -234,10 +234,12 @@ def compute_stock_methods(
         eq_s = _std_series(std, "equity_parent", years)
         sh_s = _std_series(std, "shares_diluted_weighted", years)
         rev_s = _std_series(std, "revenue", years)
+        ebit_s = _std_series(std, "operating_income", years)
+        da_s = _std_series(std, "depreciation_amortization", years)
         cash_s = _std_series(std, "cash", years)
         debt_s = _std_series(std, "debt_noncurrent", years)
 
-        pe_hist, pb_hist, evs_hist = [], [], []
+        pe_hist, pb_hist, evs_hist, evebitda_hist = [], [], [], []
         for y in years:
             px = y_prices.get(y)
             if not px:
@@ -246,16 +248,23 @@ def compute_stock_methods(
                 pe_hist.append(px / eps_s[y])
             if eq_s.get(y, 0) > 0 and sh_s.get(y, 0) > 0:
                 pb_hist.append(px / (eq_s[y] / sh_s[y]))
-            if template == "general" and rev_s.get(y, 0) > 0 and sh_s.get(y, 0) > 0:
+            if template == "general" and sh_s.get(y, 0) > 0:
                 ev = px * sh_s[y] + debt_s.get(y, 0.0) - cash_s.get(y, 0.0)
                 if ev > 0:
-                    evs_hist.append(ev / rev_s[y])
+                    if rev_s.get(y, 0) > 0:
+                        evs_hist.append(ev / rev_s[y])
+                    ebitda_y = ebit_s.get(y, 0.0) + abs(da_s.get(y, 0.0))
+                    if ebitda_y > 0:
+                        evebitda_hist.append(ev / ebitda_y)
 
         mult_inputs: list[MultipleInput] = []
         latest_eps = _latest_std_val(std, "eps_diluted", years)
         latest_eq = _latest_std_val(std, "equity_parent", years)
         latest_sh = _latest_std_val(std, "shares_diluted_weighted", years)
         latest_rev = _latest_std_val(std, "revenue", years)
+        latest_ebit = _latest_std_val(std, "operating_income", years)
+        latest_da = _latest_std_val(std, "depreciation_amortization", years) or 0.0
+        latest_ebitda = (latest_ebit + abs(latest_da)) if latest_ebit is not None else None
         latest_net_debt = (_latest_std_val(std, "debt_noncurrent", years) or 0.0) - (_latest_std_val(std, "cash", years) or 0.0)
 
         pe_band = _quantile_band(pe_hist)
@@ -264,9 +273,53 @@ def compute_stock_methods(
         pb_band = _quantile_band(pb_hist)
         if pb_band and latest_eq and latest_sh and latest_sh > 0:
             mult_inputs.append(MultipleInput("pb", latest_eq / latest_sh, *pb_band))
+        ev_ebitda_band = _quantile_band(evebitda_hist)
+        if ev_ebitda_band and latest_ebitda and latest_ebitda > 0 and latest_sh and latest_sh > 0:
+            mult_inputs.append(MultipleInput("ev_ebitda", latest_ebitda, *ev_ebitda_band, net_debt=latest_net_debt, shares=latest_sh))
         evs_band = _quantile_band(evs_hist)
         if evs_band and latest_rev and latest_sh and latest_sh > 0:
             mult_inputs.append(MultipleInput("ev_sales", latest_rev, *evs_band, net_debt=latest_net_debt, shares=latest_sh))
+
+        # Cross-sectional peer multiples (synced peers from T5 or industry defaults)
+        try:
+            from libs.sv_ai import default_peer_tickers
+            industry_hint = (calc or {}).get("generic_industry") or (filer.sic_description if filer else None)
+            t5_peers = [str(p.get("ticker")) for p in (((calc or {}).get("ai_analysis") or {}).get("T5") or {}).get("peers") or []
+                        if isinstance(p, dict) and p.get("ticker")]
+            peer_cands = list(dict.fromkeys([*t5_peers, *default_peer_tickers(ticker, industry_hint)]))[:6]
+            peer_pe_vals, peer_eve_vals = [], []
+            for pt in peer_cands:
+                if pt.upper() == ticker.upper():
+                    continue
+                pf = statements.filer_for(db, pt)
+                if pf is None or pf.synced_at is None:
+                    continue
+                p_px = _dec(db.scalar(select(PriceBar.close).where(PriceBar.ticker == pt).order_by(PriceBar.date.desc()).limit(1)))
+                if not p_px or p_px <= 0:
+                    continue
+                p_std = statements.standard_statements(db, pf, view="latest", years=2, ticker=pt, period="annual")
+                p_years = [y["label"] for y in (p_std.get("years") or []) if y.get("kind") == "annual"]
+                if not p_years:
+                    continue
+                p_eps = _latest_std_val(p_std, "eps_diluted", p_years)
+                if p_eps and p_eps > 0:
+                    peer_pe_vals.append(p_px / p_eps)
+                p_sh = _latest_std_val(p_std, "shares_diluted_weighted", p_years)
+                p_ebit = _latest_std_val(p_std, "operating_income", p_years)
+                p_da = _latest_std_val(p_std, "depreciation_amortization", p_years) or 0.0
+                if template == "general" and p_sh and p_sh > 0 and p_ebit is not None:
+                    p_ebitda = p_ebit + abs(p_da)
+                    p_ev = p_px * p_sh + (_latest_std_val(p_std, "debt_noncurrent", p_years) or 0.0) - (_latest_std_val(p_std, "cash", p_years) or 0.0)
+                    if p_ebitda > 0 and p_ev > 0:
+                        peer_eve_vals.append(p_ev / p_ebitda)
+            peer_pe_band = _quantile_band(peer_pe_vals)
+            if peer_pe_band and latest_eps and latest_eps > 0:
+                mult_inputs.append(MultipleInput("peer_pe", latest_eps, *peer_pe_band))
+            peer_eve_band = _quantile_band(peer_eve_vals)
+            if peer_eve_band and latest_ebitda and latest_ebitda > 0 and latest_sh and latest_sh > 0:
+                mult_inputs.append(MultipleInput("peer_ev_ebitda", latest_ebitda, *peer_eve_band, net_debt=latest_net_debt, shares=latest_sh))
+        except Exception:
+            pass
 
         rel_res = relative_valuation(mult_inputs)
         if rel_res:

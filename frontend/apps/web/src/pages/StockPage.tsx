@@ -132,9 +132,22 @@ export function StockPage() {
               <h2 id="comp-h" style={{ fontSize: "var(--sv-fs-lg)", color: "var(--sv-ink-700)" }}>{t("stock.composite")}</h2>
               <span className="big">{f.money(latest.composite_value, ccy)}</span>
               {gap != null && <span>{t(gap >= 0 ? "stock.upside" : "stock.downside", { pct: f.pct(gap) })}</span>}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}><span>{t("stock.method.dcf")} · {t("stock.weight", { pct: "100%" })}</span><strong>{f.value(dcf(latest, "base"))}</strong></div>
-                <div className="bar"><i style={{ width: "100%" }} /></div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {Object.entries(latest.weights ?? { dcf: 1 }).filter(([, w]) => Number(w) > 0).map(([mk, w]) => {
+                  const pct = Math.round(Number(w) * 100);
+                  const mv = latest.methods.find((m) => m.method === mk && m.scenario === "base")?.value
+                    ?? (mk === "dcf" ? dcf(latest, "base") : methods.data?.methods?.find((m) => m.method === mk)?.base);
+                  const mLabel = t(`methods.name.${mk}`).startsWith("methods.name.") ? t("stock.method.dcf") : t(`methods.name.${mk}`);
+                  return (
+                    <div key={mk} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>{mLabel} · {t("stock.weight", { pct: `${pct}%` })}</span>
+                        <strong>{f.value(mv)}</strong>
+                      </div>
+                      <div className="bar"><i style={{ width: `${Math.min(100, pct)}%` }} /></div>
+                    </div>
+                  );
+                })}
               </div>
               <span className="muted small">{t("stock.compositeNote")}</span>
               <div style={{ borderTop: "1px solid var(--sv-line-faint)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>

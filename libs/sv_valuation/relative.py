@@ -21,7 +21,7 @@ class MultipleInput:
 def _implied(m: MultipleInput, mult: float) -> Optional[float]:
     if m.company_value <= 0 or mult <= 0:
         return None
-    if m.metric in ("pe", "pb"):
+    if m.metric in ("pe", "pb", "peer_pe", "peer_pb"):
         return m.company_value * mult
     if m.shares <= 0:
         return None

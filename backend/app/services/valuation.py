@@ -388,13 +388,30 @@ def execute(job_id: str, payload: dict) -> None:
     with session() as db:
         run = None
         if status == "done" and calc:
-            from . import market
+            from . import market, valuation_methods
             market.track(db, job["ticker"])
             run = persist_run(db, calc, status="done", ai_mode=job["mode"], trigger=payload.get("trigger") or "manual",
                               verify_pass=result.get("verify_pass"), calc_path=calc_path,
                               xlsx_path=xlsx_path, ai_cost=total_cost, tokens_in=total_in, tokens_out=total_out,
                               valuation_date=job["valuation_date"], requested_by=payload.get("requested_by"),
                               plan=plan if std_input is not None else None)
+            # Upgrade Run.composite_value & weights to the industry-aware multi-method composite (D5)
+            try:
+                mm = valuation_methods.compute_stock_methods(db, job["ticker"])
+                comp_val = mm.get("composite_value")
+                weights = mm.get("weights") or {}
+                if comp_val is not None and comp_val > 0 and weights:
+                    run.composite_value = float(comp_val)
+                    run.weights = dict(weights)
+                    existing_methods = {(m.method, m.scenario) for m in run.methods}
+                    for m in mm.get("methods") or []:
+                        m_id = m.get("method")
+                        if m_id and m_id != "dcf" and m.get("base") is not None and (m_id, "base") not in existing_methods:
+                            db.add(MethodResult(run_id=run.id, method=m_id, scenario="base",
+                                                value=float(m["base"]), weight=weights.get(m_id)))
+                    db.flush()
+            except Exception:
+                traceback.print_exc()
         else:
             run = Run(ticker=job["ticker"], valuation_date=job["valuation_date"], status=status,
                       requested_by=payload.get("requested_by"),
@@ -411,10 +428,12 @@ def execute(job_id: str, payload: dict) -> None:
                               tokens_out=s.get("tokens_out") or 0, cost_usd=s.get("cost_usd") or 0.0,
                               usage_reported=bool(s.get("usage_reported")), note=s.get("note")))
         run_id = run.id
+        final_fv = run.composite_value if run is not None else None
 
     summary = None
     if status == "done":
-        summary = {"fair_value": calc.get("fair_value_per_share"), "price": calc.get("price"),
+        fv_out = final_fv if final_fv is not None else calc.get("fair_value_per_share")
+        summary = {"fair_value": fv_out, "price": calc.get("price"),
                    "currency": trading_ccy(calc), "verify_pass": result.get("verify_pass"),
                    "warning": calc.get("result_warning")}
     st.update(job_id, status=status, finished_at=now_iso(), steps=steps,
