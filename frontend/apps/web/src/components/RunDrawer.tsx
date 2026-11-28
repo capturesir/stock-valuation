@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { useCooldown } from "../lib/cooldown";
 import { useI18n } from "../lib/i18n";
 import { Close, StepIcon } from "./Icons";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 const MODES: Mode[] = ["none", "lite", "standard", "deep"];
 const today = () => { const d = new Date(); const p = (x: number) => String(x).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
@@ -163,21 +164,35 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
               </div>
               {joined && <div className="banner info" role="status">{t("run.joined")}</div>}
               <div className="bar" role="progressbar" aria-valuenow={job.progress} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${job.progress}%` }} /></div>
+              {job.status === "running" && job.activity && (
+                <div className="banner info" role="status" aria-live="polite" style={{ padding: "10px 12px" }}>
+                  <LoadingSpinner size="sm" label={job.activity} />
+                  <span className="small" style={{ flex: 1, lineHeight: 1.5 }}>{job.activity}</span>
+                </div>
+              )}
               <div className="minis">
                 <div><span className="muted small">{t("run.costSoFar")}</span><strong>{f.usd(job.cost_usd)}</strong></div>
                 <div><span className="muted small">{t("run.estimated")}</span><strong>{f.usd((job.estimate as { cost_usd?: number }).cost_usd ?? 0)}</strong></div>
                 <div><span className="muted small">{t("run.cap")}</span><strong>{f.usd(job.budget_usd)}</strong></div>
               </div>
               <ol className="check" aria-label={t("run.tasks")}>
-                {job.steps.map((s) => (
-                  <li key={s.key} className={s.status === "active" ? "active" : ""} aria-current={s.status === "active" ? "step" : undefined}>
-                    <StepIcon status={s.status} />
-                    <span className="t"><strong style={{ color: s.status === "skipped" ? "var(--sv-ink-500)" : undefined }}>{label(s)}</strong>
-                      <span className="muted small">{t(`status.${s.status}`)}{noteText(s) ? ` · ${noteText(s)}` : ""}
-                        {s.kind === "ai" && s.status === "done" ? ` · ${f.tokens(s.tokens_in)} / ${f.tokens(s.tokens_out)}` : ""}</span></span>
-                    <span className="c">{s.kind === "ai" ? (s.status === "done" || s.status === "failed" ? f.usd(s.cost_usd) : s.est_cost_usd != null ? `~${f.usd(s.est_cost_usd)}` : "—") : "—"}</span>
-                  </li>
-                ))}
+                {job.steps.map((s) => {
+                  const stepSec = s.status === "active" ? stepElapsed(s, now) : null;
+                  const note = noteText(s);
+                  return (
+                    <li key={s.key} className={s.status === "active" ? "active" : ""} aria-current={s.status === "active" ? "step" : undefined}>
+                      <StepIcon status={s.status} />
+                      <span className="t"><strong style={{ color: s.status === "skipped" ? "var(--sv-ink-500)" : undefined }}>{label(s)}</strong>
+                        <span className="muted small" style={{ whiteSpace: "normal", lineHeight: 1.45 }}>
+                          {t(`status.${s.status}`)}
+                          {stepSec != null && stepSec >= 1 ? ` (${f.duration(stepSec)})` : ""}
+                          {note ? ` · ${note}` : ""}
+                          {s.kind === "ai" && s.status === "done" && ((s.tokens_in ?? 0) > 0 || (s.tokens_out ?? 0) > 0) ? ` · ${f.tokens(s.tokens_in)} / ${f.tokens(s.tokens_out)}` : ""}
+                        </span></span>
+                      <span className="c">{s.kind === "ai" ? (s.status === "done" || s.status === "failed" ? f.usd(s.cost_usd) : s.est_cost_usd != null ? `~${f.usd(s.est_cost_usd)}` : "—") : "—"}</span>
+                    </li>
+                  );
+                })}
               </ol>
               {job.status === "done" && job.result && (
                 <div className="banner info">{t("run.doneSummary", { fair: f.money((job.result as { fair_value?: number }).fair_value, (job.result as { currency?: string }).currency),
@@ -210,4 +225,10 @@ function elapsed(job: Job, now: number): number {
   const startIso = job.started_at ?? job.created_at;
   const end = job.finished_at ? new Date(job.finished_at).getTime() : now;
   return Math.max(0, (end - new Date(startIso).getTime()) / 1000);
+}
+function stepElapsed(step: JobStep, now: number): number | null {
+  const iso = (step as JobStep & { started_at?: string | null }).started_at;
+  if (!iso) return null;
+  const ms = new Date(iso).getTime();
+  return Number.isFinite(ms) ? Math.max(0, (now - ms) / 1000) : null;
 }

@@ -201,6 +201,7 @@ class JobStep(BaseModel):
     tokens_in: Optional[int] = None
     tokens_out: Optional[int] = None
     cost_usd: Optional[float] = None
+    started_at: Optional[str] = None
 
 
 class PlanRef(BaseModel):

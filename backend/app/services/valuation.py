@@ -240,6 +240,7 @@ def execute(job_id: str, payload: dict) -> None:
                 target.update(status="skipped", note=skip)
             elif target["status"] == "pending":
                 target["status"] = "active"
+                target["started_at"] = now_iso()
         st.update(job_id, steps=steps, progress=_progress(steps), activity=activity or (target or {}).get("label"))
 
     with session() as db:
@@ -278,17 +279,31 @@ def execute(job_id: str, payload: dict) -> None:
         from . import valuation_ai
 
         def _on_post_step(k: str, act: str) -> None:
-            st.update(job_id, steps=steps, progress=_progress(steps), activity=act)
+            so_far_cost = sum(float(s.get("cost_usd") or 0.0) for s in steps if s.get("kind") == "ai")
+            so_far_in = sum(int(s.get("tokens_in") or 0) for s in steps if s.get("kind") == "ai")
+            so_far_out = sum(int(s.get("tokens_out") or 0) for s in steps if s.get("kind") == "ai")
+            st.update(
+                job_id,
+                steps=steps,
+                progress=_progress(steps),
+                activity=act,
+                cost_usd=round(so_far_cost, 6),
+                tokens_in=so_far_in,
+                tokens_out=so_far_out,
+            )
 
         try:
             with session() as db:
                 ai_analysis, _post_events = valuation_ai.run_post_tasks(
-                    db, job["ticker"], calc, steps, cfg=cfg, price=price, use_llm=use_llm, on_step_change=_on_post_step
+                    db, job["ticker"], calc, steps, cfg=cfg, price=price, use_llm=use_llm,
+                    on_step_change=_on_post_step, should_stop=lambda: st.is_cancelled(job_id),
                 )
             if ai_analysis:
                 calc["ai_analysis"] = ai_analysis
         except Exception:
             traceback.print_exc()
+
+        st.update(job_id, steps=steps, progress=_progress(steps), activity="正在歸檔估值結果與寫入資料庫…")
 
     usage = _usage_by_task(calc.get("llm_usage") or {})
     gaps = " ".join(calc.get("data_gaps") or [])

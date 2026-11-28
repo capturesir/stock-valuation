@@ -65,7 +65,14 @@ def test_all_eight_valuation_tasks_run_in_deep_mode_and_persist_analysis(configu
 
     monkeypatch.setattr(orchestrator, "run_ticker", fake_run_ticker)
 
-    # 1. Plan in deep mode shows ALL 8 tasks available & will_run (ZERO next_phase!)
+    # 1. Upload a segment filing snippet so T8 exercises DocumentChunk.content retrieval
+    seg_md = b"# CNOOC Annual Report\n\n## Operating Segments\nExploration & Production business segment accounts for 85% of revenue.\n"
+    up = configured.post("/api/v1/stocks/0883.HK/documents/upload",
+                         files={"file": ("cnooc_segments.md", seg_md, "text/markdown")},
+                         data={"title": "CNOOC FY2025 Annual Report"})
+    assert up.status_code == 201, up.text
+
+    # 2. Plan in deep mode shows ALL 8 tasks available & will_run (ZERO next_phase!)
     p = configured.get("/api/v1/ai/plan", params={"ticker": "0883.HK", "mode": "deep"}).json()
     assert len(p["tasks"]) == 8
     assert all(t["available"] and t["will_run"] and t["skip_code"] is None for t in p["tasks"])
@@ -84,6 +91,8 @@ def test_all_eight_valuation_tasks_run_in_deep_mode_and_persist_analysis(configu
     ai_steps = {s["key"]: s for s in job["steps"] if s["kind"] == "ai"}
     assert set(ai_steps) == {"T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"}
     assert all(s["status"] == "done" for s in ai_steps.values()), ai_steps
+    assert ai_steps["T8"].get("started_at")
+    assert ai_steps["T8"].get("note") and "分部" in ai_steps["T8"]["note"]
     assert job["cost_usd"] > 0
 
     # 3. Run analysis endpoint serves persisted T1, T2, T4, T5, T6, T7, T8 structured outputs
