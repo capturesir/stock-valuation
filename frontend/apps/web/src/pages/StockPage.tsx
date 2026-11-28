@@ -10,12 +10,14 @@ import { DocumentQaTab } from "../components/DocumentQaTab";
 import { FiledData } from "../components/FiledData";
 import { FootballFieldCard } from "../components/FootballFieldCard";
 import { NewsAndSuggestionsTab } from "../components/NewsAndSuggestionsTab";
+import { RevisionComparisonCard } from "../components/RevisionComparisonCard";
 import { RunAiAnalysisCard } from "../components/RunAiAnalysisCard";
 import { RunDrawer } from "../components/RunDrawer";
 import { SensitivityMonteCarloCard } from "../components/SensitivityMonteCarloCard";
 import { TrendChart, type Range } from "../components/TrendChart";
 import { ValuationWaterfallCard, type RunDetailData } from "../components/ValuationWaterfallCard";
 import { WaccTerminalCard } from "../components/WaccTerminalCard";
+import { WhatIfSandboxCard } from "../components/WhatIfSandboxCard";
 import { api } from "../lib/api";
 import { useCooldown } from "../lib/cooldown";
 import { useI18n } from "../lib/i18n";
@@ -172,6 +174,7 @@ export function StockPage() {
             </aside>
           </div>
           {methods.data && <FootballFieldCard data={methods.data} currency={ccy} ticker={ticker} consensus={runDetail.data?.ib_compare} />}
+          <RevisionComparisonCard latest={latest} prev={prev} ticker={ticker} currency={ccy} />
           {latest.data_gaps.length > 0 && (
             <section className="card" aria-labelledby="gaps-h">
               <h2 id="gaps-h">{t("stock.gaps")}</h2>
@@ -214,7 +217,9 @@ export function StockPage() {
           {runDetail.data && <ValuationWaterfallCard detail={runDetail.data} />}
           {runDetail.data && <DcfProjectionsCard detail={runDetail.data} />}
           {runDetail.data && <WaccTerminalCard detail={runDetail.data} />}
+          {runDetail.data && <WhatIfSandboxCard detail={runDetail.data} />}
           <SensitivityMonteCarloCard runId={latest.id} currency={ccy} />
+          <RevisionComparisonCard latest={latest} prev={prev} ticker={ticker} currency={ccy} />
         </>
       )}
 
