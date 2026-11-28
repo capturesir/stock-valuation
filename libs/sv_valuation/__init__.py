@@ -8,6 +8,7 @@ Pure Python (no FastAPI or SQLAlchemy imports):
 """
 from __future__ import annotations
 
+from .backtest import BacktestPoint, compute_backtest_scorecard, spearman_ic
 from .composite import MethodBand, build_composite, default_weights
 from .financials import MethodResultRange, ddm_two_stage, pb_roe_justified, residual_income
 from .relative import MultipleInput, relative_valuation
@@ -15,16 +16,19 @@ from .reverse_dcf import ReverseDcfResult, solve_implied_growth
 from .sensitivity import build_sensitivity_and_monte_carlo
 
 __all__ = [
+    "BacktestPoint",
     "MethodBand",
     "MethodResultRange",
     "MultipleInput",
     "ReverseDcfResult",
     "build_composite",
     "build_sensitivity_and_monte_carlo",
+    "compute_backtest_scorecard",
     "ddm_two_stage",
     "default_weights",
     "pb_roe_justified",
     "relative_valuation",
     "residual_income",
     "solve_implied_growth",
+    "spearman_ic",
 ]

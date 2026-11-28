@@ -1164,3 +1164,17 @@ class RunSensitivityOut(BaseModel):
     wacc_vs_g: Optional[dict] = None
     wacc_vs_margin: Optional[dict] = None
     monte_carlo: Optional[dict] = None
+
+
+class BacktestScorecardOut(BaseModel):
+    horizon_days: int
+    sample_count: int
+    tickers_tested: int
+    rank_ic: Optional[float] = None
+    hit_rate: Optional[float] = None
+    undervalued_avg_return: Optional[float] = None
+    fair_avg_return: Optional[float] = None
+    overvalued_avg_return: Optional[float] = None
+    spread_under_minus_over: Optional[float] = None
+    buckets: dict[str, int] = Field(default_factory=dict)
+    observations: list[dict] = Field(default_factory=list)

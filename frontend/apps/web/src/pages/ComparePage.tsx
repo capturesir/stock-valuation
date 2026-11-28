@@ -1,6 +1,7 @@
 import { ApiError, type CompareIn, type CompareOut } from "@sv/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { BacktestScorecardCard } from "../components/BacktestScorecardCard";
 import { CompareChart, seriesColor, seriesDashed } from "../components/CompareChart";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
@@ -261,6 +262,7 @@ export function ComparePage() {
         </div>
         {msg && <div role="status" className="banner info">{msg}</div>}
       </section>
+      <BacktestScorecardCard tickers={lines.filter((l) => l.kind === "ticker").map((l) => l.ref)} />
       <footer className="foot">{t("app.disclaimer")}</footer>
     </main>
   );

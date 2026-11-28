@@ -4,7 +4,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,9 +13,9 @@ from ..auth import require_user
 from ..db import get_db
 from ..i18n import AppError, http_error, lang_dep
 from ..models import Comparison, Portfolio, Scenario, User
-from ..schemas import (CompareIn, CompareOut, OptimizeIn, OptimizeOut, PortfolioIn, PortfolioOut, RecomputeOut, SavedComparisonIn,
+from ..schemas import (BacktestScorecardOut, CompareIn, CompareOut, OptimizeIn, OptimizeOut, PortfolioIn, PortfolioOut, RecomputeOut, SavedComparisonIn,
                        SavedComparisonOut, ScenarioIn, ScenarioOut, ScenarioSummary)
-from ..services import analytics
+from ..services import analytics, backtest
 from .common import iso, ticker_or_400
 
 router = APIRouter(tags=["analytics"])
@@ -221,3 +221,15 @@ def recompute_scenario(sid: str, request: Request, user: User = Depends(require_
     return {"identical": not changes and now["score"] == s.result.get("score"),
             "same_data": now["data_version"] == s.data_version, "same_system": now["system_version"] == s.system_version,
             "original": pick(s.result), "recomputed": pick(now), "weight_changes": changes}
+
+
+@router.get("/backtest/scorecard", response_model=BacktestScorecardOut,
+            summary="無前視偏差歷史估值回測評分卡（以首次公布 original 財報與歷史股價檢驗 12 個月前瞻超額報酬與 Rank IC）")
+def backtest_scorecard(
+    tickers: str | None = Query(default=None, description="逗號分隔股票代號；留空則自動掃描已同步股票"),
+    horizon_days: int = Query(default=365, ge=90, le=1095),
+    _: User = Depends(require_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    parsed = [ticker_or_400(x.strip()) for x in tickers.split(",") if x.strip()] if tickers else None
+    return backtest.run_backtest_scorecard(db, tickers=parsed, horizon_days=horizon_days)
