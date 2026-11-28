@@ -29,7 +29,7 @@ export type RunDetailData = {
   shares?: number | null;
   shares_source?: { basis?: string; source?: string; url?: string; data_date?: string } | null;
   fx_if_any?: { pair?: string; rate?: number; per_share_fx?: number; applied?: string } | null;
-  discount?: Record<string, { value?: number; basis?: string; source?: string; url?: string; data_date?: string }> | null;
+  discount?: Record<string, { value?: number; basis?: string; source?: string; source_name?: string; url?: string; data_date?: string }> | null;
   beta_detail?: {
     industry?: string;
     beta_u_avg?: number;
@@ -39,6 +39,7 @@ export type RunDetailData = {
     regression_beta?: number | null;
     blume_beta?: number | null;
     flag_gap_gt_0_5?: boolean;
+    gap?: number | null;
   } | null;
   terminal?: {
     method?: string;

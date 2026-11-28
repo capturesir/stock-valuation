@@ -15,6 +15,7 @@ import { RunDrawer } from "../components/RunDrawer";
 import { SensitivityMonteCarloCard } from "../components/SensitivityMonteCarloCard";
 import { TrendChart, type Range } from "../components/TrendChart";
 import { ValuationWaterfallCard, type RunDetailData } from "../components/ValuationWaterfallCard";
+import { WaccTerminalCard } from "../components/WaccTerminalCard";
 import { api } from "../lib/api";
 import { useCooldown } from "../lib/cooldown";
 import { useI18n } from "../lib/i18n";
@@ -212,6 +213,7 @@ export function StockPage() {
           <RunAiAnalysisCard runId={latest.id} currency={ccy} />
           {runDetail.data && <ValuationWaterfallCard detail={runDetail.data} />}
           {runDetail.data && <DcfProjectionsCard detail={runDetail.data} />}
+          {runDetail.data && <WaccTerminalCard detail={runDetail.data} />}
           <SensitivityMonteCarloCard runId={latest.id} currency={ccy} />
         </>
       )}
