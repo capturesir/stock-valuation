@@ -40,7 +40,9 @@ ERP, ERP_DATE, ERP_RF = 0.0420, "2026-10-01", 0.0529
 # rating-based country risk premium and default spread (mature market premium 4.20%, volatility multiplier 1.5545)
 CRP_DATE = "2026-07-01"
 CRP = {"US": (0.0, "Aa1", "美國"), "TW": (0.0074187, "Aa3", "台灣"), "HK": (0.0074187, "Aa3", "香港"), "CN": (0.0087279, "A1", "中國"),
-       "JP": (0.0087279, "A1", "日本"), "KR": (0.0061095, "Aa2", "韓國")}
+       "JP": (0.0087279, "A1", "日本"), "KR": (0.0061095, "Aa2", "韓國"),
+       "SG": (0.0, "Aaa", "新加坡"), "EU": (0.0065, "Aa2", "歐洲"), "GB": (0.0074187, "Aa3", "英國"),
+       "IN": (0.0255, "Baa3", "印度"), "ROW": (0.0150, "Baa1", "其他海外")}
 DEFAULT_SPREAD = {"US": 0.0021864, "TW": 0.0047724, "HK": 0.0047724, "CN": 0.0056146, "JP": 0.0056146, "KR": 0.0039302}
 # Damodaran betaGlobal.xls (Date updated 2026-01-05), sheet "Industry Averages": unlevered beta corrected for cash,
 # column "Average (2020-24)" (multi-year average; Damodaran: "less likely to be volatile over time") and the 2026 point value
@@ -103,6 +105,24 @@ def crp(country, extra=""):
     if country == "US":
         return D(0.0, "分析師假設（方法 A）：美國公司，ERP 已是美國隱含 ERP，不另加 CRP" + extra, "Damodaran Country Risk Premiums（2026-07 更新）", U_CRP, CRP_DATE)
     return D(v, f"市場數據：Damodaran {name} {rating} 國家風險溢價 {v:.2%}（2026-07-01 年中更新）" + extra, "Damodaran Country Risk Premiums（ctrypremJuly26.xlsx）", U_CRP, CRP_DATE)
+
+
+def crp_weighted(weights: dict[str, float], extra: str = ""):
+    """Damodaran revenue-weighted Country Risk Premium across geographic regions."""
+    clean = {k.upper(): float(v) for k, v in (weights or {}).items() if k.upper() in CRP and float(v) > 0}
+    total = sum(clean.values())
+    if total <= 0:
+        return crp("US", extra)
+    norm = {k: v / total for k, v in clean.items()}
+    val = sum(w * CRP[k][0] for k, w in norm.items())
+    parts = "、".join(f"{CRP[k][2]} {w:.0%}×{CRP[k][0]:.2%}" for k, w in sorted(norm.items(), key=lambda kv: kv[1], reverse=True))
+    return D(
+        round(val, 6),
+        f"市場數據（收入地域加權 CRP）：{parts} ＝ {val:.2%}{extra}",
+        "Damodaran Country Risk Premiums（Revenue-Weighted, ctrypremJuly26.xlsx）",
+        U_CRP,
+        CRP_DATE,
+    )
 
 
 def beta(ticker, d_m, e_m, tax, reg, reg_url, reg_date):

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import datetime as dt
 import math
+import re
 import statistics
 from typing import Optional
 
@@ -303,6 +304,49 @@ def ronic_rule(roic: Optional[float], wacc: float) -> tuple[float, str]:
                f"（歷史營運 ROIC {roic:.1%}，超額部份上限 {RONIC_EXCESS_CAP:.0%}）＝{r:.2%}；超額回報在永續期減半，反映競爭侵蝕")
 
 
+_GEO_PATTERNS: tuple[tuple[str, re.Pattern], ...] = (
+    ("US", re.compile(r"(?:united\s+states|u\.s\.a?\.?|americas|美國|美国)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("CN", re.compile(r"(?:china|mainland\s+china|prc|中國內地|中国内地|中國大陸|中国大陆|中國|中国)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("TW", re.compile(r"(?:taiwan|台灣|台湾)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("HK", re.compile(r"(?:hong\s+kong|香港)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("JP", re.compile(r"(?:japan|日本)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("KR", re.compile(r"(?:korea|韓國|韩国)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("SG", re.compile(r"(?:singapore|新加坡)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("EU", re.compile(r"(?:europe|emea|歐洲|欧洲)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("GB", re.compile(r"(?:united\s+kingdom|u\.k\.|英國|英国)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("IN", re.compile(r"(?:india|印度)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+    ("ROW", re.compile(r"(?:other\s+countries|rest\s+of\s+world|international|overseas|其他海外|其他地區|其他地区|海外)[^\n\d%]{0,24}(\d{1,2}(?:\.\d+)?)\s*%", re.I)),
+)
+
+
+def extract_geo_revenue_weights(snap: dict) -> Optional[dict[str, float]]:
+    """Extract normalized geographic revenue shares from explicit snap weights or Document Library excerpts."""
+    explicit = snap.get("geo_revenue_weights")
+    if isinstance(explicit, dict) and explicit:
+        clean = {k.upper(): float(v) for k, v in explicit.items() if k.upper() in MA.CRP and float(v) > 0}
+        s = sum(clean.values())
+        if s > 0:
+            return {k: round(v / s, 4) for k, v in clean.items()}
+    ctx = snap.get("library_context") or []
+    blob = "\n".join(f"{c.get('section', '')} {c.get('excerpt', '')}" for c in ctx if isinstance(c, dict))
+    if not blob:
+        return None
+    found: dict[str, float] = {}
+    for code, pat in _GEO_PATTERNS:
+        m = pat.search(blob)
+        if m:
+            pct = float(m.group(1)) / 100.0
+            if 0.02 <= pct <= 0.99:
+                found[code] = pct
+    total = sum(found.values())
+    if len(found) >= 2 and 0.55 <= total <= 1.15:
+        if total < 0.98 and "ROW" not in found:
+            found["ROW"] = round(1.0 - total, 4)
+            total = sum(found.values())
+        return {k: round(v / total, 4) for k, v in found.items()}
+    return None
+
+
 def _fx_rate(model_ccy: str, market_ccy: str) -> float:
     """model -> market multiplier (e.g. CNY -> HKD)."""
     model_ccy, market_ccy = (model_ccy or "").upper(), (market_ccy or "").upper()
@@ -469,18 +513,24 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
 
     # ---- discount-rate inputs
     rf = D(snap["rf"]["value"], snap["rf"]["basis"], snap["rf"]["source"], snap["rf"]["url"], snap["rf"]["data_date"])
-    # Country risk follows where the business is, approximated by the reporting currency (a HK-listed
-    # company reporting in CNY operates mainly in mainland China), not by the listing venue.
+    # Country risk: prefer revenue-weighted geographic CRP (Damodaran best practice) when
+    # geographic revenue mix is available from the Document Library; else fall back to reporting currency.
     from ..fetch import rf as _rfmod
+    geo_weights = extract_geo_revenue_weights(snap)
     crp_country = _rfmod.COUNTRY.get(model_ccy) if _rfmod.COUNTRY.get(model_ccy) in MA.CRP else code
-    if crp_country not in MA.CRP:
-        gaps.append(Gap("crp_missing", market=crp_country))
-        crp_country = "US"
-    crp = MA.crp(crp_country, f"（通用規格：按報表貨幣 {model_ccy} 推定業務所在地；跨國業務應按收入地域加權）"
-                 if crp_country != "US" else "")
-    if crp_country != code and code in MA.CRP:
-        gaps.append(Gap("crp_by_currency", currency=model_ccy, country=crp_country, country_name=MA.CRP[crp_country][2],
-                        listing=code, listing_name=MA.CRP[code][2]))
+    if geo_weights:
+        crp = MA.crp_weighted(geo_weights)
+        bd = "、".join(f"{MA.CRP[k][2]} {v:.0%}" for k, v in sorted(geo_weights.items(), key=lambda kv: kv[1], reverse=True))
+        gaps.append(Gap("crp_revenue_weighted", crp=crp["value"], breakdown=bd))
+    else:
+        if crp_country not in MA.CRP:
+            gaps.append(Gap("crp_missing", market=crp_country))
+            crp_country = "US"
+        crp = MA.crp(crp_country, f"（通用規格：按報表貨幣 {model_ccy} 推定業務所在地；跨國業務應按收入地域加權）"
+                     if crp_country != "US" else "")
+        if crp_country != code and code in MA.CRP:
+            gaps.append(Gap("crp_by_currency", currency=model_ccy, country=crp_country, country_name=MA.CRP[crp_country][2],
+                            listing=code, listing_name=MA.CRP[code][2]))
     e_mkt_model = snap["price"] * fx_mkt_to_model * shares_m
 
     kd = (interest / debt) if interest and debt and debt > 0 else None

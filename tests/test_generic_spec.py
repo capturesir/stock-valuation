@@ -372,3 +372,15 @@ def test_cyclical_margin_s2c_reinvestment_and_sbc_dilution(tmp_path):
 
     res = build_and_run(spec, out_dir=str(tmp_path))
     assert res["verify_pass"] is True, res["verify_errors"]
+
+
+def test_revenue_weighted_geographic_crp_from_library_context():
+    snap = dict(_snap(), library_context=[{
+        "title": "FY2025 10-K",
+        "section": "Geographic Revenue",
+        "excerpt": "Revenue by region: United States 45%, Taiwan 20%, China 20%, Europe 15%.",
+    }])
+    spec = G.build_generic_spec(snap, _fund(), {}, use_llm=False)
+    expected = 0.45 * G.MA.CRP["US"][0] + 0.20 * G.MA.CRP["TW"][0] + 0.20 * G.MA.CRP["CN"][0] + 0.15 * G.MA.CRP["EU"][0]
+    assert spec["crp"]["value"] == pytest.approx(expected, abs=1e-5)
+    assert any("營收地域加權國家風險溢價" in g for g in spec["data_gaps"])

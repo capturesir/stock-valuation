@@ -308,5 +308,10 @@
   "zh-Hant": "T3 假設已結合文件庫中 {n} 段管理層指引／分部展望原文進行校準。",
   "zh-Hans": "T3 假设已结合文件库中 {n} 段管理层指引／分部展望原文进行校准。",
   "en": "T3 assumptions incorporated {n} management guidance / segment outlook excerpt(s) from the Document Library."
+ },
+ "crp_revenue_weighted": {
+  "zh-Hant": "WACC 採用營收地域加權國家風險溢價（CRP＝{crp:.2%}）：{breakdown}。",
+  "zh-Hans": "WACC 采用营收地域加权国家风险溢价（CRP＝{crp:.2%}）：{breakdown}。",
+  "en": "WACC uses revenue-weighted Country Risk Premium (CRP={crp:.2%}): {breakdown}."
  }
 }

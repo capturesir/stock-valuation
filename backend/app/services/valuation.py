@@ -257,18 +257,17 @@ def execute(job_id: str, payload: dict) -> None:
     try:
         with session() as db:
             std_input = statements_input(db, job["ticker"], plan)
-            if use_t3:
-                from . import doc_library
-                ranked_ctx = doc_library.retrieve_chunks(
-                    db, job["ticker"],
-                    "revenue guidance outlook growth margin segment operating drivers 業績 指引 展望 增長 毛利率 分部",
-                    top_k=5, max_tokens=1600,
-                )
-                lib_ctx = [
-                    {"title": rc.chunk.title, "section": rc.chunk.section, "date": rc.chunk.doc_date,
-                     "excerpt": rc.chunk.content[:500]}
-                    for rc in ranked_ctx if rc.score >= 0.18
-                ]
+            from . import doc_library
+            ranked_ctx = doc_library.retrieve_chunks(
+                db, job["ticker"],
+                "revenue guidance outlook growth margin segment geographic region country 業績 指引 展望 增長 毛利率 分部 地區 收入分布",
+                top_k=6, max_tokens=2000,
+            )
+            lib_ctx = [
+                {"title": rc.chunk.title, "section": rc.chunk.section, "date": rc.chunk.doc_date,
+                 "excerpt": rc.chunk.content[:600]}
+                for rc in ranked_ctx if rc.score >= 0.18
+            ]
     except Exception:          # the standard layer must never stop a valuation: Yahoo's statements still work
         traceback.print_exc()
         std_input = None
