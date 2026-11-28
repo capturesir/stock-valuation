@@ -1039,5 +1039,20 @@
   "backtest.col.bucket": "Bucket",
   "backtest.bucket.undervalued": "Undervalued (≥+10%)",
   "backtest.bucket.fair": "Fair Value",
-  "backtest.bucket.overvalued": "Overvalued (≤-10%)"
+  "backtest.bucket.overvalued": "Overvalued (≤-10%)",
+  "wf.title": "Valuation Bridge & Waterfall (EV → Equity → Per Share)",
+  "wf.subtitle": "Full decomposition from explicit FCFF PV and terminal value PV through balance-sheet bridge items (amounts in {ccy} millions)",
+  "wf.tvShare": "Terminal Value Share {pct}",
+  "wf.tvHighWarn": "Terminal value accounts for {pct} of Enterprise Value (>75%); fair value is sensitive to WACC and terminal growth assumptions — inspect the sensitivity matrix and What-If sandbox below.",
+  "wf.pvFcff": "PV of Explicit FCFF",
+  "wf.pvTerminal": "PV of Terminal Value",
+  "wf.ev": "Enterprise Value (EV)",
+  "wf.equity": "Equity Value",
+  "wf.perShareFormula": "Per-share conversion",
+  "wf.sharesUnit": "diluted shares",
+  "wf.bridgeAudit": "Inspect balance-sheet bridge provenance ({n} items)",
+  "wf.col.item": "Bridge Item",
+  "wf.col.amount": "Amount",
+  "wf.col.basis": "Basis & Source Provenance",
+  "wf.col.date": "As-Of Date"
 }

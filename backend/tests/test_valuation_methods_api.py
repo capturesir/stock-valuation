@@ -122,3 +122,28 @@ def test_relative_valuation_adjusts_historical_prices_for_stock_splits(client):
     rel = next(m for m in r.json()["methods"] if m["method"] == "relative")
     # True multiple is 20x P/E on $3.50 EPS = $70 (NOT $500+ from unadjusted pre-split price!)
     assert 60.0 <= rel["base"] <= 80.0, rel
+
+
+def test_run_detail_endpoint_returns_glass_box_audit_data(client, tmp_path):
+    """GET /api/v1/runs/{run_id}/detail exposes EV bridge, WACC breakdown, terminal value & projections."""
+    out = tmp_path / "out"
+    shutil.copytree(ROOT / "out" / "2026-11-11_NVDA", out / "2026-11-11_NVDA")
+    with session() as db:
+        assert import_legacy(db, out_dir=out) == 1
+
+    vals = client.get("/api/v1/stocks/NVDA/valuations")
+    assert vals.status_code == 200, vals.text
+    run_id = vals.json()["latest"]["id"]
+
+    r = client.get(f"/api/v1/runs/{run_id}/detail")
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["available"] is True
+    assert d["ticker"] == "NVDA"
+    assert d["enterprise_value"] is not None and d["enterprise_value"] > 0
+    assert d["equity_value"] is not None and d["equity_value"] > 0
+    assert d["sum_pv_fcff"] is not None and d["pv_terminal"] is not None
+    assert isinstance(d["bridge"], list) and len(d["bridge"]) >= 1
+    assert isinstance(d["projections"], list) and len(d["projections"]) >= 5
+    assert isinstance(d["discount"], dict) and "wacc" in d["discount"]
+    assert isinstance(d["terminal"], dict) and "g" in d["terminal"]

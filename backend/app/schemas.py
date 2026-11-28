@@ -1166,6 +1166,36 @@ class RunSensitivityOut(BaseModel):
     monte_carlo: Optional[dict] = None
 
 
+class RunDetailOut(BaseModel):
+    run_id: str
+    ticker: str
+    available: bool = False
+    valuation_date: Optional[str] = None
+    currency: Optional[str] = None
+    trading_currency: Optional[str] = None
+    price: Optional[float] = None
+    price_date: Optional[str] = None
+    fair_value_per_share: Optional[float] = None
+    composite_value: Optional[float] = None
+    sum_pv_fcff: Optional[float] = None
+    pv_terminal: Optional[float] = None
+    enterprise_value: Optional[float] = None
+    bridge_total: Optional[float] = None
+    equity_value: Optional[float] = None
+    shares: Optional[float] = None
+    shares_source: Optional[dict] = None
+    fx_if_any: Optional[dict] = None
+    discount: Optional[dict] = None
+    beta_detail: Optional[dict] = None
+    terminal: Optional[dict] = None
+    bridge: list[dict] = Field(default_factory=list)
+    base_year: Optional[dict] = None
+    projections: list[dict] = Field(default_factory=list)
+    cfo_fcff_crosscheck: Optional[dict] = None
+    ib_compare: Optional[dict] = None
+    previous_run: Optional[dict] = None
+
+
 class BacktestScorecardOut(BaseModel):
     horizon_days: int
     sample_count: int

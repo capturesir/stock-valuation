@@ -19,7 +19,7 @@ from ..auth import Principal, current_principal
 from ..db import get_db
 from ..i18n import DEFAULT as DEFAULT_LANG, http_error, lang_dep, pick
 from ..models import AiTask, Run, Security, WatchlistItem
-from ..schemas import PriceSeries, RunAnalysisOut, RunSensitivityOut, StockMethodsOut, StockProfile, StockValuations
+from ..schemas import PriceSeries, RunAnalysisOut, RunDetailOut, RunSensitivityOut, StockMethodsOut, StockProfile, StockValuations
 from ..services import branding, market, valuation_methods
 from .common import iso, run_out, ticker_or_400
 
@@ -216,6 +216,81 @@ def run_sensitivity(run_id: str, trials: int = Query(default=2000, ge=200, le=50
     if not out:
         return {"run_id": r.id, "ticker": r.ticker, "available": False}
     return {"run_id": r.id, "ticker": r.ticker, "available": True, **out}
+
+
+@router.get("/runs/{run_id}/detail", response_model=RunDetailOut,
+            summary="白盒估值計算明細（瀑布拆解、10 年 FCFF 預測與血緣、WACC／終值公式、橋接項目、CFO 核對、投行共識與前期對比）")
+def run_detail(run_id: str, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+    r = db.get(Run, run_id)
+    if r is None:
+        raise http_error(404, "not_found", lang, what=run_id)
+    calc = _load_calc_for_export(r)
+    if not calc:
+        return {"run_id": r.id, "ticker": r.ticker, "available": False}
+
+    # Find immediately preceding completed run for side-by-side revision attribution
+    prev_row = db.scalar(
+        select(Run)
+        .where(Run.ticker == r.ticker, Run.status == "done", Run.run_at < r.run_at)
+        .order_by(Run.run_at.desc())
+        .limit(1)
+    )
+    prev_out = None
+    if prev_row is not None:
+        prev_dcf = next((m.value for m in (prev_row.methods or []) if m.method == "dcf" and m.scenario == "base"), None)
+        prev_out = {
+            "id": prev_row.id,
+            "valuation_date": prev_row.valuation_date,
+            "run_at": iso(prev_row.run_at),
+            "price": prev_row.price,
+            "composite_value": prev_row.composite_value,
+            "dcf_base": prev_dcf,
+            "wacc": prev_row.wacc,
+            "terminal_g": prev_row.terminal_g,
+            "statement_source": prev_row.statement_source,
+            "ruleset_version": prev_row.ruleset_version,
+            "adjustment_plan": prev_row.adjustment_plan,
+        }
+
+    term = calc.get("terminal") or {}
+    ev = calc.get("enterprise_value")
+    eq = calc.get("equity_value")
+    bridge_total = calc.get("bridge_total")
+    if bridge_total is None and ev is not None and eq is not None:
+        try:
+            bridge_total = float(eq) - float(ev)
+        except (TypeError, ValueError):
+            bridge_total = None
+
+    return {
+        "run_id": r.id,
+        "ticker": r.ticker,
+        "available": True,
+        "valuation_date": r.valuation_date or calc.get("valuation_date"),
+        "currency": calc.get("currency") or r.model_ccy,
+        "trading_currency": r.trading_ccy or calc.get("currency"),
+        "price": r.price if r.price is not None else calc.get("price"),
+        "price_date": r.price_date or calc.get("price_date"),
+        "fair_value_per_share": calc.get("fair_value_per_share"),
+        "composite_value": r.composite_value,
+        "sum_pv_fcff": calc.get("sum_pv_fcff"),
+        "pv_terminal": term.get("pv_terminal"),
+        "enterprise_value": ev,
+        "bridge_total": bridge_total,
+        "equity_value": eq,
+        "shares": calc.get("shares") or calc.get("shares_diluted"),
+        "shares_source": calc.get("shares_source") if isinstance(calc.get("shares_source"), dict) else None,
+        "fx_if_any": calc.get("fx_if_any") if isinstance(calc.get("fx_if_any"), dict) else None,
+        "discount": calc.get("discount") if isinstance(calc.get("discount"), dict) else None,
+        "beta_detail": calc.get("beta_method_a_detail") if isinstance(calc.get("beta_method_a_detail"), dict) else None,
+        "terminal": term if isinstance(term, dict) else None,
+        "bridge": list(calc.get("bridge") or []),
+        "base_year": calc.get("base_year") if isinstance(calc.get("base_year"), dict) else None,
+        "projections": list(calc.get("projections") or []),
+        "cfo_fcff_crosscheck": calc.get("cfo_fcff_crosscheck") if isinstance(calc.get("cfo_fcff_crosscheck"), dict) else None,
+        "ib_compare": calc.get("ib_compare") if isinstance(calc.get("ib_compare"), dict) else None,
+        "previous_run": prev_out,
+    }
 
 
 @router.get("/stocks/{ticker}/methods", response_model=StockMethodsOut,

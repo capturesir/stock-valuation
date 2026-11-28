@@ -239,6 +239,7 @@ export function createClient(cfg: ClientConfig = {}) {
     reportUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/report${q({ lang })}`,
     runAnalysis: (runId: string) => req<RunAnalysisOut>("GET", `/runs/${enc(runId)}/analysis`),
     runSensitivity: (runId: string, trials = 2000) => req<Record<string, unknown>>("GET", `/runs/${enc(runId)}/sensitivity${q({ trials })}`),
+    runDetail: (runId: string) => req<Record<string, unknown>>("GET", `/runs/${enc(runId)}/detail`),
     backtestScorecard: (tickers?: string[], horizonDays = 365) =>
       req<Record<string, unknown>>("GET", `/backtest/scorecard${q({ tickers: tickers?.join(","), horizon_days: horizonDays })}`),
     statementsExportUrl: (ticker: string, format: "xlsx" | "csv", view: "latest" | "original", period: "annual" | "quarterly",

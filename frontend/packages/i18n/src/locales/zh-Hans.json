@@ -1039,5 +1039,20 @@
   "backtest.col.bucket": "分组",
   "backtest.bucket.undervalued": "低估（≥+10%）",
   "backtest.bucket.fair": "合理区间",
-  "backtest.bucket.overvalued": "高估（≤-10%）"
+  "backtest.bucket.overvalued": "高估（≤-10%）",
+  "wf.title": "估值桥梁与价值拆解（EV → 股权价值 → 每股理论价）",
+  "wf.subtitle": "完整还原自由现金流现值、终值现值与资产负债表调整项（金额单位：百万 {ccy}）",
+  "wf.tvShare": "终值占企业价值 {pct}",
+  "wf.tvHighWarn": "终值占企业价值比例达 {pct}（高于 75%），理论价对 WACC 与永续增长率假设较敏感，请配合下方敏感度与 What-If 沙盒交叉检视。",
+  "wf.pvFcff": "显性预测期 FCFF 现值合计",
+  "wf.pvTerminal": "永续终值现值（PV of TV）",
+  "wf.ev": "企业价值（Enterprise Value）",
+  "wf.equity": "归属股东股权价值（Equity Value）",
+  "wf.perShareFormula": "每股理论价换算",
+  "wf.sharesUnit": "稀释股数",
+  "wf.bridgeAudit": "展开资产负债表桥梁审计明细（{n} 项）",
+  "wf.col.item": "桥梁项目",
+  "wf.col.amount": "调整金额",
+  "wf.col.basis": "取数口径与来源出处",
+  "wf.col.date": "基准日期"
 }

@@ -13,6 +13,7 @@ import { RunAiAnalysisCard } from "../components/RunAiAnalysisCard";
 import { RunDrawer } from "../components/RunDrawer";
 import { SensitivityMonteCarloCard } from "../components/SensitivityMonteCarloCard";
 import { TrendChart, type Range } from "../components/TrendChart";
+import { ValuationWaterfallCard, type RunDetailData } from "../components/ValuationWaterfallCard";
 import { api } from "../lib/api";
 import { useCooldown } from "../lib/cooldown";
 import { useI18n } from "../lib/i18n";
@@ -50,6 +51,12 @@ export function StockPage() {
   useEffect(() => { if (ticker && !notFound) rememberTicker(ticker); }, [ticker, notFound]);
 
   const v = vals.data, latest = v?.latest, prev = v?.previous, ccy = v?.currency ?? latest?.trading_ccy;
+  const runDetail = useQuery({
+    queryKey: ["run-detail", latest?.id],
+    queryFn: () => api.runDetail(latest!.id) as Promise<RunDetailData>,
+    enabled: !!latest?.id,
+    retry: false,
+  });
   const gap = latest?.composite_value != null && latest.price ? latest.composite_value / latest.price - 1 : null;
   const inList = wl.data?.some((w) => w.ticker === ticker);
 
@@ -202,6 +209,7 @@ export function StockPage() {
             </div>
           </section>
           <RunAiAnalysisCard runId={latest.id} currency={ccy} />
+          {runDetail.data && <ValuationWaterfallCard detail={runDetail.data} />}
           <SensitivityMonteCarloCard runId={latest.id} currency={ccy} />
         </>
       )}

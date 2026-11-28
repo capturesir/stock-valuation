@@ -1039,5 +1039,20 @@
   "backtest.col.bucket": "分組",
   "backtest.bucket.undervalued": "低估（≥+10%）",
   "backtest.bucket.fair": "合理區間",
-  "backtest.bucket.overvalued": "高估（≤-10%）"
+  "backtest.bucket.overvalued": "高估（≤-10%）",
+  "wf.title": "估值橋樑與價值拆解（EV → 股權價值 → 每股理論價）",
+  "wf.subtitle": "完整還原自由現金流現值、終值現值與資產負債表調整項（金額單位：百萬 {ccy}）",
+  "wf.tvShare": "終值佔企業價值 {pct}",
+  "wf.tvHighWarn": "終值佔企業價值比例達 {pct}（高於 75%），理論價對 WACC 與永續增長率假設較敏感，請配合下方敏感度與 What-If 沙盒交叉檢視。",
+  "wf.pvFcff": "顯性預測期 FCFF 現值合計",
+  "wf.pvTerminal": "永續終值現值（PV of TV）",
+  "wf.ev": "企業價值（Enterprise Value）",
+  "wf.equity": "歸屬股東股權價值（Equity Value）",
+  "wf.perShareFormula": "每股理論價換算",
+  "wf.sharesUnit": "攤薄股數",
+  "wf.bridgeAudit": "展開資產負債表橋樑審計明細（{n} 項）",
+  "wf.col.item": "橋樑項目",
+  "wf.col.amount": "調整金額",
+  "wf.col.basis": "取數口徑與來源出處",
+  "wf.col.date": "基準日期"
 }
