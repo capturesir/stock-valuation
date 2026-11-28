@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import datetime as dt
 import math
+import statistics
 from typing import Optional
 
 from ..engine import method_a as MA
@@ -578,14 +579,35 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     g1 = _clamp_g(g1, "次年")
     starts = [float(g0)] + ([float(g1)] if g1 is not None else [])
     growths = rules.fade_growth_convex(starts, terminal_g, n)
-    margins = [m0] + rules.fade_levels(m0, m_avg, n)[1:]
+
+    # Cyclical / volatile operating margin normalization:
+    # Avoid extrapolating a cyclical peak EBIT margin over 10 years by reverting toward the
+    # multi-year median margin when the industry is cyclical or historical spread >= 8pp.
+    cyclical_kws = (
+        "oil", "gas", "energy", "coal", "steel", "mining", "metal", "semiconductor",
+        "shipping", "marine", "airline", "chemical", "auto", "commodity", "paper", "building",
+    )
+    ind_l = f"{industry} {info.get('sector') or ''} {info.get('industry') or ''}".lower()
+    m_med = statistics.median(margins_hist) if margins_hist else m0
+    m_spread = (max(margins_hist) - min(margins_hist)) if len(margins_hist) >= 3 else 0.0
+    is_cyclical = any(k in ind_l for k in cyclical_kws) or m_spread >= 0.08
+    margin_target = m_avg
+    if is_cyclical and len(margins_hist) >= 3 and m0 > m_med + 0.03:
+        margin_target = m_med + 0.25 * (m0 - m_med)
+        margins = [m0] + rules.fade_levels(m0, margin_target, n)[1:]
+        gaps.append(Gap("cyclical_margin_normalized", m0=m0, median=m_med, target=margin_target))
+    else:
+        margins = [m0] + rules.fade_levels(m0, m_avg, n)[1:]
+
     da_pcts = [da_pct] * n
-    # Capex:
+    # Capex & Sales-to-Capital reinvestment linkage:
     # 1) High-capex peak -> fade down to sustainable steady-state reinvestment ratio.
     # 2) Low-capex / IFRS 16 (D&A >> CapEx because ROU lease amortization sits in D&A while lease
     #    repayments sit in Financing CF) -> floor reinvestment at D&A and fade to max(D&A, steady)
     #    so lease depreciation is never treated as perpetual free cash flow.
-    steady_capex_pct = da_pct + (terminal_g / ronic) * max(m0, 0.0) - nwc_pct * terminal_g
+    # 3) Sales-to-Capital linkage -> during elevated growth (g_t > terminal_g + 3pp), lift under-modeled
+    #    reinvestment toward ΔRevenue / Sales-to-Capital so high growth is never modeled as "free".
+    steady_capex_pct = da_pct + (terminal_g / ronic) * max(margin_target, 0.0) - nwc_pct * terminal_g
     steady_capex_pct = max(steady_capex_pct, da_pct)
     if cpx_pct > steady_capex_pct + 0.01:
         capex_pcts = rules.fade_levels(cpx_pct, steady_capex_pct, n)
@@ -596,11 +618,47 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     else:
         capex_pcts = [cpx_pct] * n
 
+    s2c_raw = (rev / ic) if (ic and ic > 0) else None
+    s2c = max(0.5, min(4.0, s2c_raw)) if s2c_raw is not None else None
+    s2c_adjusted = False
+    if s2c is not None:
+        cap_hi = max(cpx_pct * 1.5, da_pct + 0.25)
+        for idx in range(n):
+            g_t = growths[idx]
+            if g_t > terminal_g + 0.03:
+                req_net = g_t / s2c
+                req_capex = da_pct + max(req_net - nwc_pct * g_t, 0.0)
+                req_capex = min(req_capex, cap_hi)
+                if req_capex > capex_pcts[idx] + 0.01:
+                    capex_pcts[idx] = max(da_pct, 0.5 * capex_pcts[idx] + 0.5 * req_capex)
+                    s2c_adjusted = True
+        if s2c_adjusted:
+            gaps.append(Gap("sales_to_capital_reinvestment", s2c=s2c, avg_capex=sum(capex_pcts) / n))
+
+    # Stock-Based Compensation (SBC) & ongoing RSU dilution check:
+    # GAAP/IFRS EBIT already expenses SBC; here we surface material SBC (>=2% of revenue) and
+    # ensure net share dilution from un-offset RSU grants is reflected in share count floor.
+    sbc_val = abs(_val(cf_a, d0, "Stock Based Compensation", "StockBasedCompensation") or 0.0)
+    sbc_pct = (sbc_val / rev) if (sbc_val and rev) else 0.0
+    sbc_mkt_pct = ((sbc_val / 1e6) / e_mkt_model) if (sbc_val and e_mkt_model) else 0.0
+    sh_hist = [v / 1e6 for v in (float(_val(bs_a, d, "Ordinary Shares Number", "Share Issued") or 0) for d in dates[:4]) if v]
+    net_share_cagr = 0.0
+    if len(sh_hist) >= 2 and sh_hist[-1] > 0:
+        net_share_cagr = (sh_hist[0] / sh_hist[-1]) ** (1.0 / (len(sh_hist) - 1)) - 1.0
+    if sbc_pct >= 0.02:
+        gaps.append(Gap("sbc_material", pct=sbc_pct, mkt_pct=sbc_mkt_pct, dil=net_share_cagr))
+        if net_share_cagr > 0.005:
+            # Conservative ongoing net RSU dilution drag over 5 years (capped at +10% shares)
+            dil_mult = min(1.10, (1.0 + min(net_share_cagr, 0.03)) ** 5)
+            shares_m = shares_m * dil_mult
+            gaps.append(Gap("sbc_dilution_applied", cagr=net_share_cagr, mult=dil_mult))
+
     growth_notes = [f"規則後備：{cons_note}；其後向終值 g {terminal_g:.2%} 凸形收斂"] + ["向終值增長收斂"] * (n - 1)
-    margin_notes = [f"首年用最近年度 EBIT 利潤率 {m0:.2%}；其後向 {len(margins_hist)} 年平均 {m_avg:.2%} 淡化"] * n
+    margin_notes = [f"首年用最近年度 EBIT 利潤率 {m0:.2%}；其後向 {margin_target:.2%} 淡化"] * n
     re_note = (f"總 D&A 取 {len(da_pcts_hist) or 1} 年平均 {da_pct:.2%} 營收；"
                f"Capex 由 {capex_pcts[0]:.2%} 過渡至 {capex_pcts[-1]:.2%} 營收"
-               + ("（歷史高峰向可持續水平直線過渡）" if capex_pcts[0] != capex_pcts[-1] else ""))
+               + (f"（含 Sales-to-Capital {s2c:.2f}× 再投資連動）" if s2c_adjusted and s2c else "")
+               + ("（歷史高峰向可持續水平過渡）" if capex_pcts[0] != capex_pcts[-1] else ""))
     llm_note = None
 
     if use_llm and client is not None and client.available():
@@ -638,8 +696,8 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
             gaps.append(llm_note)
 
     # ---- shares / capex floor (same rules as the hand-built specs)
-    sh_hist = [v / 1e6 for v in (float(_val(bs_a, d, "Ordinary Shares Number", "Share Issued") or 0) for d in dates[:4]) if v]
-    shf = rules.shares_floor(shares_m, sh_hist, years=n, dilution=0.01)
+    dil_rate = max(0.01, min(net_share_cagr, 0.04)) if net_share_cagr > 0 else 0.01
+    shf = rules.shares_floor(shares_m, sh_hist, years=n, dilution=dil_rate)
     cpx_ppe = [abs(_val(cf_a, d, "Depreciation") or 0) / r for d, r in hist_rev if _val(cf_a, d, "Depreciation")]
     floor = rules.capex_floor(cpx_ppe, cpx_hist)
     floor_pct = max(floor["floor_pct"] if floor["floor_pct"] else cpx_pct, da_pct)

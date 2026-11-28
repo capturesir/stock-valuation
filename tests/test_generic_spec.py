@@ -337,3 +337,38 @@ def test_ifrs16_capex_below_da_is_floored_and_late_year_uses_stub(tmp_path):
     # Engine + independent verify_fcff must pass with zero arithmetic errors
     res = build_and_run(spec, out_dir=str(tmp_path))
     assert res["verify_pass"] is True, res["verify_errors"]
+
+
+def test_cyclical_margin_s2c_reinvestment_and_sbc_dilution(tmp_path):
+    """Verify cyclical peak margin normalization, Sales-to-Capital reinvestment lift, and un-offset SBC dilution."""
+    fund = _fund()
+    dates = sorted(fund["is_a"].keys(), reverse=True)
+    # Force cyclical peak in base year (55% EBIT margin vs ~28% prior years) + high consensus growth (+35%)
+    for idx, d in enumerate(dates[:4]):
+        rev = fund["is_a"][d].get("Total Revenue")
+        if not rev:
+            continue
+        fund["is_a"][d]["Operating Income"] = rev * (0.55 if idx == 0 else 0.28)
+        if d in fund["cf_a"]:
+            fund["cf_a"][d]["Stock Based Compensation"] = rev * 0.06
+            fund["cf_a"][d]["Capital Expenditure"] = -rev * 0.04
+            fund["cf_a"][d]["Depreciation And Amortization"] = rev * 0.04
+        if d in fund["bs_a"]:
+            # Simulate 2.5%/yr ongoing net share dilution
+            fund["bs_a"][d]["Ordinary Shares Number"] = 1000e6 * (1.025 ** (3 - idx))
+    fund["rev_est"] = {"0y": {"avg": fund["is_a"][dates[0]]["Total Revenue"] * 1.35, "yearAgoRevenue": fund["is_a"][dates[0]]["Total Revenue"]}}
+
+    spec = G.build_generic_spec(_snap(), fund, {}, use_llm=False)
+    # 1. Cyclical margin fades toward median (~28%), not staying at 55% peak
+    assert spec["margins"][-1] < 0.40
+    assert any("週期性利潤率常態化" in g for g in spec["data_gaps"])
+    # 2. High-growth CapEx lifted by Sales-to-Capital reinvestment linkage
+    assert spec["capex_pcts"][0] > 0.045
+    assert any("資本周轉再投資連動" in g for g in spec["data_gaps"])
+    # 3. Material SBC + positive net share dilution triggers SBC check & share multiplier
+    assert any("股份支付（SBC）檢核" in g for g in spec["data_gaps"])
+    assert any("股權稀釋調整" in g for g in spec["data_gaps"])
+    assert spec["shares_m"] > 1000.0 * (1.025 ** 3)
+
+    res = build_and_run(spec, out_dir=str(tmp_path))
+    assert res["verify_pass"] is True, res["verify_errors"]

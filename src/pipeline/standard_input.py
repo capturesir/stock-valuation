@@ -41,6 +41,7 @@ ROWS: dict[str, tuple[str, str, int]] = {
     "cfo": ("cf_a", "Operating Cash Flow", 1),
     "capex": ("cf_a", "Capital Expenditure", -1),
     "depreciation_amortization": ("cf_a", "Depreciation And Amortization", 1),
+    "share_based_compensation": ("cf_a", "Stock Based Compensation", 1),
 }
 # Yahoo rows that would be read before (or instead of) a standard row and could disagree with it
 SHADOWED = {"is_a": ("Total Operating Income As Reported", "EBIT", "Operating Revenue", "Tax Rate For Calcs",

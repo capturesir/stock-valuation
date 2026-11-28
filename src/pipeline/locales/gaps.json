@@ -283,5 +283,25 @@
   "zh-Hant": "⚠ 合理性提示：基準理論價（{fv:.2f}）為當前市價（{price:.2f}）的 {ratio:.1f} 倍，顯著高於市場定價；請核對增長假設、WACC 與終值倍數，並搭配反向 DCF 與相對估值交叉檢視。",
   "zh-Hans": "⚠ 合理性提示：基准理论价（{fv:.2f}）为当前市价（{price:.2f}）的 {ratio:.1f} 倍，显著高于市场定价；请核对增长假设、WACC 与终值倍数，并搭配反向 DCF 与相对估值交叉检视。",
   "en": "⚠ Sanity check: base fair value ({fv:.2f}) is {ratio:.1f}× the market price ({price:.2f}); review growth assumptions, WACC and terminal multiple alongside Reverse DCF and relative valuation."
+ },
+ "cyclical_margin_normalized": {
+  "zh-Hant": "週期性利潤率常態化：基準年 EBIT 利潤率 {m0:.1%} 顯著高於多年中位數 {median:.1%}，預測期向 {target:.1%} 回歸，避免高峰外推。",
+  "zh-Hans": "周期性利润率常态化：基准年 EBIT 利润率 {m0:.1%} 显著高于多年中位数 {median:.1%}，预测期向 {target:.1%} 回归，避免高峰外推。",
+  "en": "Cyclical margin normalization: base EBIT margin {m0:.1%} is well above the multi-year median {median:.1%}; forecast fades toward {target:.1%} to avoid peak extrapolation."
+ },
+ "sales_to_capital_reinvestment": {
+  "zh-Hant": "資本周轉再投資連動：依歷史 Sales-to-Capital {s2c:.2f}× 校準高增長年份資本開支（預測期平均 CapEx 佔營收 {avg_capex:.1%}），避免零資本消耗增長。",
+  "zh-Hans": "资本周转再投资联动：依历史 Sales-to-Capital {s2c:.2f}× 校准高增长年份资本开支（预测期平均 CapEx 占营收 {avg_capex:.1%}），避免零资本消耗增长。",
+  "en": "Sales-to-Capital reinvestment linkage: lifted high-growth CapEx via historical Sales-to-Capital {s2c:.2f}× (average forecast CapEx {avg_capex:.1%} of revenue) so growth is funded by capital."
+ },
+ "sbc_material": {
+  "zh-Hant": "股份支付（SBC）檢核：基準年 SBC 佔營收 {pct:.1%}（約佔市值 {mkt_pct:.2%}/年）；GAAP/IFRS 營業利潤已將其列為費用，歷史淨股數年化變動 {dil:+.2%}。",
+  "zh-Hans": "股份支付（SBC）检核：基准年 SBC 占营收 {pct:.1%}（约占市值 {mkt_pct:.2%}/年）；GAAP/IFRS 营业利润已将其列为费用，历史净股数年化变动 {dil:+.2%}。",
+  "en": "SBC check: base-year SBC is {pct:.1%} of revenue (~{mkt_pct:.2%}/yr of market cap); GAAP/IFRS EBIT already expenses SBC, with historical net share change {dil:+.2%}/yr."
+ },
+ "sbc_dilution_applied": {
+  "zh-Hant": "未完全對沖之股權稀釋調整：淨股數年化增幅 {cagr:.2%}，已於每股價值橋接計入 5 年期保守稀釋係數 ×{mult:.3f}。",
+  "zh-Hans": "未完全对冲之股权稀释调整：净股数年化增幅 {cagr:.2%}，已于每股价值桥接计入 5 年期保守稀释系数 ×{mult:.3f}。",
+  "en": "Un-offset share dilution adjustment: net share CAGR of {cagr:.2%} applied as a conservative 5-year dilution multiplier ×{mult:.3f} in per-share equity value."
  }
 }
