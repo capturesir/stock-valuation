@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useIsAdmin } from "../lib/session";
+import { LoadingSpinner } from "./LoadingSpinner";
 import { StandardStatements } from "./StandardStatements";
 
 /** Concepts most people look for first; the first one the company filed is opened by default. */
@@ -24,9 +25,9 @@ const rank = (tx: string) => { const i = TAXONOMY_ORDER.indexOf(tx); return i < 
 const byTaxonomyThenLabel = (a: FiledConceptOut, b: FiledConceptOut) =>
   rank(a.taxonomy) - rank(b.taxonomy) || (a.label ?? a.concept).localeCompare(b.label ?? b.concept);
 
-/** Layer ② as filed: every number the company reported to the SEC, with a link to the filing. */
+/** Layer ② as filed: every number the company reported (SEC for US, HKEXnews/Yahoo for HK), with source links. */
 export function FiledData({ ticker }: { ticker: string }) {
-  const { t, f } = useI18n();
+  const { t, f, locale } = useI18n();
   const isAdmin = useIsAdmin();
   const qc = useQueryClient();
   const status = useQuery({ queryKey: ["stmt-status", ticker], queryFn: () => api.statementsStatus(ticker),
@@ -78,34 +79,58 @@ export function FiledData({ ticker }: { ticker: string }) {
     setPicked(conceptKey(first));
   }, [concepts.data, picked]);
 
+  const syncingNow = sync.isPending || !!st?.pending;
   const syncButton = canFetch && (
-    <button className="btn secondary small" type="button" disabled={sync.isPending || st?.pending} onClick={() => sync.mutate()}>
-      {sync.isPending || st?.pending ? t("admin.sources.syncing") : t(filer.data ? "filed.resync" : "admin.sources.sync")}</button>
+    <button className="btn secondary small" type="button" disabled={syncingNow} onClick={() => sync.mutate()}>
+      {syncingNow
+        ? <span className="loading-row"><LoadingSpinner size="sm" label={t("admin.sources.syncing")} />{t("admin.sources.syncing")}</span>
+        : t(filer.data ? "filed.resync" : "admin.sources.sync")}
+    </button>
   );
   const hkPdfButton = isHk && (
     <>
       <input ref={pdfInputRef} type="file" accept="application/pdf,.pdf" style={{ display: "none" }}
              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPdf.mutate(f); e.target.value = ""; }} />
       <button className="btn secondary small" type="button" disabled={uploadPdf.isPending} onClick={() => pdfInputRef.current?.click()}>
-        {uploadPdf.isPending ? t("filed.hkex.uploading") : t("filed.hkex.uploadPdf")}
+        {uploadPdf.isPending
+          ? <span className="loading-row"><LoadingSpinner size="sm" label={t("filed.hkex.uploading")} />{t("filed.hkex.uploading")}</span>
+          : t("filed.hkex.uploadPdf")}
       </button>
     </>
   );
   const errText = (e: unknown) => (e as Error | null)?.message;
   const syncError = (sync.error || fetchNow.error || uploadPdf.error) && <div role="alert" className="banner err">{errText(sync.error ?? fetchNow.error ?? uploadPdf.error)}</div>;
-  const lastError = (code?: string | null) => (code && /^[a-z_]+$/.test(code) ? t(`filed.err.${code}`, { ticker }) : code);
+  const lastError = (code?: string | null) => {
+    if (!code) return code;
+    if (isHk && code === "upstream") return t("filed.hkex.err.upstream", { ticker });
+    return /^[a-z_]+$/.test(code) ? t(`filed.err.${code}`, { ticker }) : code;
+  };
+  const fetchingText = t(isHk ? "filed.hkex.fetching" : "filed.none.fetching", { ticker });
 
-  if (status.isLoading || (st?.synced && filer.isLoading)) return <p className="muted">{t("common.loading")}</p>;
+  if (status.isLoading || (st?.synced && filer.isLoading)) {
+    return (
+      <section className="card" role="status" aria-live="polite">
+        <div className="loading-row">
+          <LoadingSpinner label={t("common.loading")} />
+          <span className="muted">{t("std.loading")}</span>
+        </div>
+      </section>
+    );
+  }
   if (status.error) return <div role="alert" className="banner err">{errText(status.error)}</div>;
   if (!st?.synced || !filer.data) {
     const working = st?.pending || fetchNow.isPending || sync.isPending || uploadPdf.isPending;
     return (
       <section className="card" aria-labelledby="filed-none-h">
         <h2 id="filed-none-h">{t("filed.none.title", { ticker })}</h2>
-        {isHk ? <p className="muted" style={{ margin: 0 }}>{working ? t("filed.none.fetching", { ticker }) : t("filed.hkex.freeNote")}</p>
+        {working ? (
+          <div className="banner info" role="status" aria-live="polite">
+            <LoadingSpinner label={fetchingText} />
+            <span>{fetchingText}</span>
+          </div>
+        ) : isHk ? <p className="muted" style={{ margin: 0 }}>{t("filed.hkex.freeNote")}</p>
           : !st?.sec_ready ? <p className="muted" style={{ margin: 0 }}>{t(isAdmin ? "filed.none.noContactAdmin" : "filed.none.noContact")}</p>
           : st.us_filer === false ? <p className="muted" style={{ margin: 0 }}>{t("filed.none.notUs", { ticker })}</p>
-          : working ? <p role="status" style={{ margin: 0 }}>{t("filed.none.fetching", { ticker })}</p>
           : <p className="muted" style={{ margin: 0 }}>{t("filed.none.ready")}</p>}
         {!working && st?.last_error && <div role="alert" className="banner err">{lastError(st.last_error)}</div>}
         {canFetch && !working && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{syncButton}{hkPdfButton}</div>}
@@ -115,6 +140,11 @@ export function FiledData({ ticker }: { ticker: string }) {
   }
 
   const fl = filer.data;
+  const isHkFiler = isHk || fl.cik.startsWith("HK");
+  const hkCode = ticker.replace(/\.HK$/i, "").padStart(4, "0");
+  const hkexUrl = locale === "en"
+    ? "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en"
+    : "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=zh";
   const q = search.trim().toLowerCase();
   const list = (concepts.data ?? []).filter((c) => !q || c.concept.toLowerCase().includes(q) || (c.label ?? "").toLowerCase().includes(q))
     .sort(byTaxonomyThenLabel);
@@ -127,25 +157,32 @@ export function FiledData({ ticker }: { ticker: string }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <h2 id="filer-h">{fl.name ?? ticker}</h2>
             <span className="muted small">
-              {[`CIK ${fl.cik}`, fl.sic_description, fl.fiscal_year_end && t("filed.fye", { mmdd: `${fl.fiscal_year_end.slice(0, 2)}-${fl.fiscal_year_end.slice(2)}` }),
+              {[isHkFiler ? t("filed.hkex.code", { code: hkCode }) : `CIK ${fl.cik}`, fl.sic_description,
+                fl.fiscal_year_end && t("filed.fye", { mmdd: `${fl.fiscal_year_end.slice(0, 2)}-${fl.fiscal_year_end.slice(2)}` }),
                 t("filed.counts", { filings: fl.filings.toLocaleString(), facts: fl.facts.toLocaleString() }),
                 fl.synced_at && t("filed.synced", { at: f.datetime(fl.synced_at) })].filter(Boolean).join(" · ")}
             </span>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <a className="btn secondary small"
-               href={fl.cik.startsWith("HK") ? "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=en" : `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${fl.cik}`}
-               target="_blank" rel="noreferrer">{t(fl.cik.startsWith("HK") ? "filed.hkexPage" : "filed.secPage")}</a>
+               href={isHkFiler ? hkexUrl : `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${fl.cik}`}
+               target="_blank" rel="noreferrer">{t(isHkFiler ? "filed.hkexPage" : "filed.secPage")}</a>
             {hkPdfButton}
             {syncButton}
           </div>
         </div>
-        {isHk && <div className="muted small">{t("filed.hkex.freeNote")}</div>}
+        {isHkFiler && <div className="muted small">{t("filed.hkex.freeNote")}</div>}
+        {(syncingNow || uploadPdf.isPending) && (
+          <div className="banner info" role="status" aria-live="polite">
+            <LoadingSpinner size="sm" label={uploadPdf.isPending ? t("filed.hkex.uploading") : fetchingText} />
+            <span>{uploadPdf.isPending ? t("filed.hkex.uploading") : fetchingText}</span>
+          </div>
+        )}
         {uploadPdf.data && <div role="status" className="banner info">{t("filed.hkex.pdfDone", {
           facts: uploadPdf.data.facts_added, ccy: uploadPdf.data.currency,
           years: (uploadPdf.data.fiscal_years ?? []).join(", ") || "—",
           matched: pdfCc?.matched_count ?? 0, compared: pdfCc?.compared ?? 0, diff: pdfCc?.discrepancy_count ?? 0 })}</div>}
-        {sync.data && <div role="status" className="banner info">{t(sync.data.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {
+        {sync.data && <div role="status" className="banner info">{t(sync.data.unchanged ? (isHkFiler ? "filed.hkex.unchanged" : "admin.sources.unchanged") : "admin.sources.synced", {
           ticker, name: sync.data.name ?? "", filings: sync.data.filings_added, facts: sync.data.facts_added, total: sync.data.facts_total.toLocaleString() })}</div>}
         {syncError}
       </section>
@@ -158,12 +195,13 @@ export function FiledData({ ticker }: { ticker: string }) {
 
       {mode === "standard" && <StandardStatements ticker={ticker} onShowFiled={(c) => { setPicked(c); setSearch(""); setMode("filed"); }} />}
 
-      {mode === "filed" && <div className="banner info" style={{ margin: 0 }}>{t("filed.asFiledNote")}</div>}
+      {mode === "filed" && <div className="banner info" style={{ margin: 0 }}>{t(isHkFiler ? "filed.hkex.asFiledNote" : "filed.asFiledNote")}</div>}
       {mode === "filed" && <div className="row">
         <section className="card col-side" aria-labelledby="concepts-h" style={{ gap: 8 }}>
           <h2 id="concepts-h" style={{ fontSize: "var(--sv-fs-lg)" }}>{t("filed.concepts", { n: concepts.data?.length ?? 0 })}</h2>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("filed.search")} aria-label={t("filed.search")} />
           <div role="listbox" aria-label={t("filed.concepts", { n: list.length })} style={{ maxHeight: 520, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            {concepts.isLoading && <div className="loading-row" role="status"><LoadingSpinner size="sm" label={t("common.loading")} /><span className="muted small">{t("common.loading")}</span></div>}
             {list.slice(0, 400).map((c: FiledConceptOut) => {
               const k = conceptKey(c);
               return (
@@ -175,18 +213,28 @@ export function FiledData({ ticker }: { ticker: string }) {
               );
             })}
             {list.length > 400 && <span className="muted small">{t("filed.more", { n: list.length - 400 })}</span>}
-            {!list.length && <span className="muted small">{t("filed.noMatch")}</span>}
+            {!concepts.isLoading && !list.length && <span className="muted small">{t("filed.noMatch")}</span>}
           </div>
         </section>
         <section className="card col-main" aria-labelledby="facts-h">
-          {current ? <Facts ticker={ticker} concept={current} /> : <p className="muted">{t("common.loading")}</p>}
+          {current ? <Facts ticker={ticker} concept={current} isHk={isHkFiler} /> : (
+            <div className="loading-row" role="status"><LoadingSpinner size="sm" label={t("common.loading")} /><span className="muted">{t("common.loading")}</span></div>
+          )}
         </section>
       </div>}
     </>
   );
 }
 
-function Facts({ ticker, concept }: { ticker: string; concept: FiledConceptOut }) {
+function sourceLinkLabel(form: string, url: string | null | undefined, isHk: boolean, t: (k: string) => string): string {
+  const u = (url ?? "").toLowerCase();
+  const f = (form ?? "").toUpperCase();
+  if (f.startsWith("HKEX") || u.includes("hkexnews.hk") || u.includes("hkex.com.hk")) return t("filed.source.hkex");
+  if (f.startsWith("YAHOO") || u.includes("finance.yahoo.com")) return t("filed.source.yahoo");
+  return isHk ? t("filed.source.hkex") : "SEC";
+}
+
+function Facts({ ticker, concept, isHk }: { ticker: string; concept: FiledConceptOut; isHk: boolean }) {
   const { t } = useI18n();
   const [annualOnly, setAnnualOnly] = useState(false);
   const facts = useQuery({ queryKey: ["filed-facts", ticker, concept.taxonomy, concept.concept],
@@ -203,7 +251,7 @@ function Facts({ ticker, concept }: { ticker: string; concept: FiledConceptOut }
     }
     return out;
   }, [facts.data]);
-  const rows = (facts.data ?? []).filter((x) => !annualOnly || x.form.startsWith("10-K") || x.form.startsWith("20-F") || x.form.startsWith("40-F"));
+  const rows = (facts.data ?? []).filter((x) => !annualOnly || x.form.startsWith("10-K") || x.form.startsWith("20-F") || x.form.startsWith("40-F") || x.form.endsWith("-AR"));
   const unit = (u: string) => (["shares", "pure", "USD/shares"].includes(u) ? t(`filed.unit.${u.replace("/", "_")}`) : u);
   return (
     <>
@@ -214,10 +262,10 @@ function Facts({ ticker, concept }: { ticker: string; concept: FiledConceptOut }
             {concept.source === "instance" && <> · {t("filed.source.instance")}</>}</span>
         </div>
         <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <input type="checkbox" checked={annualOnly} onChange={(e) => setAnnualOnly(e.target.checked)} />{t("filed.annualOnly")}
+          <input type="checkbox" checked={annualOnly} onChange={(e) => setAnnualOnly(e.target.checked)} />{t(isHk ? "filed.hkex.annualOnly" : "filed.annualOnly")}
         </label>
       </div>
-      {facts.isLoading && <p className="muted">{t("common.loading")}</p>}
+      {facts.isLoading && <div className="loading-row" role="status"><LoadingSpinner size="sm" label={t("common.loading")} /><span className="muted">{t("common.loading")}</span></div>}
       {facts.error && <div role="alert" className="banner err">{(facts.error as Error).message}</div>}
       {facts.data && (
         <div className="tbl-wrap">
@@ -227,16 +275,19 @@ function Facts({ ticker, concept }: { ticker: string; concept: FiledConceptOut }
               <th scope="col" className="l">{t("filed.col.filing")}</th><th scope="col">{t("filed.col.filed")}</th><th scope="col">{t("filed.col.source")}</th>
             </tr></thead>
             <tbody>
-              {rows.map((x) => (
-                <tr key={`${x.accession}|${x.unit}|${x.period_start}|${x.period_end}`}>
-                  <td className="l">{x.period_start ? `${x.period_start} – ${x.period_end}` : t("filed.instant", { date: x.period_end })}</td>
-                  <td><strong>{groupDigits(x.value)}</strong> <span className="muted small">{unit(x.unit)}</span>
-                    {restated.has(x) && <> <span className="tag warn" title={t("filed.restatedHint")}>{t("filed.restated")}</span></>}</td>
-                  <td className="l">{x.form}{x.fp && x.fy && <> <span className="muted small" title={t("filed.filingPeriodHint")}>{t("filed.filingPeriod", { fy: x.fy, fp: x.fp })}</span></>}</td>
-                  <td>{x.filed}</td>
-                  <td><a href={x.document_url ?? x.index_url} target="_blank" rel="noreferrer">SEC</a></td>
-                </tr>
-              ))}
+              {rows.map((x) => {
+                const href = x.document_url ?? x.index_url;
+                return (
+                  <tr key={`${x.accession}|${x.unit}|${x.period_start}|${x.period_end}`}>
+                    <td className="l">{x.period_start ? `${x.period_start} – ${x.period_end}` : t("filed.instant", { date: x.period_end })}</td>
+                    <td><strong>{groupDigits(x.value)}</strong> <span className="muted small">{unit(x.unit)}</span>
+                      {restated.has(x) && <> <span className="tag warn" title={t("filed.restatedHint")}>{t("filed.restated")}</span></>}</td>
+                    <td className="l">{x.form}{x.fp && x.fy && <> <span className="muted small" title={t("filed.filingPeriodHint")}>{t("filed.filingPeriod", { fy: x.fy, fp: x.fp })}</span></>}</td>
+                    <td>{x.filed}</td>
+                    <td><a href={href} target="_blank" rel="noreferrer">{sourceLinkLabel(x.form, href, isHk, t)}</a></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {!rows.length && <p className="muted">{t("filed.noRows")}</p>}

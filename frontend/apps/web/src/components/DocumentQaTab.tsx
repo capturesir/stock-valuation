@@ -5,10 +5,12 @@ import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { useIsAdmin } from "../lib/session";
 import { useI18n } from "../lib/i18n";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 export function DocumentQaTab({ ticker }: { ticker: string }) {
   const { t } = useI18n();
   const isAdmin = useIsAdmin();
+  const isHk = /\.hk$/i.test(ticker);
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -196,7 +198,7 @@ export function DocumentQaTab({ ticker }: { ticker: string }) {
             disabled={syncMut.isPending}
             onClick={() => syncMut.mutate()}
           >
-            {syncMut.isPending ? t("qa.syncing") : t("qa.syncLibrary")}
+            {syncMut.isPending ? <span className="loading-row"><LoadingSpinner size="sm" label={t("qa.syncing")} />{t("qa.syncing")}</span> : t("qa.syncLibrary")}
           </button>
           <button
             className="btn secondary small"
@@ -204,7 +206,7 @@ export function DocumentQaTab({ ticker }: { ticker: string }) {
             disabled={uploadMut.isPending}
             onClick={() => fileRef.current?.click()}
           >
-            {uploadMut.isPending ? t("common.loading") : t("qa.upload")}
+            {uploadMut.isPending ? <span className="loading-row"><LoadingSpinner size="sm" label={t("common.loading")} />{t("common.loading")}</span> : t("qa.upload")}
           </button>
           <input
             ref={fileRef}
@@ -225,7 +227,7 @@ export function DocumentQaTab({ ticker }: { ticker: string }) {
         )}
 
         {!docs.data?.length && !docs.isLoading && (
-          <p className="muted small" style={{ margin: 0 }}>{t("qa.emptyLibrary")}</p>
+          <p className="muted small" style={{ margin: 0 }}>{t(isHk ? "qa.emptyLibrary.hkex" : "qa.emptyLibrary")}</p>
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

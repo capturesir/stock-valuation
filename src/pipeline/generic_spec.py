@@ -341,7 +341,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     code = market_code(ticker)
     mk = MARKET_DEFAULTS[code]
     gaps: list = list(snap.get("data_gaps") or [])
-    from_sec = (snap.get("statement_source") or {}).get("source") == "sec_standard"
+    from_sec = (snap.get("statement_source") or {}).get("source") in ("sec_standard", "hkex_standard")
     gaps.append(Gap("generic_spec_sec" if from_sec else "generic_spec_yahoo"))
 
     is_a, bs_a, cf_a = fund.get("is_a") or {}, fund.get("bs_a") or {}, fund.get("cf_a") or {}

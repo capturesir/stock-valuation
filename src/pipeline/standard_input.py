@@ -116,12 +116,14 @@ def to_blocks(std: dict, yahoo_fund: dict) -> tuple[dict, dict, dict, list[str],
     plan = std.get("plan")
     plan_text = (Gap("plan_central", v=plan["version"]) if plan and plan["kind"] == "central"
                  else Gap("plan_personal", v=plan["version"]) if plan else Gap("plan_none"))
-    gaps.append(Gap("sec_standard", ruleset=std["ruleset"], version=std["ruleset_version"], plan=plan_text, years=used or ["—"]))
+    is_hk = str(std.get("cik") or "").startswith("HK") or str(std.get("ticker") or "").upper().endswith(".HK")
+    source_code = "hkex_standard" if is_hk else "sec_standard"
+    gaps.append(Gap(source_code, ruleset=std["ruleset"], version=std["ruleset_version"], plan=plan_text, years=used or ["—"]))
     if dropped:
         gaps.append(Gap("grade_c_dropped", years=dropped))
     if filled:
         gaps.append(Gap("yahoo_fill", items=sorted(filled)))
-    source = {"source": "sec_standard", "ruleset": std["ruleset"], "ruleset_version": std["ruleset_version"],
+    source = {"source": source_code, "ruleset": std["ruleset"], "ruleset_version": std["ruleset_version"],
               "view": std.get("view"), "as_of": std.get("as_of"), "years": used, "dropped": dropped,
               "plan": plan, "grades": {k: v for k, v in grades.items() if k in used}}
     return blocks["is_a"], blocks["bs_a"], blocks["cf_a"], gaps, source

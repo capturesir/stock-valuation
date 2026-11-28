@@ -234,6 +234,11 @@
   "zh-Hans": "美股财报取自 SEC 标准层（规则 {ruleset} {version}；{plan}）：{years}；每个数字可在「财报」分页追回申报文件。",
   "en": "US statements come from the SEC standard layer (ruleset {ruleset} {version}; {plan}): {years}. Every figure can be traced to its filing on the Statements tab."
  },
+ "hkex_standard": {
+  "zh-Hant": "港股財報取自港股標準層（香港交易所披露易／Yahoo 財報；規則 {ruleset} {version}；{plan}）：{years}；每個數字可在「財報」分頁追回來源，並可上傳港交所年報 PDF 交叉核對。",
+  "zh-Hans": "港股财报取自港股标准层（香港交易所披露易／Yahoo 财报；规则 {ruleset} {version}；{plan}）：{years}；每个数字可在「财报」分页追回来源，并可上传港交所年报 PDF 交叉核对。",
+  "en": "HKEX statements come from the HKEX standard layer (HKEXnews / Yahoo Finance; ruleset {ruleset} {version}; {plan}): {years}. Every figure can be traced on the Statements tab and cross-checked with an HKEX annual report PDF."
+ },
  "plan_central": {
   "zh-Hant": "中央方案 v{v}",
   "zh-Hans": "中央方案 v{v}",

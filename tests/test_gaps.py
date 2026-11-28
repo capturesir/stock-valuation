@@ -35,3 +35,21 @@ def test_nested_gaps_and_lists_follow_the_language():
     e = encode([g])[0]
     assert "central plan v3" in text(e, "en") and "FY2024, FY2023" in text(e, "en")
     assert text({"code": "no_such_code", "params": {}, "text": "saved"}, "en") == "saved"
+
+
+def test_hkex_standard_input_labels_hk_source_not_sec():
+    from src.pipeline.standard_input import to_blocks
+
+    std = {
+        "ticker": "0700.HK",
+        "cik": "HK00000700",
+        "ruleset": "general",
+        "ruleset_version": "1",
+        "years": [{"label": "FY2024", "kind": "annual", "end": "2024-12-31"}],
+        "rows": [{"code": "revenue", "cells": [{"value": "660000000000"}]}],
+        "checks": {"grades": {"FY2024": "A"}},
+    }
+    _, _, _, gaps, source = to_blocks(std, {})
+    assert source["source"] == "hkex_standard"
+    assert gaps and "港股標準層" in gaps[0] and "SEC" not in gaps[0]
+    assert "HKEX standard layer" in text(encode(gaps)[0], "en") and "SEC" not in text(encode(gaps)[0], "en")

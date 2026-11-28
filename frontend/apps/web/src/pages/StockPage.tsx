@@ -180,8 +180,8 @@ export function StockPage() {
               <div><span className="muted small">{t("stock.verify")}</span><strong>{latest.verify_pass == null ? "—" : t(latest.verify_pass ? "stock.verify.pass" : "stock.verify.fail")}</strong></div>
               <div><span className="muted small">{t("history.col.mode")}</span><strong>{t(`run.mode.${latest.ai_mode}`)}</strong></div>
               <div><span className="muted small">{t("run.statements")}</span>
-                <strong>{t(`run.source.${latest.statement_source ?? "yahoo"}`)}{latest.ruleset_version ? ` · ${latest.ruleset_version}` : ""}</strong></div>
-              {latest.statement_source === "sec_standard" && (
+                <strong>{t(`run.source.${latest.statement_source === "sec_standard" && /\.hk$/i.test(ticker) ? "hkex_standard" : (latest.statement_source ?? "yahoo")}`)}{latest.ruleset_version ? ` · ${latest.ruleset_version}` : ""}</strong></div>
+              {(latest.statement_source === "sec_standard" || latest.statement_source === "hkex_standard") && (
                 <div><span className="muted small">{t("adj.plan")}</span>
                   <strong>{planText(latest.adjustment_plan as { kind: string; version: number; label: string } | null | undefined, t)}</strong></div>
               )}

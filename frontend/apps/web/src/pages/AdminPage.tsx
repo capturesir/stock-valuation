@@ -2,6 +2,7 @@ import { ApiError, type AdminUserIn, type AdminUserUpdate, type StatementsSyncRe
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 import { api } from "../lib/api";
 import { useBranding } from "../lib/branding";
 import { useI18n } from "../lib/i18n";
@@ -263,8 +264,8 @@ function DataSources() {
           <input value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} placeholder="NVDA" autoComplete="off" />
         </label>
         <div style={{ alignSelf: "flex-end" }}>
-          <button className="btn secondary" type="submit" disabled={sync.isPending || !ready}>
-            {sync.isPending ? t("admin.sources.syncing") : t("admin.sources.sync")}</button>
+          <button className="btn secondary" type="submit" disabled={sync.isPending || (!ready && !/\.hk$/i.test(ticker.trim()))}>
+            {sync.isPending ? <span className="loading-row"><LoadingSpinner size="sm" label={t("admin.sources.syncing")} />{t("admin.sources.syncing")}</span> : t("admin.sources.sync")}</button>
         </div>
       </form>
       {q.data && !ready && <p className="small muted" style={{ margin: 0 }}>{t("admin.sources.needContact")}</p>}
@@ -275,7 +276,7 @@ function DataSources() {
       })()}</p>}
       {result && <div role="status" className="banner info">
         <span style={{ flex: "1 1 240px" }}>
-          {t(result.unchanged ? "admin.sources.unchanged" : "admin.sources.synced", {
+          {t(result.unchanged ? (/\.hk$/i.test(result.ticker) ? "filed.hkex.unchanged" : "admin.sources.unchanged") : "admin.sources.synced", {
             ticker: result.ticker, name: result.name ?? "", filings: result.filings_added, facts: result.facts_added,
             total: result.facts_total.toLocaleString() })}
           {!result.has_xbrl && <> {t("admin.sources.noXbrl")}</>}

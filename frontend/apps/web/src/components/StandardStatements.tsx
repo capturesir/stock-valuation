@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { AdjustCell, AdjustmentPlans } from "./AdjustmentPlans";
 import { groupDigits } from "./FiledData";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 const STATEMENTS: StdRow["statement"][] = ["income", "balance", "cash_flow"];
 const GRADE_TAG: Record<string, string> = { A: "ok", B: "warn", C: "bad" };
@@ -35,17 +36,31 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
     return s.replace(/^-/, "−");
   };
 
-  if (q.isLoading) return <p className="muted">{t("common.loading")}</p>;
+  const isHk = /\.hk$/i.test(ticker);
+
+  if (q.isLoading) {
+    return (
+      <section className="card" role="status" aria-live="polite">
+        <div className="loading-row">
+          <LoadingSpinner label={t("std.loading")} />
+          <span className="muted">{t("std.loading")}</span>
+        </div>
+      </section>
+    );
+  }
   if (q.error) return <div role="alert" className="banner err">{(q.error as Error).message}</div>;
   if (!d) return null;
-  if (!d.years.length) return <div className="banner info">{t("std.noYears")}</div>;
+  if (!d.years.length) return <div className="banner info">{t(isHk ? "std.noYears.hkex" : "std.noYears")}</div>;
   const grades: Record<string, string> = d.checks.grades ?? {};
 
   return (
     <section className="card" aria-labelledby="std-h" style={{ gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <h2 id="std-h">{t("std.title")}</h2>
+          <div className="loading-row">
+            <h2 id="std-h">{t("std.title")}</h2>
+            {q.isFetching && <LoadingSpinner size="sm" label={t("common.loading")} />}
+          </div>
           <span className="muted small">{t("std.subtitle", { ccy: d.currency ?? "—", ruleset: d.ruleset, version: d.ruleset_version })}</span>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -146,7 +161,7 @@ export function StandardStatements({ ticker, onShowFiled }: { ticker: string; on
       })}
       <Ratios d={d} />
       <AnalyticsPanel ticker={ticker} plan={plan} />
-      <Checks d={d} />
+      <Checks d={d} isHk={isHk} />
       <AdjustmentPlans ticker={ticker} />
     </section>
   );
@@ -283,11 +298,12 @@ function Ratios({ d }: { d: Std }) {
   );
 }
 
-function Checks({ d }: { d: Std }) {
+function Checks({ d, isHk }: { d: Std; isHk: boolean }) {
   const { t, f } = useI18n();
   const c = d.checks;
   const failures = c.failures ?? [];
   const fmt = (v: unknown) => (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v) ? groupDigits(v) : String(v));
+  const valLabel = (k: string) => (k === "sec" && isHk ? t("check.value.hkex") : t(`check.value.${k}`));
   return (
     <div style={{ borderTop: "1px solid var(--sv-line-faint)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
       <h3 style={{ margin: 0 }}>{t("check.title")}</h3>
@@ -306,7 +322,7 @@ function Checks({ d }: { d: Std }) {
                     <span className={`tag ${x.severity === "error" ? "bad" : x.severity === "warning" ? "warn" : "neutral"}`}>{t(`check.severity.${x.severity}`)}</span>{" "}
                     {t(`check.${x.rule_id}`)}{typeof x.values?.item === "string" ? `（${t(`std.item.${x.values.item}`)}）` : ""}</td>
                   <td className="l" style={{ whiteSpace: "normal" }}>
-                    {Object.entries(x.values ?? {}).filter(([k]) => k !== "item").map(([k, v]) => `${t(`check.value.${k}`)} ${fmt(v)}`).join(" · ")}</td>
+                    {Object.entries(x.values ?? {}).filter(([k]) => k !== "item").map(([k, v]) => `${valLabel(k)} ${fmt(v)}`).join(" · ")}</td>
                   <td>{x.difference != null ? f.pct(Number(x.difference), 2, false) : "—"}</td>
                 </tr>
               ))}
@@ -318,10 +334,19 @@ function Checks({ d }: { d: Std }) {
   );
 }
 
+function docLabel(form: string | null | undefined, url: string | null | undefined, isHk: boolean, t: (k: string) => string): string {
+  const u = (url ?? "").toLowerCase();
+  const f = (form ?? "").toUpperCase();
+  if (f.startsWith("HKEX") || u.includes("hkexnews.hk") || u.includes("hkex.com.hk")) return t("std.hkexDoc");
+  if (f.startsWith("YAHOO") || u.includes("finance.yahoo.com")) return t("std.yahooDoc");
+  return isHk ? t("std.hkexDoc") : t("std.secDoc");
+}
+
 function Lineage({ d, row, year, view, onShowFiled, ticker }: { d: Std; row: StdRow; year: number; view: "latest" | "original";
                                                               onShowFiled: (concept: string) => void; ticker: string }) {
   const { t } = useI18n();
   const [editing, setEditing] = useState(false);
+  const isHk = /\.hk$/i.test(ticker);
   const c = row.cells[year];
   const y = d.years[year];
   const yy = d.years[year];
@@ -347,10 +372,13 @@ function Lineage({ d, row, year, view, onShowFiled, ticker }: { d: Std; row: Std
           : t("std.from.ttmSum", { quarters: (c.inputs ?? []).join("、") })}
           {(c.parts ?? []).length > 0 && (
             <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
-              {(c.parts ?? []).map((p, k) => (
-                <li key={k}>{p.sign > 0 ? "＋" : "−"} {groupDigits(p.value)}（{p.period_start ? `${p.period_start} – ${p.period_end}` : p.period_end}，{p.form}，{p.filed}）{" "}
-                  <a href={p.document_url ?? p.index_url ?? "#"} target="_blank" rel="noreferrer">{t("std.secDoc")}</a></li>
-              ))}
+              {(c.parts ?? []).map((p, k) => {
+                const href = p.document_url ?? p.index_url ?? "#";
+                return (
+                  <li key={k}>{p.sign > 0 ? "＋" : "−"} {groupDigits(p.value)}（{p.period_start ? `${p.period_start} – ${p.period_end}` : p.period_end}，{p.form}，{p.filed}）{" "}
+                    <a href={href} target="_blank" rel="noreferrer">{docLabel(p.form, href, isHk, t)}</a></li>
+                );
+              })}
               {c.method === "derived" && (c.inputs ?? []).length > 0 && <li>− {t("std.minusQuarters", { quarters: (c.inputs ?? []).join("、") })}</li>}
             </ul>
           )}
@@ -359,7 +387,7 @@ function Lineage({ d, row, year, view, onShowFiled, ticker }: { d: Std; row: Std
       {c.method === "derived" || c.method === "ttm" ? null : c.method === "concept" ? (
         <span>{t("std.from.concept", { concept: c.concept ?? "", rule: c.rule_id })}
           {c.form && <> · {t("std.from.filing", { form: c.form, filed: c.filed ?? "" })}</>}
-          {(c.document_url || c.index_url) && <> · <a href={c.document_url ?? c.index_url ?? "#"} target="_blank" rel="noreferrer">{t("std.secDoc")}</a></>}
+          {(c.document_url || c.index_url) && <> · <a href={c.document_url ?? c.index_url ?? "#"} target="_blank" rel="noreferrer">{docLabel(c.form, c.document_url ?? c.index_url, isHk, t)}</a></>}
           {c.concept && <> · <button type="button" className="linklike" onClick={() => onShowFiled(c.concept!)}>{t("std.showFiled")}</button></>}
         </span>
       ) : (
