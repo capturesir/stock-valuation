@@ -128,9 +128,10 @@ def test_plan_prices_only_tasks_that_will_run(configured):
     assert p["total"]["cost_high_usd"] == pytest.approx(expect * 1.15)
     later = {t["key"]: t["skip_code"] for t in p["tasks"] if not t["will_run"]}
     assert later["T4"] == "not_selected" and later["T6"] == "not_selected" and "next_phase" not in later.values()
-    # built-in spec: assumptions are locked, so T3 is skipped while T1/T2/T7 still run
+    # v2.2.0: NVDA & 1830.HK are unlocked for generic calibrated DCF + T3 AI assumptions
     nv = configured.get("/api/v1/ai/plan", params={"ticker": "NVDA", "mode": "standard"}).json()
-    assert next(t for t in nv["tasks"] if t["key"] == "T3")["skip_code"] == "name_spec_locked"
+    assert next(t for t in nv["tasks"] if t["key"] == "T3")["will_run"] is True
+    assert next(t for t in nv["tasks"] if t["key"] == "T3")["skip_code"] is None
     assert next(t for t in nv["tasks"] if t["key"] == "T7")["will_run"] is True
 
 

@@ -662,6 +662,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
     llm_note = None
 
     if use_llm and client is not None and client.available():
+        lib_guidance = list(snap.get("library_context") or [])[:5]
         facts = {
             "ticker": ticker, "company": snap.get("company_name"),
             "sector": info.get("sector"), "industry": info.get("industry"),
@@ -674,6 +675,7 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
             "history": [{"date": d, "revenue_m": r / 1e6, "ebit_margin":
                          round((_op_income(is_a, d)[0] or 0) / r, 4)} for d, r in hist_rev],
             "consensus": rev_est, "rules_proposal": {"revenue_growth": growths, "ebit_margins": margins},
+            "library_guidance": lib_guidance,
         }
         try:
             res = _propose_paths(client, facts)
@@ -690,6 +692,8 @@ def build_generic_spec(snap: dict, fund: dict, cfg: Optional[dict] = None,
                                ["依 AI 路徑"] * (n - 1)
                 margin_notes = [f"AI 提案：{res.get('rationale', {}).get('margins') or '見來源'}"] * n
                 snap["assumption_source"] = "llm"
+                if lib_guidance:
+                    gaps.append(Gap("t3_library_guidance_used", n=len(lib_guidance)))
             else:
                 llm_note = Gap("ai_rejected", why=why)
         if llm_note:

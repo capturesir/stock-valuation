@@ -34,7 +34,8 @@ def load_config(path: Optional[Path] = None) -> dict:
 def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
                valuation_date: str = "2026-11-11", progress=None,
                should_stop=None, skip_extract: bool = False, apply_adjustments: bool = True,
-               statements: Optional[dict] = None) -> dict:
+               statements: Optional[dict] = None, prefer_generic: bool = False,
+               library_context: Optional[list[dict]] = None) -> dict:
     """Fetch -> assumptions -> engine -> verify -> Excel / markdown.
 
     ``progress`` is an optional callback ``(step_key, activity=None, skip=None)``
@@ -69,6 +70,9 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     case_dir.mkdir(parents=True, exist_ok=True)
 
     snap = {"ticker": ticker, "data_gaps": [], "valuation_date": valuation_date}
+    if library_context:
+        snap["library_context"] = library_context
+    use_builtin = (ticker in ("NVDA", "1830.HK")) and not prefer_generic
 
     # prices
     _step("quote", f"正在向 Yahoo 取得 {ticker} 市價…")
@@ -86,7 +90,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     fund = yahoo.fundamentals(ticker)
     (case_dir / "yahoo_fundamentals.json").write_text(json.dumps(fund, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
     statement_source = {"source": "yahoo"}
-    if statements is not None and ticker not in ("NVDA", "1830.HK"):
+    if statements is not None and not use_builtin:
         from . import standard_input
         is_a, bs_a, cf_a, std_gaps, statement_source = standard_input.to_blocks(statements, fund)
         fund = {**fund, "is_a": is_a, "bs_a": bs_a, "cf_a": cf_a}
@@ -99,7 +103,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
 
     # Rf
     _step("rf", "正在取得 10 年期政府債券孳息（無風險利率）…")
-    builtin = ticker in ("NVDA", "1830.HK")
+    builtin = use_builtin
     model_ccy = (info.get("financialCurrency") or snap.get("currency_yahoo") or "").upper()
     if builtin or not model_ccy:
         # built-in specs: 1830.HK is in HKD (net of the HK default spread, S9), NVDA in USD
@@ -212,7 +216,7 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
     snap["llm_status"] = llm_status
 
     # Build spec
-    is_generic = ticker not in ("NVDA", "1830.HK")
+    is_generic = not use_builtin
     if is_generic and use_llm and client.available():
         _step("ai_assume", f"AI 正在提出增長與利潤率假設（{client.model}）…")
     elif is_generic:
@@ -221,9 +225,9 @@ def run_ticker(ticker: str, cfg: Optional[dict] = None, use_llm: bool = True,
         _step("ai_assume", "內建規格已鎖定假設，不呼叫 AI", skip="內建規格")
 
     _step("spec", "正在建立模型規格（行業 β、折現率、橋接項目）…")
-    if ticker == "NVDA":
+    if use_builtin and ticker == "NVDA":
         spec = name_specs.spec_nvda(snap)
-    elif ticker == "1830.HK":
+    elif use_builtin and ticker == "1830.HK":
         spec = name_specs.spec_1830(snap)
     else:
         # No hand-verified spec: build one from the fetched statements so a new

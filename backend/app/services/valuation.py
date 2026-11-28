@@ -180,7 +180,7 @@ def resolve_plan(db: Session, ticker: str, user_id: Optional[str], choice: str) 
     from . import adjustments, statements
 
     filer = statements.filer_for(db, ticker)
-    if ticker in BUILTIN or filer is None or not filer.facts or template_for_sic(filer.sic) != "general":
+    if filer is None or not filer.facts or template_for_sic(filer.sic) != "general":
         return None
     user = db.get(User, user_id) if user_id else None
     if user is None:
@@ -199,7 +199,7 @@ def statements_input(db: Session, ticker: str, plan: Optional[dict]) -> Optional
     from . import adjustments, statements
 
     filer = statements.filer_for(db, ticker)
-    if ticker in BUILTIN or filer is None or not filer.facts or template_for_sic(filer.sic) != "general":
+    if filer is None or not filer.facts or template_for_sic(filer.sic) != "general":
         return None
     applied = None
     if plan:
@@ -253,19 +253,40 @@ def execute(job_id: str, payload: dict) -> None:
     use_t3 = use_llm and any(s["key"] == "T3" and s["status"] == "pending" for s in steps)
     status, error, result = "done", None, None
     plan = job.get("plan")
+    lib_ctx: list[dict] = []
     try:
         with session() as db:
             std_input = statements_input(db, job["ticker"], plan)
+            if use_t3:
+                from . import doc_library
+                ranked_ctx = doc_library.retrieve_chunks(
+                    db, job["ticker"],
+                    "revenue guidance outlook growth margin segment operating drivers 業績 指引 展望 增長 毛利率 分部",
+                    top_k=5, max_tokens=1600,
+                )
+                lib_ctx = [
+                    {"title": rc.chunk.title, "section": rc.chunk.section, "date": rc.chunk.doc_date,
+                     "excerpt": rc.chunk.content[:500]}
+                    for rc in ranked_ctx if rc.score >= 0.18
+                ]
     except Exception:          # the standard layer must never stop a valuation: Yahoo's statements still work
         traceback.print_exc()
         std_input = None
 
     try:
+        import inspect
+        rt_params = inspect.signature(run_ticker).parameters
+        extra_kw: dict = {}
+        if "prefer_generic" in rt_params:
+            extra_kw["prefer_generic"] = True
+        if "library_context" in rt_params and lib_ctx:
+            extra_kw["library_context"] = lib_ctx
         result = run_ticker(
             job["ticker"], cfg=cfg, use_llm=use_t3, valuation_date=job["valuation_date"],
             progress=progress, should_stop=lambda: st.is_cancelled(job_id), skip_extract=True,
             apply_adjustments=False,      # never the shared v1 file (D12): plans are applied to the standard layer
             statements=std_input,
+            **extra_kw,
         )
     except ValuationCancelled:
         status, error = "cancelled", "用戶已停止估值（已完成的步驟保留）"

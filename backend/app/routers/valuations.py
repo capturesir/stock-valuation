@@ -37,7 +37,7 @@ def make_plan(db: Session, ticker: str, mode: str, tasks=None, budget=None) -> d
     model = ai["model"]
     p = pricing.plan(mode=mode, model=model, prices=settings_store.price_table(db),
                      llm_configured=ai["configured"], local=ai["local"],
-                     has_name_spec=_has_name_spec(ticker), selected=tasks,
+                     has_name_spec=False, selected=tasks,
                      calibration=settings_store.calibration(db, model) if model else 1.0)
     spent = settings_store.month_spend(db)
     per_run = ai["budget_per_run_usd"] if budget is None else budget

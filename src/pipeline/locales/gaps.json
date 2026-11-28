@@ -303,5 +303,10 @@
   "zh-Hant": "未完全對沖之股權稀釋調整：淨股數年化增幅 {cagr:.2%}，已於每股價值橋接計入 5 年期保守稀釋係數 ×{mult:.3f}。",
   "zh-Hans": "未完全对冲之股权稀释调整：净股数年化增幅 {cagr:.2%}，已于每股价值桥接计入 5 年期保守稀释系数 ×{mult:.3f}。",
   "en": "Un-offset share dilution adjustment: net share CAGR of {cagr:.2%} applied as a conservative 5-year dilution multiplier ×{mult:.3f} in per-share equity value."
+ },
+ "t3_library_guidance_used": {
+  "zh-Hant": "T3 假設已結合文件庫中 {n} 段管理層指引／分部展望原文進行校準。",
+  "zh-Hans": "T3 假设已结合文件库中 {n} 段管理层指引／分部展望原文进行校准。",
+  "en": "T3 assumptions incorporated {n} management guidance / segment outlook excerpt(s) from the Document Library."
  }
 }
