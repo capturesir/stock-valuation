@@ -19,7 +19,7 @@ from ..auth import Principal, current_principal
 from ..db import get_db
 from ..i18n import DEFAULT as DEFAULT_LANG, http_error, lang_dep, pick
 from ..models import AiTask, Run, Security, WatchlistItem
-from ..schemas import PriceSeries, RunAnalysisOut, StockMethodsOut, StockProfile, StockValuations
+from ..schemas import PriceSeries, RunAnalysisOut, RunSensitivityOut, StockMethodsOut, StockProfile, StockValuations
 from ..services import branding, market, valuation_methods
 from .common import iso, run_out, ticker_or_400
 
@@ -198,6 +198,24 @@ def run_analysis(run_id: str, db: Session = Depends(get_db), lang: str = Depends
             for t in task_rows
         ],
     }
+
+
+@router.get("/runs/{run_id}/sensitivity", response_model=RunSensitivityOut,
+            summary="2D 敏感度熱力圖（WACC × 永續增長率、WACC × 營業利潤率）與蒙地卡羅模擬")
+def run_sensitivity(run_id: str, trials: int = Query(default=2000, ge=200, le=5000),
+                    db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+    from libs.sv_valuation import build_sensitivity_and_monte_carlo
+
+    r = db.get(Run, run_id)
+    if r is None:
+        raise http_error(404, "not_found", lang, what=run_id)
+    calc = _load_calc_for_export(r)
+    if not calc:
+        return {"run_id": r.id, "ticker": r.ticker, "available": False}
+    out = build_sensitivity_and_monte_carlo(calc, trials=trials)
+    if not out:
+        return {"run_id": r.id, "ticker": r.ticker, "available": False}
+    return {"run_id": r.id, "ticker": r.ticker, "available": True, **out}
 
 
 @router.get("/stocks/{ticker}/methods", response_model=StockMethodsOut,

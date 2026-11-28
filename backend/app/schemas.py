@@ -1151,3 +1151,16 @@ class RunAnalysisOut(BaseModel):
     ticker: str
     ai_analysis: dict = Field(default_factory=dict)
     tasks: list[dict] = Field(default_factory=list)
+
+
+class RunSensitivityOut(BaseModel):
+    run_id: str
+    ticker: str
+    available: bool = False
+    currency: Optional[str] = None
+    price: Optional[float] = None
+    base_wacc: Optional[float] = None
+    base_terminal_g: Optional[float] = None
+    wacc_vs_g: Optional[dict] = None
+    wacc_vs_margin: Optional[dict] = None
+    monte_carlo: Optional[dict] = None

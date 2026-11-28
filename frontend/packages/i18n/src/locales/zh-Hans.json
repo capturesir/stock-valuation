@@ -1009,5 +1009,17 @@
   "bg.doneSummary": "估值完成：理论价 {fair} · 花费 {cost}",
   "bg.announceDone": "{ticker} 估值已完成。",
   "bg.announceFailed": "{ticker} 估值失败。",
-  "bg.announceCancelled": "{ticker} 估值已停止。"
+  "bg.announceCancelled": "{ticker} 估值已停止。",
+  "sens.title": "2D 敏感度热力图与蒙特卡罗模拟",
+  "sens.subtitle": "同时扰动 WACC、永续增长率、营收增速与营业利润率（{trials} 次蒙特卡罗模拟）",
+  "sens.matrixToggle": "敏感度矩阵切换",
+  "sens.tab.waccG": "WACC × 永续增长率",
+  "sens.tab.waccMargin": "WACC × 营业利润率",
+  "sens.marginShift": "利润率偏移",
+  "sens.mc.p10p90": "理论价 10%–90% 区间",
+  "sens.mc.median": "蒙特卡罗中位数（P50）",
+  "sens.mc.probAbove": "理论价高于现价胜率",
+  "sens.mc.probMos20": "具备 20% 安全边际概率",
+  "sens.mc.histTitle": "理论价概率分布（有效模拟 {n} 次；主色为高于现价区间）",
+  "sens.mc.priceMark": "现价 {price}"
 }

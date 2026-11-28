@@ -1009,5 +1009,17 @@
   "bg.doneSummary": "估值完成：理論價 {fair} · 花費 {cost}",
   "bg.announceDone": "{ticker} 估值已完成。",
   "bg.announceFailed": "{ticker} 估值失敗。",
-  "bg.announceCancelled": "{ticker} 估值已停止。"
+  "bg.announceCancelled": "{ticker} 估值已停止。",
+  "sens.title": "2D 敏感度熱力圖與蒙地卡羅模擬",
+  "sens.subtitle": "同時擾動 WACC、永續增長率、營收增速與營業利潤率（{trials} 次蒙地卡羅模擬）",
+  "sens.matrixToggle": "敏感度矩陣切換",
+  "sens.tab.waccG": "WACC × 永續增長率",
+  "sens.tab.waccMargin": "WACC × 營業利潤率",
+  "sens.marginShift": "利潤率偏移",
+  "sens.mc.p10p90": "理論價 10%–90% 區間",
+  "sens.mc.median": "蒙地卡羅中位數（P50）",
+  "sens.mc.probAbove": "理論價高於現價勝率",
+  "sens.mc.probMos20": "具備 20% 安全邊際機率",
+  "sens.mc.histTitle": "理論價機率分佈（有效模擬 {n} 次；主色為高於現價區間）",
+  "sens.mc.priceMark": "現價 {price}"
 }

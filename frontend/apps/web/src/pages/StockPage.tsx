@@ -11,6 +11,7 @@ import { FootballFieldCard } from "../components/FootballFieldCard";
 import { NewsAndSuggestionsTab } from "../components/NewsAndSuggestionsTab";
 import { RunAiAnalysisCard } from "../components/RunAiAnalysisCard";
 import { RunDrawer } from "../components/RunDrawer";
+import { SensitivityMonteCarloCard } from "../components/SensitivityMonteCarloCard";
 import { TrendChart, type Range } from "../components/TrendChart";
 import { api } from "../lib/api";
 import { useCooldown } from "../lib/cooldown";
@@ -201,6 +202,7 @@ export function StockPage() {
             </div>
           </section>
           <RunAiAnalysisCard runId={latest.id} currency={ccy} />
+          <SensitivityMonteCarloCard runId={latest.id} currency={ccy} />
         </>
       )}
 

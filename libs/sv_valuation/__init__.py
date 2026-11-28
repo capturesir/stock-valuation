@@ -12,6 +12,7 @@ from .composite import MethodBand, build_composite, default_weights
 from .financials import MethodResultRange, ddm_two_stage, pb_roe_justified, residual_income
 from .relative import MultipleInput, relative_valuation
 from .reverse_dcf import ReverseDcfResult, solve_implied_growth
+from .sensitivity import build_sensitivity_and_monte_carlo
 
 __all__ = [
     "MethodBand",
@@ -19,6 +20,7 @@ __all__ = [
     "MultipleInput",
     "ReverseDcfResult",
     "build_composite",
+    "build_sensitivity_and_monte_carlo",
     "ddm_two_stage",
     "default_weights",
     "pb_roe_justified",

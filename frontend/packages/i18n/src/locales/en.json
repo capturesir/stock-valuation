@@ -1009,5 +1009,17 @@
   "bg.doneSummary": "Completed: fair value {fair} · cost {cost}",
   "bg.announceDone": "{ticker} valuation finished.",
   "bg.announceFailed": "{ticker} valuation failed.",
-  "bg.announceCancelled": "{ticker} valuation cancelled."
+  "bg.announceCancelled": "{ticker} valuation cancelled.",
+  "sens.title": "2D Sensitivity Heatmap & Monte Carlo Simulation",
+  "sens.subtitle": "Jointly perturbs WACC, terminal g, revenue growth, and EBIT margin ({trials} Monte Carlo trials)",
+  "sens.matrixToggle": "Sensitivity matrix selector",
+  "sens.tab.waccG": "WACC × Terminal g",
+  "sens.tab.waccMargin": "WACC × EBIT Margin",
+  "sens.marginShift": "Margin Shift",
+  "sens.mc.p10p90": "P10–P90 Fair Value Range",
+  "sens.mc.median": "Monte Carlo Median (P50)",
+  "sens.mc.probAbove": "Prob. Fair Value > Price",
+  "sens.mc.probMos20": "Prob. ≥20% Margin of Safety",
+  "sens.mc.histTitle": "Fair value distribution ({n} valid trials; highlighted bins exceed current price)",
+  "sens.mc.priceMark": "Price {price}"
 }

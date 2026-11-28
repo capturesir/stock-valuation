@@ -238,6 +238,7 @@ export function createClient(cfg: ClientConfig = {}) {
     excelUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/excel${q({ lang })}`,
     reportUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/report${q({ lang })}`,
     runAnalysis: (runId: string) => req<RunAnalysisOut>("GET", `/runs/${enc(runId)}/analysis`),
+    runSensitivity: (runId: string, trials = 2000) => req<Record<string, unknown>>("GET", `/runs/${enc(runId)}/sensitivity${q({ trials })}`),
     statementsExportUrl: (ticker: string, format: "xlsx" | "csv", view: "latest" | "original", period: "annual" | "quarterly",
                           plan: PlanChoice = "auto") =>
       `${base}/stocks/${enc(ticker)}/statements/export${q({ format, view, period, years: period === "quarterly" ? 12 : 10, plan })}`,
