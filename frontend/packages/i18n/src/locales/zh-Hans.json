@@ -996,5 +996,18 @@
   "qa.starter.financials": "{ticker} 近五年营收、净利、毛利率与自由现金流趋势如何？",
   "qa.starter.valuation": "{ticker} 目前的理论价、WACC 与多方法估值对比如何？",
   "qa.starter.risks": "{ticker} 有哪些主要风险、红队警示或财务异常？",
-  "qa.starter.news": "{ticker} 近期有什么重要新闻或催化事件？"
+  "qa.starter.news": "{ticker} 近期有什么重要新闻或催化事件？",
+  "bg.region": "后台估值作业与完成通知",
+  "bg.srContext": "后台估值作业状态通知",
+  "bg.pillRunning": "后台估值中（{n}）· {pct}%",
+  "bg.pillDone": "{n} 项估值已完成",
+  "bg.toggleHint": "展开或收起后台估值进度窗口",
+  "bg.runningLabel": "{ticker} 估值进行中",
+  "bg.minimize": "收起到顶部栏",
+  "bg.inspect": "查看实时进度",
+  "bg.openStock": "前往个股",
+  "bg.doneSummary": "估值完成：理论价 {fair} · 花费 {cost}",
+  "bg.announceDone": "{ticker} 估值已完成。",
+  "bg.announceFailed": "{ticker} 估值失败。",
+  "bg.announceCancelled": "{ticker} 估值已停止。"
 }

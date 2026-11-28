@@ -9,6 +9,7 @@ import { useI18n } from "../lib/i18n";
 import { savePrefs, useMe } from "../lib/session";
 import { THEMES, useTheme, type Theme } from "../lib/theme";
 import { Gear, List, Person, Search, Trend } from "./Icons";
+import { BackgroundJobs } from "./BackgroundJobs";
 import { PwaPrompt } from "./PwaPrompt";
 
 export function Layout() {
@@ -62,6 +63,7 @@ export function Layout() {
                    aria-label={t("nav.searchLabel")} autoCapitalize="characters" />
           </form>
           <div className="spacer" />
+          <BackgroundJobs slot="header" />
           <label className="sr-only" htmlFor="lang">{t("nav.language")}</label>
           <select id="lang" className="lang" value={locale} onChange={(e) => changeLocale(e.target.value as Locale)}>
             {LOCALES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
@@ -93,6 +95,7 @@ export function Layout() {
         <NavLink to="/settings"><Gear size={20} />{t("nav.settings")}</NavLink>
         <NavLink to="/account"><Person size={20} />{t("nav.account")}</NavLink>
       </nav>
+      <BackgroundJobs slot="dock" />
       <PwaPrompt />
     </>
   );

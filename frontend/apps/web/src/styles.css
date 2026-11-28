@@ -399,3 +399,82 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; 
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px; background: var(--sv-track); }
 .chip button { border: 0; background: none; cursor: pointer; padding: 0 2px; color: var(--sv-ink-700); font: inherit; }
 .chip button.on { color: var(--sv-secondary-strong); }
+
+
+/* persistent site-wide background valuation dock & toast notifications (modern-web-guidance: persistent-toast-notifications) */
+.bg-pill { background: var(--sv-card); cursor: pointer; }
+.bg-pill.running { border-color: var(--sv-primary); background: var(--sv-primary-weak); color: var(--sv-primary-strong); }
+.bg-pill.done { border-color: var(--sv-success); background: var(--sv-success-weak); color: var(--sv-success); }
+
+[popover].bg-dock {
+  position: fixed;
+  inset: auto 20px 20px auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100dvh - 100px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 35;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, display 0.2s ease, overlay 0.2s ease;
+  transition-behavior: allow-discrete;
+}
+
+@supports not selector(:popover-open) {
+  [popover].bg-dock:not(.\:popover-open) {
+    display: none;
+  }
+}
+
+[popover].bg-dock:is(:popover-open, .\:popover-open) {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@starting-style {
+  [popover].bg-dock:is(:popover-open, .\:popover-open) {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.bg-toast {
+  background: var(--sv-card);
+  border: 1px solid var(--sv-line-soft);
+  border-radius: var(--sv-radius-xl);
+  padding: 14px 16px;
+  box-shadow: var(--sv-shadow-drawer);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bg-toast.active { border-left: 4px solid var(--sv-primary); }
+.bg-toast.done { border-left: 4px solid var(--sv-success); }
+.bg-toast.err { border-left: 4px solid var(--sv-danger); }
+.bg-toast-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bg-toast-body { line-height: 1.5; word-break: break-word; white-space: normal; }
+.bg-toast-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bg-close { width: 32px; height: 32px; min-height: 32px; flex: none; }
+
+@media (max-width: 767px) {
+  [popover].bg-dock {
+    inset: auto 12px 76px 12px;
+    width: auto;
+    max-height: calc(100dvh - 140px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [popover].bg-dock {
+    transition: none;
+    transform: none;
+  }
+}

@@ -996,5 +996,18 @@
   "qa.starter.financials": "How have {ticker}'s revenue, net income, margins, and FCF trended?",
   "qa.starter.valuation": "What are {ticker}'s fair value, WACC, and multi-method valuation results?",
   "qa.starter.risks": "What are the key risks, red-team warnings, or financial anomalies for {ticker}?",
-  "qa.starter.news": "What are the recent news headlines or catalysts for {ticker}?"
+  "qa.starter.news": "What are the recent news headlines or catalysts for {ticker}?",
+  "bg.region": "Background valuation jobs and notifications",
+  "bg.srContext": "Background valuation job announcements",
+  "bg.pillRunning": "Valuing ({n}) · {pct}%",
+  "bg.pillDone": "{n} valuation done",
+  "bg.toggleHint": "Show or hide background valuation panel",
+  "bg.runningLabel": "{ticker} valuation running",
+  "bg.minimize": "Minimize to header",
+  "bg.inspect": "Live progress",
+  "bg.openStock": "Open stock",
+  "bg.doneSummary": "Completed: fair value {fair} · cost {cost}",
+  "bg.announceDone": "{ticker} valuation finished.",
+  "bg.announceFailed": "{ticker} valuation failed.",
+  "bg.announceCancelled": "{ticker} valuation cancelled."
 }

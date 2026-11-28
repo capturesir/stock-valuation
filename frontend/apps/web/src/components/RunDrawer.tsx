@@ -6,6 +6,7 @@ import { useCooldown } from "../lib/cooldown";
 import { useI18n } from "../lib/i18n";
 import { Close, StepIcon } from "./Icons";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { notifyDrawerState, notifyJobStarted } from "./BackgroundJobs";
 
 const MODES: Mode[] = ["none", "lite", "standard", "deep"];
 const today = () => { const d = new Date(); const p = (x: number) => String(x).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
@@ -38,6 +39,12 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
     });
   };
 
+  // notify persistent background jobs dock while this drawer is open
+  useEffect(() => {
+    notifyDrawerState(true, ticker);
+    return () => notifyDrawerState(false, ticker);
+  }, [ticker]);
+
   // resume a valuation of this ticker that is already running (e.g. after a reload)
   useEffect(() => {
     api.activeJobs().then((js) => { const j = js.find((x) => x.ticker === ticker); if (j) follow(j); }).catch(() => undefined);
@@ -61,6 +68,7 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
     try {
       const j = await api.startValuation({ ticker, mode, tasks, valuation_date: date, force, plan: "auto" });
       setJoined(Boolean(j.joined));
+      notifyJobStarted(j);
       follow(j);
     } catch (e) {
       if (e instanceof ApiError && e.code === "recent_valuation") { setRecent(e.message); return; }
@@ -205,7 +213,7 @@ export function RunDrawer({ ticker, onClose }: { ticker: string; onClose: () => 
                 <>
                   <span className="muted small" style={{ flex: "1 1 160px" }}>{t("run.stopHint")}</span>
                   <button className="btn danger" type="button" onClick={() => api.cancelJob(job.id).then(setJob)}>{t("run.stop")}</button>
-                  <button className="btn dark" type="button" onClick={onClose}>{t("run.background")}</button>
+                  <button className="btn dark" type="button" onClick={() => { if (job) notifyJobStarted(job); onClose(); }}>{t("run.background")}</button>
                 </>
               ) : (
                 <button className="btn primary" type="button" onClick={onClose}>{job.status === "done" ? t("run.viewResult") : t("common.close")}</button>

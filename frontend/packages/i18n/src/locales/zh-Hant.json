@@ -996,5 +996,18 @@
   "qa.starter.financials": "{ticker} 近五年營收、淨利、毛利率與自由現金流趨勢如何？",
   "qa.starter.valuation": "{ticker} 目前的理論價、WACC 與多方法估值對比如何？",
   "qa.starter.risks": "{ticker} 有哪些主要風險、紅隊警示或財務異常？",
-  "qa.starter.news": "{ticker} 近期有什麼重要新聞或催化事件？"
+  "qa.starter.news": "{ticker} 近期有什麼重要新聞或催化事件？",
+  "bg.region": "背景估值作業與完成通知",
+  "bg.srContext": "背景估值作業狀態通知",
+  "bg.pillRunning": "背景估值中（{n}）· {pct}%",
+  "bg.pillDone": "{n} 項估值已完成",
+  "bg.toggleHint": "展開或收合背景估值進度視窗",
+  "bg.runningLabel": "{ticker} 估值進行中",
+  "bg.minimize": "收合到頂部列",
+  "bg.inspect": "查看即時進度",
+  "bg.openStock": "前往個股",
+  "bg.doneSummary": "估值完成：理論價 {fair} · 花費 {cost}",
+  "bg.announceDone": "{ticker} 估值已完成。",
+  "bg.announceFailed": "{ticker} 估值失敗。",
+  "bg.announceCancelled": "{ticker} 估值已停止。"
 }
