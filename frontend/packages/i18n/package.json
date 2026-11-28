@@ -1,6 +1,6 @@
 {
   "name": "@sv/i18n",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "type": "module",
   "description": "介面語言檔與數字／貨幣／日期格式；不依賴任何框架，網頁、App、小程序共用",

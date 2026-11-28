@@ -4,6 +4,20 @@
 
 ---
 
+## 2.3.0 — 2026-11-28
+
+**主題：白盒估值深度呈現工作台（Glass-Box Valuation Workbench）— 讓專業投資者逐層穿透每個理論價背後的現金流、折現率、橋樑調整、多方法倍數與即時壓力測試。**
+
+### 新增
+- **單次估值白盒明細 API**（`GET /api/v1/runs/{run_id}/detail`、`backend/app/routers/stocks.py`、`backend/app/schemas.py`）：由既有估值計算檔完整還原顯性期 FCFF 現值、終值現值、企業價值、資產負債表橋樑項、股權價值、攤薄股數、匯率換算、WACC 全參數、Damodaran 行業 Beta 審計、終值公式參數、10 年預測明細、CFO 現金流核對與市場分析師一致目標價。
+- **估值橋樑與價值拆解卡**（`ValuationWaterfallCard.tsx`）：視覺化呈現 `PV(FCFF) + PV(TV) = EV → 資產負債表橋樑（現金／負債／少數股東權益／SBC 稀釋）→ 股權價值 ÷ 攤薄股數 × 匯率 = 每股理論價`，附可展開審計出處表與終值佔比 > 75% 風險警示。
+- **10 年 FCFF 預測與假設溯源卡**（`DcfProjectionsCard.tsx`）：結合 ECharts 雙軸趨勢圖（營收／FCFF 柱狀＋營業利潤率／營收增速折線）與可捲動凍結表頭 10 年＋永續期完整現金流表；標示殘段期（Stub）並支援點選任一年份即時展開該年增速、利潤率、再投資推演依據與來源連結。
+- **白盒 WACC、終值公式與 CFO 交叉核對卡**（`WaccTerminalCard.tsx`）：完整公式呈現 `Ke = Rf + βL × ERP + CRP`、`Kd(after-tax)`、股債資本結構堆疊條、Damodaran 行業無槓桿/再槓桿 β vs Yahoo 5 年迴歸 β 偏差標示、價值驅動終值公式（`g ÷ RONIC` 再投資率）與基期 `CFO 路徑 vs NOPAT 路徑` 現金流核對。
+- **足球場圖升級：分析師一致目標價、倍數明細與互動權重調校器**（`FootballFieldCard.tsx`、`api.methods(ticker, weights)`）：於足球場圖疊加 0% 權重分析師一致目標價區間對照、支援展開各方法具體倍數（`P/E`、`P/B`、`EV/EBITDA`、`EV/Sales`、同業中位數）與公式假設，並提供即時滑桿調校各方法權重預覽綜合理論價。
+- **即時 What-If 估值沙盒與跨次估值修訂對照卡**（`WhatIfSandboxCard.tsx`、`RevisionComparisonCard.tsx`）：瀏覽器端毫秒級重算完整 10 年 DCF 與終值（四組即時滑桿：WACC、永續增長 `g`、營收增速偏移、營業利潤率偏移，含偏保守／基準／偏樂觀一鍵情境），並提供前次 vs 最新估值並排修訂差異表（市價、綜合價、DCF、WACC bps、終值 g、財報口徑與 AI 模式）。
+
+---
+
 ## 未發布
 
 ---
