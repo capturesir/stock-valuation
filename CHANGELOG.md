@@ -8,6 +8,32 @@
 
 ---
 
+## 2.2.0 — 2026-11-28
+
+**主題：買方機構級估值核心升級（多方法主估值、SBC／Sales-to-Capital／週期常態化／地域加權 CRP、2D 敏感度與蒙地卡羅模擬、無前視偏差歷史回測）＋跨語言研究問答與全站常駐背景作業體驗。**
+
+### 估值結果變動（依 `docs/versioning.md` §2 紀錄）
+- **多方法複合理論價正式寫入主估值**（`backend/app/services/valuation.py`、`backend/app/services/valuation_methods.py`）：
+  - `Run.composite_value` 與 `Run.weights` 不再寫死 `DCF 100%`，改依行業自動套用多方法權重（一般企業以 DCF 65%＋相對估值 35%；銀行／保險改採剩餘收益 RI＋DDM＋P/B–ROE 為主、FCFF 權重為 0），並新增 **EV/EBITDA** 與**同業橫斷面倍數（Peer P/E、Peer EV/EBITDA）**。
+- **DCF 引擎機構級校準**（`src/pipeline/generic_spec.py`、`src/pipeline/standard_input.py`、`src/engine/method_a.py`）：
+  - **週期股利潤率常態化**：對週期性產業或高利潤率波動公司，基準年處於週期高峰時自動向多年中位數回歸，避免高峰外推。
+  - **Sales-to-Capital 再投資連動**：高增長預測年份依歷史資本周轉比率校準資本開支，確保成長伴隨合理資本投入。
+  - **股份支付（SBC）與未對沖稀釋調整**：讀入標準層 `share_based_compensation`，顯著 SBC 且具淨股數稀釋時於每股價值橋接計入保守稀釋係數。
+  - **營收地域加權國家風險溢價（CRP）**：當文件庫含營收地區分佈時，依 Damodaran 各區 CRP 按營收佔比加權計算 WACC。
+  - **解鎖 `NVDA` 與 `1830.HK` 線上估值 T3**：Web 線上估值不再鎖死於舊版寫死規格，與所有股票一致採用標準化財報、校準後通用 DCF 與 AI T3（並將文件庫管理層指引與分部展望注入 T3）；原 `name_specs.py` 保留予 v1 回歸基準測試使用。
+
+### 新增
+- **2D 敏感度熱力圖與 2,000 次蒙地卡羅模擬**（`libs/sv_valuation/sensitivity.py`、`GET /api/v1/runs/{run_id}/sensitivity`、`SensitivityMonteCarloCard.tsx`）：提供 `WACC × 永續增長率`、`WACC × 營業利潤率` 雙矩陣熱力圖、P10–P90 理論價分佈直方圖、現價勝率與 20% 安全邊際機率。
+- **無前視偏差歷史估值回測評分卡**（`libs/sv_valuation/backtest.py`、`backend/app/services/backtest.py`、`GET /api/v1/backtest/scorecard`、`BacktestScorecardCard.tsx`）：以首次公布（`original`）財報與拆股還原歷史股價檢驗低估／高估組 12 個月前瞻報酬、方向勝率與 Spearman Rank IC。
+- **雙語跨語言研究問答升級**（`libs/sv_docs/retrieval.py`、`libs/sv_docs/qa.py`、`backend/app/services/doc_library.py`、`DocumentQaTab.tsx`）：新增繁簡正規化、22 組中英財經概念擴展、首次提問自動本地同步、結構化全庫直讀（概況／財報／杜邦／估值／風險／新聞）、多輪追問補全、未設定 AI 顯眼橫幅與一鍵推薦提問。
+- **全站常駐背景作業追蹤與完成通知**（`BackgroundJobs.tsx`、`Layout.tsx`）：頂部列常駐進度膠囊＋右下角 `popover="manual"` 浮動卡片與常駐完成通知；估值抽屜加入 `T1–T8` 細部子步驟即時動態與單步計時。
+- **港股財報來源正名與載入 Spinner**（`LoadingSpinner.tsx`、`FiledData.tsx`、`StandardStatements.tsx`）：港股全面改顯示「港交所代號／披露易／Yahoo 財報／港股標準層」，並於所有財報抓取與切換流程加上原生無障礙 `<progress>` 旋轉進度指示器。
+
+### 修正
+- 修正 `valuation_ai.py` 讀取文件庫分部段落誤用 `DocumentChunk.text`（應為 `DocumentChunk.content`）導致 T8 在有文件庫檔案時異常的問題。
+
+---
+
 ## 2.1.0 — 2026-11-28
 
 **主題：估值偏高根因修正與模型校準＋補齊估值流程全部 8 項 AI 任務（T1–T8），消除所有「下一階段推出」項目。**

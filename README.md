@@ -1,6 +1,6 @@
 # 可攜式、可換模型的股票估值系統（A 組 FCFF 框架）
 
-- 版本：2.1.0（v2 正式版；估值校準與全部 8 項 AI 任務 T1–T8 完整落地）：包含相對估值拆股還原與 TTM 對齊修正、DCF 凸形增長衰減與 IFRS 16 再投資下限、首年殘段折現、合理性檢查，以及 T1–T8 全部估值任務即時執行與分析檢視；詳見 [`CHANGELOG.md`](CHANGELOG.md) 與 [`docs/使用手冊.md`](docs/使用手冊.md)
+- 版本：2.2.0（機構級估值與投研平台升級）：涵蓋週期股利潤率常態化、Sales-to-Capital 再投資連動、SBC 稀釋檢核、多方法複合理論價寫入主估值、EV/EBITDA 與同業橫斷面倍數、營收地域加權 CRP、2D 敏感度熱力圖與 2,000 次蒙地卡羅模擬、無前視偏差歷史回測評分卡、雙語跨語言研究問答、港股來源標示與全站常駐背景作業追蹤；詳見 [`CHANGELOG.md`](CHANGELOG.md) 與 [`docs/使用手冊.md`](docs/使用手冊.md)
 - 日期：2026-11-28（亞洲／澳門時間，UTC+8）
 - 語言：繁體中文（介面另支援简体中文、English）
 - 倉庫：[https://github.com/capturesir/stock-valuation](https://github.com/capturesir/stock-valuation)
