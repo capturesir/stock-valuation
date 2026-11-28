@@ -987,5 +987,14 @@
   "std.yahooDoc": "Yahoo Finance",
   "check.value.hkex": "HKEX standard",
   "run.source.hkex_standard": "HKEX standard layer (HKEXnews / Yahoo)",
-  "qa.emptyLibrary.hkex": "No documents yet. Press “Sync library” to import valuation reports, financial summaries, and HKEXnews filings, or upload an annual report PDF/Markdown file."
+  "qa.emptyLibrary.hkex": "No documents yet. Press “Sync library” to import valuation reports, financial summaries, and HKEXnews filings, or upload an annual report PDF/Markdown file.",
+  "qa.noAiBanner": "No AI model is configured yet — Research Q&A is running in offline retrieval & structured financial mode. Configure an AI model in Settings for deeper semantic reasoning and cross-document synthesis.",
+  "qa.goSettings": "Configure AI →",
+  "qa.badge.noAi": "Offline retrieval (no AI)",
+  "qa.retryWithWeb": "Retry with web search",
+  "qa.starter.overview": "Summarize {ticker}'s fundamentals, business overview, and valuation",
+  "qa.starter.financials": "How have {ticker}'s revenue, net income, margins, and FCF trended?",
+  "qa.starter.valuation": "What are {ticker}'s fair value, WACC, and multi-method valuation results?",
+  "qa.starter.risks": "What are the key risks, red-team warnings, or financial anomalies for {ticker}?",
+  "qa.starter.news": "What are the recent news headlines or catalysts for {ticker}?"
 }

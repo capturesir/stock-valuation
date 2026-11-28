@@ -134,3 +134,55 @@ def test_history_compression_keeps_recent_and_bounds_summary():
     assert recent[0]["content"].startswith("Turn 8")
     assert "Turn 0" in summary or len(summary) <= 400
     assert len(summary) <= 400
+
+
+def test_cross_lingual_trad_simp_overview_and_no_ai_guidance():
+    candidates = [
+        CandidateChunk(
+            chunk_id=1, document_id=10, source_kind="sec_filing", title="NVDA FY2026 10-K",
+            doc_date="2026-02-26", section="ITEM 1. BUSINESS", page=None,
+            content="NVIDIA designs GPUs and accelerated computing platforms including Blackwell and CUDA software for AI data centers.",
+            token_count=20, url="https://www.sec.gov/Archives/edgar/data/1045810/10k.htm",
+        ),
+        CandidateChunk(
+            chunk_id=2, document_id=10, source_kind="sec_filing", title="NVDA FY2026 10-K",
+            doc_date="2026-02-26", section="ITEM 1A. RISK FACTORS", page=None,
+            content="Supply chain concentration at TSMC foundry and US semiconductor export controls pose operational risks.",
+            token_count=20, url="https://www.sec.gov/Archives/edgar/data/1045810/10k.htm",
+        ),
+        CandidateChunk(
+            chunk_id=3, document_id=11, source_kind="hkex_pdf", title="騰訊控股 2025 年報",
+            doc_date="2026-03-25", section="Page 12: 業務回顧", page=12,
+            content="微信及 WeChat 合併月活躍賬戶數達到 13.8 億，視頻號與小遊戲帶動廣告收入增長。",
+            token_count=28, url="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0325/report.pdf",
+        ),
+    ]
+
+    # 1. Traditional Chinese question finds English 10-K Risk Factors
+    zh_to_en = hybrid_rank("這家公司面臨哪些供應鏈與出口管制風險？", candidates, top_k=5)
+    assert evidence_sufficient(zh_to_en, "這家公司面臨哪些供應鏈與出口管制風險？")
+    assert zh_to_en[0].chunk.chunk_id == 2
+
+    # 2. Simplified Chinese query matches Traditional Chinese HKEX document identically
+    simp_to_trad = hybrid_rank("微信月活跃账户数和广告收入增长如何？", candidates, top_k=5)
+    assert evidence_sufficient(simp_to_trad, "微信月活跃账户数和广告收入增长如何？")
+    assert simp_to_trad[0].chunk.chunk_id == 3
+
+    # 3. Broad company overview query surfaces representative sections instead of refusing
+    ov = hybrid_rank("總結這家公司的業務與投資亮點", candidates, top_k=5)
+    assert evidence_sufficient(ov, "總結這家公司的業務與投資亮點")
+
+    # 4. No-AI offline mode appends clear notice on answers and actionable hints on refusals
+    ans, cits, refused = extractive_answer("這家公司面臨哪些供應鏈風險？", zh_to_en, lang="zh-Hant", ai_configured=False)
+    assert not refused and cits and "尚未設定 AI 模型" in ans
+    ref_ans, ref_cits, is_ref = extractive_answer(
+        "Mars coffee price 2099", [], lang="zh-Hant", ai_configured=False, doc_count=0, allow_web=False
+    )
+    assert is_ref and not ref_cits
+    assert "文件庫沒有相關資料" in ref_ans and "尚未設定 AI 模型" in ref_ans and "同步文件庫" in ref_ans
+
+    # 5. Citation verifier normalizes [L1, L2] and 【L2】 while rejecting fabricated [L99]
+    _, cmap = build_qa_prompt("Risks", "NVDA", zh_to_en, lang="zh-Hant")
+    cleaned, verified = verify_citations("供應鏈風險 [L1, L2] 與重點【L1】以及偽造 [L99]。", cmap)
+    assert "[L1]" in cleaned and "[L2]" in cleaned and "[L99]" not in cleaned
+    assert [c.id for c in verified] == ["L1", "L2"]

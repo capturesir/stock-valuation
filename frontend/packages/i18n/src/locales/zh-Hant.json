@@ -987,5 +987,14 @@
   "std.yahooDoc": "Yahoo 財報",
   "check.value.hkex": "港股標準層",
   "run.source.hkex_standard": "港股標準層（披露易／Yahoo）",
-  "qa.emptyLibrary.hkex": "尚未有文件。按「同步文件庫」匯入估值報告、財報摘要與港交所披露易公告，或上傳年報 PDF／Markdown。"
+  "qa.emptyLibrary.hkex": "尚未有文件。按「同步文件庫」匯入估值報告、財報摘要與港交所披露易公告，或上傳年報 PDF／Markdown。",
+  "qa.noAiBanner": "目前尚未設定 AI 模型，研究問答將以「離線智慧檢索與結構化財報摘錄」模式回答。建議設定 AI 模型以獲得更深入的語意理解、跨語言閱讀與綜合分析。",
+  "qa.goSettings": "前往設定 AI →",
+  "qa.badge.noAi": "離線檢索（未設定 AI）",
+  "qa.retryWithWeb": "啟用上網補充並重試",
+  "qa.starter.overview": "總結 {ticker} 的基本面、業務概況與估值重點",
+  "qa.starter.financials": "{ticker} 近五年營收、淨利、毛利率與自由現金流趨勢如何？",
+  "qa.starter.valuation": "{ticker} 目前的理論價、WACC 與多方法估值對比如何？",
+  "qa.starter.risks": "{ticker} 有哪些主要風險、紅隊警示或財務異常？",
+  "qa.starter.news": "{ticker} 近期有什麼重要新聞或催化事件？"
 }

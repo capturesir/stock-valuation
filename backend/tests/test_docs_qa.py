@@ -158,3 +158,53 @@ def test_sync_valuation_and_numeric_tool_grounding(client, tmp_path):
     assert msg["used_statements"] is True
     assert any(c["source_type"] == "statements" for c in msg["citations"])
     assert not msg["insufficient_evidence"]
+
+
+def test_cross_lingual_qa_auto_sync_and_no_ai_hints(client, tmp_path):
+    import shutil
+    from backend.app import ROOT
+    from backend.app.db import session
+    from backend.app.services.legacy import import_legacy
+
+    # Import a valuation run WITHOUT manually calling /documents/sync first
+    out = tmp_path / "out"
+    shutil.copytree(ROOT / "out" / "2026-11-11_NVDA", out / "2026-11-11_NVDA")
+    with session() as db:
+        assert import_legacy(db, out_dir=out) == 1
+
+    # Broad Traditional Chinese question auto-syncs local docs and returns grounded valuation & profile answer + no-AI note
+    r1 = client.post("/api/v1/stocks/NVDA/qa/ask",
+                     json={"question": "總結這家公司的基本面和目前估值貴不貴？"},
+                     headers={"Accept-Language": "zh-Hant"})
+    assert r1.status_code == 200, r1.text
+    m1 = r1.json()["message"]
+    assert not m1["insufficient_evidence"]
+    assert m1["used_statements"] is True
+    assert "尚未設定 AI 模型" in m1["content"]
+    assert len(m1["citations"]) >= 1
+
+    # Upload English 10-K risk snippet and ask in Traditional Chinese → cross-lingual retrieval succeeds
+    html = b"<html><body><h2>ITEM 1A. RISK FACTORS</h2><p>TSMC foundry concentration and export licensing rules constrain GPU supply.</p></body></html>"
+    up = client.post("/api/v1/stocks/NVDA/documents/upload",
+                     files={"file": ("risks.html", html, "text/html")},
+                     data={"title": "NVDA Risk Factors"})
+    assert up.status_code == 201
+
+    r2 = client.post("/api/v1/stocks/NVDA/qa/ask",
+                     json={"question": "這家公司的供應鏈和出口管制風險是什麼？", "thread_id": r1.json()["thread_id"]},
+                     headers={"Accept-Language": "zh-Hant"})
+    assert r2.status_code == 200, r2.text
+    m2 = r2.json()["message"]
+    assert not m2["insufficient_evidence"]
+    assert any(c["source_type"] == "library" for c in m2["citations"])
+
+    # Unanswerable question without AI returns refusal + actionable AI/web hints
+    r3 = client.post("/api/v1/stocks/NVDA/qa/ask",
+                     json={"question": "火星殖民地2099年的咖啡價格是多少？", "allow_web": False},
+                     headers={"Accept-Language": "zh-Hant"})
+    assert r3.status_code == 200
+    m3 = r3.json()["message"]
+    assert m3["insufficient_evidence"] is True
+    assert "文件庫沒有相關資料" in m3["content"]
+    assert "尚未設定 AI 模型" in m3["content"]
+    assert "允許上網補充" in m3["content"]
