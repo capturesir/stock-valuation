@@ -347,6 +347,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 讀取該次估值的全部 AI 任務分析結果（T1–T8，含情境機率、同業篩選、反方審查、變動歸因與分部拆解） */
+        get: operations["run_analysis_api_v1_runs__run_id__analysis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stocks/{ticker}/methods": {
         parameters: {
             query?: never;
@@ -3046,6 +3063,21 @@ export interface components {
             /** Seen At */
             seen_at: string;
         };
+        /** RunAnalysisOut */
+        RunAnalysisOut: {
+            /** Run Id */
+            run_id: string;
+            /** Ticker */
+            ticker: string;
+            /** Ai Analysis */
+            ai_analysis?: {
+                [key: string]: unknown;
+            };
+            /** Tasks */
+            tasks?: {
+                [key: string]: unknown;
+            }[];
+        };
         /** RunOut */
         RunOut: {
             /** Id */
@@ -4703,6 +4735,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_analysis_api_v1_runs__run_id__analysis_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "accept-language"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunAnalysisOut"];
                 };
             };
             /** @description Validation Error */

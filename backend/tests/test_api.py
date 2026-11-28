@@ -24,8 +24,11 @@ def _fake_calc(ticker: str, fair: float = 41.15, price: float = 22.72, usage_eve
 
 
 def _install_fake_engine(monkeypatch, *, usage_events=None, slow=False, fail=None):
+    from backend.app.services import ai_tasks, valuation_ai
     from src.pipeline import orchestrator
 
+    monkeypatch.setattr(valuation_ai, "_make_llm_caller", lambda cfg, use_llm: (None, None))
+    monkeypatch.setattr(ai_tasks, "_yahoo_news", lambda ticker, limit=10: [])
     calls = {}
 
     def fake_run_ticker(ticker, cfg=None, use_llm=True, valuation_date="", progress=None, should_stop=None,
@@ -118,15 +121,17 @@ def test_plan_without_key_runs_nothing(client):
 def test_plan_prices_only_tasks_that_will_run(configured):
     p = configured.get("/api/v1/ai/plan", params={"ticker": "0883.HK", "mode": "standard"}).json()
     run = [t for t in p["tasks"] if t["will_run"]]
-    assert [t["key"] for t in run] == ["T3"]
-    expect = (10_000 * 0.30 + 3_000 * 1.20) / 1e6
+    assert [t["key"] for t in run] == ["T1", "T2", "T3", "T7"]
+    assert all(t["available"] for t in p["tasks"])
+    expect = ((12_000 + 20_000 + 10_000 + 8_000) * 0.30 + (2_000 + 3_000 + 3_000 + 2_000) * 1.20) / 1e6
     assert p["total"]["cost_usd"] == pytest.approx(expect)
     assert p["total"]["cost_high_usd"] == pytest.approx(expect * 1.15)
     later = {t["key"]: t["skip_code"] for t in p["tasks"] if not t["will_run"]}
-    assert later["T1"] == "next_phase" and later["T7"] == "next_phase"
-    # built-in spec: assumptions are locked, so T3 is skipped
+    assert later["T4"] == "not_selected" and later["T6"] == "not_selected" and "next_phase" not in later.values()
+    # built-in spec: assumptions are locked, so T3 is skipped while T1/T2/T7 still run
     nv = configured.get("/api/v1/ai/plan", params={"ticker": "NVDA", "mode": "standard"}).json()
     assert next(t for t in nv["tasks"] if t["key"] == "T3")["skip_code"] == "name_spec_locked"
+    assert next(t for t in nv["tasks"] if t["key"] == "T7")["will_run"] is True
 
 
 def test_price_lookup_prefers_longest_prefix():

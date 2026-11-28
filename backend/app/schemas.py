@@ -1143,3 +1143,10 @@ class AiSuggestionDecisionIn(BaseModel):
     apply_to_plan: bool = Field(False, description="採用 T1 建議時是否同步寫入個人財報調整方案並留痕（架構 §2.5）")
     adjustment_value: Optional[str] = Field(None, description="套用至調整方案時的目標數值（選填，預設使用建議 payload.value）")
     adjustment_reason: Optional[str] = Field(None, description="寫入調整方案的理由（選填，預設使用建議標題）")
+
+
+class RunAnalysisOut(BaseModel):
+    run_id: str
+    ticker: str
+    ai_analysis: dict = Field(default_factory=dict)
+    tasks: list[dict] = Field(default_factory=list)

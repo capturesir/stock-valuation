@@ -84,6 +84,7 @@ export type ReverseDcfOut = S["ReverseDcfOut"];
 export type NewsItemOut = S["NewsItemOut"];
 export type AiSuggestionOut = S["AiSuggestionOut"];
 export type AiSuggestionGenerateOut = S["AiSuggestionGenerateOut"];
+export type RunAnalysisOut = S["RunAnalysisOut"];
 
 export interface ClientConfig {
   /** "" = same origin (served behind Caddy); e.g. "https://valuation.example.com" for apps */
@@ -236,6 +237,7 @@ export function createClient(cfg: ClientConfig = {}) {
     prices: (ticker: string, days = 365) => req<PriceSeries>("GET", `/stocks/${enc(ticker)}/prices${q({ days })}`),
     excelUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/excel${q({ lang })}`,
     reportUrl: (runId: string, lang?: string) => `${base}/runs/${enc(runId)}/report${q({ lang })}`,
+    runAnalysis: (runId: string) => req<RunAnalysisOut>("GET", `/runs/${enc(runId)}/analysis`),
     statementsExportUrl: (ticker: string, format: "xlsx" | "csv", view: "latest" | "original", period: "annual" | "quarterly",
                           plan: PlanChoice = "auto") =>
       `${base}/stocks/${enc(ticker)}/statements/export${q({ format, view, period, years: period === "quarterly" ? 12 : 10, plan })}`,

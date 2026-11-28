@@ -3,7 +3,7 @@
  "info": {
   "title": "估值工作台 API",
   "description": "股票估值系統 v2 後端。所有前端共用此 API。本系統產出不構成投資建議。",
-  "version": "2.0.0-beta.2"
+  "version": "2.0.0"
  },
  "paths": {
   "/api/v1/health": {
@@ -1399,6 +1399,80 @@
       "content": {
        "application/json": {
         "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/runs/{run_id}/analysis": {
+   "get": {
+    "tags": [
+     "stocks"
+    ],
+    "summary": "讀取該次估值的全部 AI 任務分析結果（T1–T8，含情境機率、同業篩選、反方審查、變動歸因與分部拆解）",
+    "operationId": "run_analysis_api_v1_runs__run_id__analysis_get",
+    "parameters": [
+     {
+      "name": "run_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Run Id"
+      }
+     },
+     {
+      "name": "authorization",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authorization"
+      }
+     },
+     {
+      "name": "accept-language",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accept-Language"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunAnalysisOut"
+        }
        }
       }
      },
@@ -11723,6 +11797,37 @@
      "seen_at"
     ],
     "title": "RevisionOut"
+   },
+   "RunAnalysisOut": {
+    "properties": {
+     "run_id": {
+      "type": "string",
+      "title": "Run Id"
+     },
+     "ticker": {
+      "type": "string",
+      "title": "Ticker"
+     },
+     "ai_analysis": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Ai Analysis"
+     },
+     "tasks": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "type": "array",
+      "title": "Tasks"
+     }
+    },
+    "type": "object",
+    "required": [
+     "run_id",
+     "ticker"
+    ],
+    "title": "RunAnalysisOut"
    },
    "RunOut": {
     "properties": {

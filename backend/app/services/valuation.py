@@ -249,6 +249,7 @@ def execute(job_id: str, payload: dict) -> None:
     local = pricing.is_local(cfg["llm"]["base_url"])
     price = {"model": model, "input": 0.0, "cached_input": 0.0, "output": 0.0} if local else pricing.find_price(model, prices)
     use_llm = bool(payload.get("use_llm"))
+    use_t3 = use_llm and any(s["key"] == "T3" and s["status"] == "pending" for s in steps)
     status, error, result = "done", None, None
     plan = job.get("plan")
     try:
@@ -260,7 +261,7 @@ def execute(job_id: str, payload: dict) -> None:
 
     try:
         result = run_ticker(
-            job["ticker"], cfg=cfg, use_llm=use_llm, valuation_date=job["valuation_date"],
+            job["ticker"], cfg=cfg, use_llm=use_t3, valuation_date=job["valuation_date"],
             progress=progress, should_stop=lambda: st.is_cancelled(job_id), skip_extract=True,
             apply_adjustments=False,      # never the shared v1 file (D12): plans are applied to the standard layer
             statements=std_input,
@@ -272,6 +273,23 @@ def execute(job_id: str, payload: dict) -> None:
         traceback.print_exc()
 
     calc = (result or {}).get("json") or {}
+    # Run all remaining selected AI tasks (T1, T2, T4, T5, T6, T7, T8) right after the engine finishes
+    if status == "done" and calc:
+        from . import valuation_ai
+
+        def _on_post_step(k: str, act: str) -> None:
+            st.update(job_id, steps=steps, progress=_progress(steps), activity=act)
+
+        try:
+            with session() as db:
+                ai_analysis, _post_events = valuation_ai.run_post_tasks(
+                    db, job["ticker"], calc, steps, cfg=cfg, price=price, use_llm=use_llm, on_step_change=_on_post_step
+                )
+            if ai_analysis:
+                calc["ai_analysis"] = ai_analysis
+        except Exception:
+            traceback.print_exc()
+
     usage = _usage_by_task(calc.get("llm_usage") or {})
     gaps = " ".join(calc.get("data_gaps") or [])
     gap_codes = {g.get("code") for g in calc.get("data_gap_codes") or [] if isinstance(g, dict)}
@@ -287,14 +305,19 @@ def execute(job_id: str, payload: dict) -> None:
             s.update(tokens_in=u["tokens_in"], tokens_out=u["tokens_out"], cost_usd=round(c, 6),
                      usage_reported=u["reported"])
             total_cost, total_in, total_out = total_cost + c, total_in + u["tokens_in"], total_out + u["tokens_out"]
-            if "ai_failed" in gap_codes or "AI 提案失敗" in gaps:
+            if s["key"] == "T3" and ("ai_failed" in gap_codes or "AI 提案失敗" in gaps):
                 s.update(status="failed", note="AI 請求失敗，已改用規則後備", note_code="ai_failed")
-            elif "ai_rejected" in gap_codes or "AI 提案未採用" in gaps:
+            elif s["key"] == "T3" and ("ai_rejected" in gap_codes or "AI 提案未採用" in gaps):
                 s.update(note="AI 提案超出資料推算範圍，已退回規則值（費用已產生）", note_code="ai_rejected")
             elif not u["reported"]:
                 s.update(note="服務商未回報用量，費用按 0 計", note_code="usage_unreported")
-        elif s["status"] == "done" and status == "done":
+        elif s["key"] == "T3" and s["status"] == "done" and status == "done":
             s.update(status="failed", note="AI 未回覆可用結果，已改用規則後備", note_code="ai_failed")
+        elif s["status"] == "done":
+            # Post-valuation AI tasks (T1/T2/T4/T5/T6/T7/T8) already recorded their own tokens & cost
+            total_cost += float(s.get("cost_usd") or 0.0)
+            total_in += int(s.get("tokens_in") or 0)
+            total_out += int(s.get("tokens_out") or 0)
         elif s["status"] == "pending":
             s["status"] = "cancelled" if status == "cancelled" else "skipped"
             s["note"] = s.get("note") or ("已停止" if status == "cancelled" else "未執行")
@@ -306,6 +329,24 @@ def execute(job_id: str, payload: dict) -> None:
     calc_path, xlsx_path = (result or {}).get("path"), (result or {}).get("xlsx")
     if status == "done" and calc:
         calc_path, xlsx_path = archive_outputs(job_id, result)
+        if calc.get("ai_analysis") and calc_path and Path(calc_path).is_file():
+            try:
+                import json as _json
+                Path(calc_path).write_text(_json.dumps(calc, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+            except OSError:
+                pass
+        elif calc.get("ai_analysis") and not calc_path:
+            # Fake/headless runs without an exported JSON still persist ai_analysis into the run archive dir
+            try:
+                import json as _json
+                from ..config import get_settings
+                dest = get_settings().data_dir / "runs" / job_id
+                dest.mkdir(parents=True, exist_ok=True)
+                p_json = dest / f"{job['ticker']}_calc.json"
+                p_json.write_text(_json.dumps(calc, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+                calc_path = str(p_json)
+            except OSError:
+                pass
         _brand(job_id, result)
 
     with session() as db:

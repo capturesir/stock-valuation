@@ -18,8 +18,8 @@ from .. import limits
 from ..auth import Principal, current_principal
 from ..db import get_db
 from ..i18n import DEFAULT as DEFAULT_LANG, http_error, lang_dep, pick
-from ..models import Run, Security, WatchlistItem
-from ..schemas import PriceSeries, StockMethodsOut, StockProfile, StockValuations
+from ..models import AiTask, Run, Security, WatchlistItem
+from ..schemas import PriceSeries, RunAnalysisOut, StockMethodsOut, StockProfile, StockValuations
 from ..services import branding, market, valuation_methods
 from .common import iso, run_out, ticker_or_400
 
@@ -175,6 +175,29 @@ def report(run_id: str, lang_q: Optional[str] = Query(default=None, alias="lang"
     branding.stamp_run_files(db, [str(out)])
     return FileResponse(out, filename=filename, background=BackgroundTask(shutil.rmtree, tmp, ignore_errors=True),
                         media_type="text/markdown; charset=utf-8")
+
+
+@router.get("/runs/{run_id}/analysis", response_model=RunAnalysisOut,
+            summary="讀取該次估值的全部 AI 任務分析結果（T1–T8，含情境機率、同業篩選、反方審查、變動歸因與分部拆解）")
+def run_analysis(run_id: str, db: Session = Depends(get_db), lang: str = Depends(lang_dep)) -> dict:
+    r = db.get(Run, run_id)
+    if r is None:
+        raise http_error(404, "not_found", lang, what=run_id)
+    calc = _load_calc_for_export(r) or {}
+    task_rows = db.scalars(select(AiTask).where(AiTask.run_id == r.id).order_by(AiTask.task)).all()
+    return {
+        "run_id": r.id,
+        "ticker": r.ticker,
+        "ai_analysis": calc.get("ai_analysis") or {},
+        "tasks": [
+            {
+                "task": t.task, "status": t.status, "model": t.model,
+                "tokens_in": t.tokens_in, "tokens_out": t.tokens_out,
+                "cost_usd": t.cost_usd, "note": t.note,
+            }
+            for t in task_rows
+        ],
+    }
 
 
 @router.get("/stocks/{ticker}/methods", response_model=StockMethodsOut,

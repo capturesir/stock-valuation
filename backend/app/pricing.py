@@ -31,18 +31,22 @@ class TaskDef:
 
 
 TASKS: tuple[TaskDef, ...] = (
-    TaskDef("T1", "財報異常偵測與調整建議", "4–5 期三大報表，找出一次性損益、重編、單位錯誤", 12_000, 2_000,
-            ("standard", "deep"), False, None),
-    TaskDef("T2", "新資訊摘要與影響評估", "最新公告與新聞，評估對增長、利潤率、風險的影響", 20_000, 3_000,
-            ("standard", "deep"), False, None),
+    TaskDef("T1", "財報異常偵測與調整建議", "檢查層異常、重編與跨來源差異分析，產出可點擊來源的調整建議", 12_000, 2_000,
+            ("standard", "deep"), True, "t1_anomalies"),
+    TaskDef("T2", "新資訊摘要與影響評估", "彙整 SEC／披露易／Yahoo 公告與新聞，評估增長、利潤率與風險影響", 20_000, 3_000,
+            ("standard", "deep"), True, "t2_news"),
     TaskDef("T3", "增長與利潤率假設", "10 個預測年的營收增長與 EBIT 利潤率，附理由；超出資料範圍會被拒絕", 10_000, 3_000,
             ("lite", "standard", "deep"), True, "propose_assumptions", needs_generic_spec=True),
-    TaskDef("T4", "情境敘事與機率", "悲觀／基準／樂觀的觸發條件與建議機率", 6_000, 2_000, ("deep",), False, None),
-    TaskDef("T5", "可比公司篩選", "3–8 家可比公司與入選理由，倍數由程式抓取", 3_000, 1_000, ("deep",), False, None),
-    TaskDef("T6", "反方審查", "找出假設之間的矛盾與遺漏的風險", 12_000, 2_000, ("deep",), False, None),
-    TaskDef("T7", "估值報告與變動解釋", "投資論點、風險，以及理論價為何改變", 8_000, 2_000,
-            ("lite", "standard", "deep"), False, None),
-    TaskDef("T8", "分部與驅動因子拆解", "分部營收與增長驅動因子，供 SOTP 使用", 25_000, 3_000, ("deep",), False, None),
+    TaskDef("T4", "情境敘事與機率", "悲觀／基準／樂觀觸發條件、機率權重與機率加權理論價", 6_000, 2_000,
+            ("deep",), True, "t4_scenarios"),
+    TaskDef("T5", "可比公司篩選", "3–8 家同業可比公司與入選理由，搭配程式計算之標準化比率中位數", 3_000, 1_000,
+            ("deep",), True, "t5_peers"),
+    TaskDef("T6", "反方審查", "對估值假設進行紅隊審查，找出矛盾、高估風險、WACC 與終值脆弱點", 12_000, 2_000,
+            ("deep",), True, "t6_red_team"),
+    TaskDef("T7", "估值報告與變動解釋", "投資論點、關鍵風險、多方法比較，以及相較前次估值的理論價變動歸因", 8_000, 2_000,
+            ("lite", "standard", "deep"), True, "t7_report"),
+    TaskDef("T8", "分部與驅動因子拆解", "從文件庫申報與財報抽取業務分部與營收驅動因子，供 SOTP 參考", 25_000, 3_000,
+            ("deep",), True, "t8_segments"),
 )
 TASK_BY_KEY = {t.key: t for t in TASKS}
 NEXT_PHASE = "下一階段推出（v2.0.0-beta）"

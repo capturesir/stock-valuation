@@ -9,6 +9,7 @@ import { DocumentQaTab } from "../components/DocumentQaTab";
 import { FiledData } from "../components/FiledData";
 import { FootballFieldCard } from "../components/FootballFieldCard";
 import { NewsAndSuggestionsTab } from "../components/NewsAndSuggestionsTab";
+import { RunAiAnalysisCard } from "../components/RunAiAnalysisCard";
 import { RunDrawer } from "../components/RunDrawer";
 import { TrendChart, type Range } from "../components/TrendChart";
 import { api } from "../lib/api";
@@ -186,6 +187,7 @@ export function StockPage() {
               )}
             </div>
           </section>
+          <RunAiAnalysisCard runId={latest.id} currency={ccy} />
         </>
       )}
 
