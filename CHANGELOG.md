@@ -8,6 +8,30 @@
 
 ---
 
+## 2.1.0 — 2026-11-28
+
+**主題：估值偏高根因修正與模型校準＋補齊估值流程全部 8 項 AI 任務（T1–T8），消除所有「下一階段推出」項目。**
+
+### 估值結果變動（依 `docs/versioning.md` §2 紀錄）
+- **相對估值拆股與 TTM 對齊修正**（`backend/app/services/valuation_methods.py`）：
+  - `NVDA` 相對估值基準價由 `$631.63` 修正為 **`$210.51`**（歷史 P/B 由 70.2× → 29.3×，EV/Sales 由 83.4× → 21.9×）；修復未還原拆股歷史股價與 TTM 欄位錯位。
+  - 金融股 `P/B–ROE` 永續公式改採超額 ROE 折半回歸 `Ke`（上限 +6pp）：`JPM` P/B–ROE 由 `$287.11` → **`$176.00`**（與 RI `$177.09` 一致）；`UNH` 由 `$242.16` → **`$142.04`**；`TRV` 由 `$420.70` → **`$216.55`**。
+- **通用規格 DCF 模型校準**（`src/pipeline/rules.py`、`src/pipeline/generic_spec.py`、`src/pipeline/model_builder.py`）：
+  - 高增長由 10 年直線淡化改為**凸形幾何衰減**（`fade_growth_convex`，超額增長每年乘 `0.58`），避免高增長股 10 年營收膨脹 20–35 倍。
+  - **IFRS 16 / `CapEx < D&A` 再投資下限**：歷史現金 CapEx 顯著低於 D&A 時，預測期再投資至少由 D&A 過渡至可持續水準，不再將使用權資產租賃折舊誤算為永久自由現金流。
+  - **負營運資金保守截斷**：歷史負 NWC 比率於預測期截斷為 `0%`。
+  - **首年殘段折算**：估值日位於首個預測財年 3 個月之後時，僅計入剩餘期間現金流並按殘段中點折現（如 `1883.HK` 基準價由 `HK$7.99` 降至 **`HK$5.72`**，`9%靜態` 由 `HK$3.27` 降至 **`HK$2.75`**），並於基準價超過市價 2 倍時自動附加 `valuation_high_vs_price` 合理性警示。
+  - 既有凍結之 v1 內建規格驗證檔（`out/2026-11-11_NVDA`、`out/2026-11-11_1830.HK`）維持逐位元不變。
+
+### 新增
+- **全部 8 項估值 AI 任務（T1–T8）全數啟用**（`backend/app/pricing.py`、`libs/sv_ai/pipeline_tasks.py`、`backend/app/services/valuation_ai.py`）：
+  - `T1`（財報異常偵測）、`T2`（新聞摘要與影響評估）、`T3`（增長與利潤率假設）、`T4`（悲觀／基準／樂觀情境敘事與機率加權理論價）、`T5`（可比公司篩選與標準化同業中位數）、`T6`（反方紅隊審查：矛盾、高估、WACC／終值與反向 DCF 落差）、`T7`（估值報告與相較前次估值之變動歸因）、`T8`（文件庫分部與驅動因子拆解）。
+  - 支援設定 AI 金鑰時逐項呼叫 LLM 並精確累計各任務 Token 與費用，無金鑰或異常時自動退回規則引擎且不中斷估值。
+- **新接口與前端檢視**：新增 `GET /api/v1/runs/{run_id}/analysis` 與前端 [`RunAiAnalysisCard.tsx`](frontend/apps/web/src/components/RunAiAnalysisCard.tsx)，於股票估值分頁呈現該次估值的 T1–T8 結構化分析結果（三語齊全）。
+- **測試**：新增 `libs/sv_ai/tests/test_pipeline_tasks.py`、`backend/tests/test_valuation_all_tasks.py`，並擴充 `backend/tests/test_valuation_methods_api.py`（10 拆 1 拆股測試）與 `tests/test_generic_spec.py`（凸形增長、IFRS 16 再投資下限、首年殘段驗算）。
+
+---
+
 ## 2.0.0 — 2026-11-28
 
 **主題：v2.0 正式版 — 完成路線圖 v2.1 全數核心里程碑（D1–D13），整合港股免費財報與年報 PDF 交叉核對、杜邦／盈利質素／同業財報並排比較、估值方法統一介面、T7 解釋與系統操作說明書；v1 FCFF 引擎數值逐位元不變。**

@@ -1,6 +1,6 @@
 {
   "name": "@sv/tokens",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "description": "估值工作台設計 token（唯一來源）",

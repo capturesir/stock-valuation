@@ -1,6 +1,6 @@
 # 可攜式、可換模型的股票估值系統（A 組 FCFF 框架）
 
-- 版本：2.0.0（v2 正式版；v1.1 功能與 FCFF 引擎照常可用且逐位元一致）：已全數完成路線圖 v2.1 全部里程碑（D1–D13），包含 PostgreSQL 多用戶與品牌、美股 SEC XBRL 與港股 D11 免費來源（Yahoo＋年報 PDF 抽取核對）四層財報管線、3／5 因子杜邦與盈利質素分析、多家公司財報並排比較、市場數據完整性檢查與投資組合最佳化、每隻股票文件庫與混合檢索附出處問答（D13）、多方法估值與足球場圖（D5）、統一新聞介面與 T1／T2／T7 嚴格引用驗證 AI 任務（D4）與完整[`docs/使用手冊.md`](docs/使用手冊.md)
+- 版本：2.1.0（v2 正式版；估值校準與全部 8 項 AI 任務 T1–T8 完整落地）：包含相對估值拆股還原與 TTM 對齊修正、DCF 凸形增長衰減與 IFRS 16 再投資下限、首年殘段折現、合理性檢查，以及 T1–T8 全部估值任務即時執行與分析檢視；詳見 [`CHANGELOG.md`](CHANGELOG.md) 與 [`docs/使用手冊.md`](docs/使用手冊.md)
 - 日期：2026-11-28（亞洲／澳門時間，UTC+8）
 - 語言：繁體中文（介面另支援简体中文、English）
 - 倉庫：[https://github.com/capturesir/stock-valuation](https://github.com/capturesir/stock-valuation)
